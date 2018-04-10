@@ -14,7 +14,6 @@
 #------------------------------------------------------------------------------#
 import argparse
 from enum import Enum
-import logging
 import openpyxl
 import os.path
 import sys
@@ -24,6 +23,9 @@ from time import sleep
 import sqlite3
 from xls2db import xls2db
 import cgSQL
+
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 #------------------------------------------------------------------------------#
 # Declare the application title and calling arguments help:                    #
@@ -42,6 +44,7 @@ args = vars(parser.parse_args())
 #------------------------------------------------------------------------------#
 c = 1
 gClass = ''
+gClassDescription = ''
 gInstance = ''
 gSelectParameter = ''
 gSelectSelection = ''
@@ -53,18 +56,29 @@ pathTemplates = ''
 #------------------------------------------------------------------------------#
 # Declare the error handling global variables and procedure:                   #
 #------------------------------------------------------------------------------#
-iErr = 0
-errProc = ''
-errParameters = []
-def errorHandler(eCode, *args):
-    global iErr
-    global errParameters
+def errorHandler(errProc, eCode, *args):
+    #--------------------------------------------------------------------------#
+    # Get the application specific error message and output the error:         #
+    #--------------------------------------------------------------------------#
+    sMsg = errorMessage[eCode]
 
-    iErr = eCode
-    errParameters = []
+    #--------------------------------------------------------------------------#
+    # Replace any error parameters:                                            #
+    #--------------------------------------------------------------------------#
+    i = 1
     for arg in args:
-        errParameters.append(arg)
-    reportComplete()
+        sMsg = sMsg.replace('@' + str(i), str(arg))
+        i = i + 1
+
+    #--------------------------------------------------------------------------#
+    # Output the error message and end:                                        #
+    #--------------------------------------------------------------------------#
+    print('\r\n')
+    print(appTitle + ' Version ' + appVersion + '\r\n' + 'ERROR ' +
+          str(eCode) + ' in Procedure ' + "'" + errProc + "'" + '\r\n' + '\r\n' + sMsg)
+    print('\r\n')
+    print(traceback.format_exception(*sys.exc_info()))
+    sys.exit()
 
 #------------------------------------------------------------------------------#
 # Enumerate the error numbers and map the error messages:                      #
@@ -91,7 +105,8 @@ class errorCode(Enum):
     noBeginPlaceholder                 = -35
     noEndPlaceholder                   = -36
     noCodeTemplateFile                 = -37
-    unknownAttribute                   = -38
+    nonASCIICharacter                  = -38
+    unknownAttribute                   = -39
 
 errorMessage = {
     errorCode.cannotCommit             : 'Cannot commit changes to sqlite database',
@@ -99,7 +114,7 @@ errorMessage = {
     errorCode.cannotConnectDB          : 'Cannot connect to sqlite database @1',
     errorCode.cannotCreateTable        : 'Cannot insert table @1 into sqlite database',
     errorCode.cannotGetSQL             : 'Cannot retrieve SQL query expression for attribute @1',
-    errorCode.cannotQuery              : 'Cannot query using SQL expression @1',
+    errorCode.cannotQuery              : 'Query element @1 cannot execute using SQL expression @2 using parameters @3',
     errorCode.filenotExist             : 'Workbook file @1 does not exist.',
     errorCode.invalidChildData         : 'Class @1 has no children defined!',
     errorCode.invalidChildField        : 'Class @1 child field @2 is null!',
@@ -115,6 +130,7 @@ errorMessage = {
     errorCode.noEndPlaceholder         : 'No valid END placholder for attribute @1 in @2.',
     errorCode.noClassDBSheet           : 'idb Template Worksheet does not include a template called @1.',
     errorCode.noCodeTemplateFile       : 'Code template file @1 does not exist!',
+    errorCode.nonASCIICharacter        : 'Query element @1 using SQL expression @2 and parameters @3 returned a non ascii-encoded unicode string',
     errorCode.unknownAttribute         : 'Attribute @1 is unknown.',
 }
 
@@ -143,9 +159,7 @@ def main():
     #--------------------------------------------------------------------------#
     # Define the procedure name:                                               #
     #--------------------------------------------------------------------------#
-    global errProc
     errProc = main.__name__
-    logging.basicConfig(level=logging.INFO)
 
     #--------------------------------------------------------------------------#
     # Declare global and local variables:                                      #
@@ -174,7 +188,7 @@ def main():
     #--------------------------------------------------------------------------#
     wbName = args['sheet']
     if not os.path.exists(wbName):
-        errorHandler(errorCode.filenotExist, wbName)
+        errorHandler(errProc, errorCode.filenotExist, wbName)
 
     #--------------------------------------------------------------------------#
     # Delete the sqlite database file if it already exists so it can be        #
@@ -192,7 +206,7 @@ def main():
     try:
         xls2db(wbName, dbName)
     except:
-        errorHandler(errorCode.cannotConvertWorkbook, wbName, dbName)
+        errorHandler(errProc, errorCode.cannotConvertWorkbook, wbName, dbName)
 
     #--------------------------------------------------------------------------#
     # Connect to the new persistent sqlite database file:                      #
@@ -201,7 +215,7 @@ def main():
         conn = sqlite3.connect('cg.db')
         conn.row_factory = sqlite3.Row
     except:
-        errorHandler(errorCode.cannotConnectDB, 'cg.db')
+        errorHandler(errProc, errorCode.cannotConnectDB, 'cg.db')
 
     #--------------------------------------------------------------------------#
     # Create the SFC Parameters table:                                         #
@@ -211,12 +225,12 @@ def main():
         query = cgSQL.sql[cgSQL.sqlCode.createParameterSFC]
         c.execute(query)
     except:
-        errorHandler(errorCode.cannotCreateTable, query)
+        errorHandler(errProc, errorCode.cannotCreateTable, query)
 
     #--------------------------------------------------------------------------#
     # Get the progress weighting:                                              #
     #--------------------------------------------------------------------------#
-    pbChunks = 21.0
+    pbChunks = 22.0
 
     #--------------------------------------------------------------------------#
     # Create the overall program files:                                        #
@@ -252,10 +266,14 @@ def main():
     processLevel(sPCell, 'PC', 100 * 4 / pbChunks)
 
     #--------------------------------------------------------------------------#
-    # Commit the changes to the database if no error and close the connection: #
+    # Finally reate the block program files now all the blocks are done:       #
     #--------------------------------------------------------------------------#
-    if (iErr == 0):
-        conn.commit()
+    createProgramFiles(sPCell, 'BLK', 100 * 1 / pbChunks)
+
+    #--------------------------------------------------------------------------#
+    # Commit the changes to the database and close the connection:             #
+    #--------------------------------------------------------------------------#
+    conn.commit()
     conn.close()
 
     #--------------------------------------------------------------------------#
@@ -264,55 +282,11 @@ def main():
     p.set_description('Processing complete')
     p.refresh()
     p.close()
-    reportComplete()
-
-#------------------------------------------------------------------------------#
-# Function reportComplete                                                      #
-#                                                                              #
-# Description:                                                                 #
-# Reports the completion status of the operation.                              #
-#------------------------------------------------------------------------------#
-def reportComplete():
-    #--------------------------------------------------------------------------#
-    # Declare global parameters:                                               #
-    #--------------------------------------------------------------------------#
-    global iErr
-    global errProc
-    global errParameters
 
     #--------------------------------------------------------------------------#
-    # Check if successful completion:                                          #
+    # Output a success message:                                                #
     #--------------------------------------------------------------------------#
-    if (iErr == 0):
-        #----------------------------------------------------------------------#
-        # Output a success message:                                            #
-        #----------------------------------------------------------------------#
-        print('Congratulations! Operation successful.')
-    else:
-        #----------------------------------------------------------------------#
-        # Get the application specific error message and output the error:     #
-        #----------------------------------------------------------------------#
-        sMsg = errorMessage[iErr]
-
-        #----------------------------------------------------------------------#
-        # Check if there are any error parameters to replace:                  #
-        #----------------------------------------------------------------------#
-        if (not errParameters is None):
-            #------------------------------------------------------------------#
-            # Enter a loop to replace each parameter:                          #
-            #------------------------------------------------------------------#
-            for i in range(0, len(errParameters)):
-                sMsg = sMsg.replace('@' + str(i + 1), errParameters[i])
-
-        #----------------------------------------------------------------------#
-        # Output the error message and end:                                    #
-        #----------------------------------------------------------------------#
-        print('\r\n')
-        logging.critical(appTitle + ' Version ' + appVersion + '\r\n' + 'ERROR ' +
-                         str(iErr) + ' in Procedure ' + "'" + errProc + "'" + '\r\n' + '\r\n' + sMsg)
-        print('\r\n')
-        print(traceback.format_exception(*sys.exc_info()))
-        sys.exit()
+    print('Congratulations! Operation successful.')
 
 #------------------------------------------------------------------------------#
 # Function: processLevel                                                       #
@@ -331,7 +305,6 @@ def processLevel(sPCell, sLevel, pbwt):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    global errProc
     errProc = processLevel.__name__
 
     #--------------------------------------------------------------------------#
@@ -349,7 +322,7 @@ def processLevel(sPCell, sLevel, pbwt):
         r = c.fetchone()
         num = r['num']
     except:
-        errorHandler(errorCode.cannotQuery, 'tblClass')
+        errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.processLevelCount, query, sLevel.upper())
 
     #--------------------------------------------------------------------------#
     # Get the list of classes:                                                 #
@@ -358,7 +331,7 @@ def processLevel(sPCell, sLevel, pbwt):
         query = cgSQL.sql[cgSQL.sqlCode.processLevel]
         c.execute(query, (sLevel.upper(),))
     except:
-        errorHandler(errorCode.cannotQuery, 'tblClass')
+        errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.processLevel, query, sLevel.upper())
 
     #--------------------------------------------------------------------------#
     # Process each row in the list of classes:                                 #
@@ -378,12 +351,12 @@ def processLevel(sPCell, sLevel, pbwt):
         #----------------------------------------------------------------------#
         # Create the instance FB (ifb) of the class:                           #
         #----------------------------------------------------------------------#
-        createOneClass(sPCell, sClass, row['Description'], row['ifb'], 'ifb', '')
+        createClass(sLevel, sPCell, sClass, row['Description'], row['ifb'], 'ifb', '', True)
 
         #----------------------------------------------------------------------#
         # Create the instance FCs (ifc) of the class:                          #
         #----------------------------------------------------------------------#
-        createOneClass(sPCell, sClass, row['Description'], row['ifc'], 'ifc', '')
+        createClass(sLevel, sPCell, sClass, row['Description'], row['ifc'], 'ifc', '', True)
 
         #----------------------------------------------------------------------#
         # Update the SFC parameters in the database:                           #
@@ -393,7 +366,7 @@ def processLevel(sPCell, sLevel, pbwt):
         #----------------------------------------------------------------------#
         # Create the block class files:                                        #
         #----------------------------------------------------------------------#
-        createOneClass(sPCell, sClass, row['Description'], row['fb'], 'fb', '')
+        createClass(sLevel, sPCell, sClass, row['Description'], row['fb'], 'fb', '', True)
 
         #----------------------------------------------------------------------#
         # Update the progress message:                                         #
@@ -423,7 +396,6 @@ def createProgramFiles(sPCell, sLevel, pbwt):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    global errProc
     errProc = createProgramFiles.__name__
 
     #--------------------------------------------------------------------------#
@@ -441,7 +413,7 @@ def createProgramFiles(sPCell, sLevel, pbwt):
         r = c.fetchone()
         num = r['num']
     except:
-        errorHandler(errorCode.cannotQuery, query)
+        errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createProgramFilesCount, query, sLevel.upper())
 
     #--------------------------------------------------------------------------#
     # Now get the list of non S88 files:                                       #
@@ -450,7 +422,7 @@ def createProgramFiles(sPCell, sLevel, pbwt):
         query = cgSQL.sql[cgSQL.sqlCode.createProgramFiles]
         c.execute(query, (sLevel.upper(),))
     except:
-        errorHandler(errorCode.cannotQuery, 'tblFile')
+        errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createProgramFiles, query, sLevel.upper())
 
     #--------------------------------------------------------------------------#
     # Process each row in the list of files:                                   #
@@ -468,7 +440,7 @@ def createProgramFiles(sPCell, sLevel, pbwt):
         #----------------------------------------------------------------------#
         # Create the output file from the input awl source:                    #
         #----------------------------------------------------------------------#
-        createAllClasses(sPCell, sLevel, row['File'])
+        createClass(sLevel, sPCell, '', '', row['File'], '', '', False)
 
     #--------------------------------------------------------------------------#
     # Update the progress message:                                             #
@@ -477,25 +449,31 @@ def createProgramFiles(sPCell, sLevel, pbwt):
     p.refresh()
 
 #------------------------------------------------------------------------------#
-# Function: createAllClasses                                                   #
+# Function: createClass                                                        #
 #                                                                              #
 # Description:                                                                 #
 # Creates Class based STL files, such as instance FBs (ifb) and instance       #
 # FCs (ifc) for all of the class instances of the specified in the Process     #
 # Cell.                                                                        #
+# If bOne then creates files with all instances of the specified level.        #
 #------------------------------------------------------------------------------#
 # Calling parameters:                                                          #
 #                                                                              #
-# sPCell                The process cell which owns the instances.             #
 # sLevel                The Class level to create.                             #
+# sPCell                The process cell which owns the instances.             #
+# sClass                The class to process the instances for.                #
+# sClassDescription     The class description.                                 #
 # sTemplate             The code template file name.                           #
+# sOutputPrefix         The output file prefix name.                           #
+# sOutputSuffix         The output file suffix name.                           #
+# bOne                  Create output file just the specified class.           #
 #------------------------------------------------------------------------------#
-def createAllClasses(sPCell, sLevel, sTemplate):
+def createClass(sLevel, sPCell, sClass, sClassDescription,
+                sTemplate, sOutputPrefix, sOutputSuffix, bOne):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    global errProc
-    errProc = createAllClasses.__name__
+    errProc = createClass.__name__
 
     #--------------------------------------------------------------------------#
     # Declare use of the global sqlite cursor object:                          #
@@ -510,21 +488,12 @@ def createAllClasses(sPCell, sLevel, sTemplate):
     sFileNameIn = pathTemplates + '/' + sTemplate + '.awl'
     logging.info(sFileNameIn)
     if not os.path.exists(sFileNameIn):
-        errorHandler(errorCode.filenotExist, sFileNameIn)
+        errorHandler(errProc, errorCode.filenotExist, sFileNameIn)
 
     #--------------------------------------------------------------------------#
-    # Get the list of global block classes:                                    #
+    # Get a connection to the database:                                        #
     #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        if (sLevel == 'PG'):
-            query = cgSQL.sql[cgSQL.sqlCode.createAllClasses1]
-            c.execute(query)
-        else:
-            query = cgSQL.sql[cgSQL.sqlCode.createAllClassesAll]
-            c.execute(query, (sLevel.upper(),))
-    except:
-        errorHandler(errorCode.cannotQuery, query)
+    c = conn.cursor()
 
     #--------------------------------------------------------------------------#
     # Open the template file for reading and parse each line:                  #
@@ -535,139 +504,6 @@ def createAllClasses(sPCell, sLevel, sTemplate):
     bTemplateEnd = False
     txtData = ''
     txtTemplate = ''
-    for sBuffer in file:
-        #----------------------------------------------------------------------#
-        # Check if a blank line:                                               #
-        #----------------------------------------------------------------------#
-        if (len(sBuffer) == 0):
-            if (bTemplateBegin and not bTemplateEnd):
-                txtTemplate = txtTemplate + '\r\n'
-            else:
-                txtData = txtData + '\r\n'
-        else:
-            #------------------------------------------------------------------#
-            # Check if the start of a new instance template:                   #
-            #------------------------------------------------------------------#
-            if (sBuffer.find('@@TEMPLATE_BEGIN@@') > 0):
-                bTemplateBegin = True
-                bSkipFirstLine = True
-
-            #------------------------------------------------------------------#
-            # Check if the end of the current instance template:               #
-            #------------------------------------------------------------------#
-            elif (sBuffer.find('@@TEMPLATE_END@@') > 0):
-                bTemplateEnd = True
-
-
-            #------------------------------------------------------------------#
-            # Build the instance template text if within an instance template: #
-            #------------------------------------------------------------------#
-            if (bTemplateBegin and not bTemplateEnd):
-                if (bSkipFirstLine):
-                    bSkipFirstLine = False
-                else:
-                    txtTemplate = txtTemplate + sBuffer# + '\r\n'
-
-            #------------------------------------------------------------------#
-            # Check if not in a template:                                      #
-            #------------------------------------------------------------------#
-            if (not bTemplateBegin):
-                #--------------------------------------------------------------#
-                # Build the output text with the base file data:               #
-                #--------------------------------------------------------------#
-                txtData = txtData + sBuffer# + '\r\n'
-
-            #------------------------------------------------------------------#
-            # Replace the fields in the instance template if the template is   #
-            # finished:                                                        #
-            #------------------------------------------------------------------#
-            elif (bTemplateBegin and bTemplateEnd):
-                txtData = processTemplate(c, txtTemplate, txtData)
-
-            #------------------------------------------------------------------#
-            # Reset the instance template flags:                               #
-            #------------------------------------------------------------------#
-            elif (bTemplateBegin and bTemplateEnd):
-                txtTemplate = ''
-                bTemplateBegin = False
-                bTemplateEnd = False
-
-    #--------------------------------------------------------------------------#
-    # Close the input file:                                                    #
-    #--------------------------------------------------------------------------#
-    file.close()
-
-    #--------------------------------------------------------------------------#
-    # Replace any default parameters:                                          #
-    #--------------------------------------------------------------------------#
-    txtData = defaultParameters(sPCell, txtData)
-
-    #--------------------------------------------------------------------------#
-    # Write the output instance file:                                          #
-    #--------------------------------------------------------------------------#
-    sFileNameOut = pathOutput + '/' + sTemplate + '.awl'
-    file = open(sFileNameOut, 'w')
-    file.write(txtData)
-    file.close()
-
-#------------------------------------------------------------------------------#
-# Function: createOneClass                                                     #
-#                                                                              #
-# Description:                                                                 #
-# Creates Class based STL files, such as instance FBs (ifb) and instance       #
-# FCs (ifc) for all of the class instances of the specified in the Process     #
-# Cell.                                                                        #
-#------------------------------------------------------------------------------#
-# Calling parameters:                                                          #
-#                                                                              #
-# sPCell                The process cell which owns the instances.             #
-# sClass                The class to process the instances for.                #
-# sClassDescription     The class description.                                 #
-# sTemplate             The code template file name.                           #
-# sOutputPrefix         The output file prefix name.                           #
-# sOutputSuffix         The output file suffix name.                           #
-#------------------------------------------------------------------------------#
-def createOneClass(sPCell, sClass, sClassDescription, sTemplate, sOutputPrefix, sOutputSuffix):
-    #--------------------------------------------------------------------------#
-    # Define the procedure name and trap any programming errors:               #
-    #--------------------------------------------------------------------------#
-    global errProc
-    errProc = createOneClass.__name__
-
-    #--------------------------------------------------------------------------#
-    # Declare use of the global sqlite cursor object:                          #
-    #--------------------------------------------------------------------------#
-    global conn
-    global pathOutput
-    global pathTemplates
-
-    #--------------------------------------------------------------------------#
-    # Get the code template file name and check that it exists:                #
-    #--------------------------------------------------------------------------#
-    sFileNameIn = pathTemplates + '/' + sTemplate + '.awl'
-    logging.info(sFileNameIn)
-    if not os.path.exists(sFileNameIn):
-        errorHandler(errorCode.filenotExist, sFileNameIn)
-
-    #--------------------------------------------------------------------------#
-    # Get the list of instances:                                               #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.createOneClass]
-        c.execute(query, ('RM', sClass, sPCell, sPCell, sPCell))
-    except:
-        errorHandler(errorCode.cannotQuery, query)
-
-    #--------------------------------------------------------------------------#
-    # Open the template file for reading:                                      #
-    #--------------------------------------------------------------------------#
-    bSkipFirstLine = False
-    bTemplateBegin = False
-    bTemplateEnd = False
-    txtData = ''
-    txtTemplate = ''
-    file = open(sFileNameIn, 'r')
     for sBuffer in file:
         #----------------------------------------------------------------------#
         # Check if a blank line:                                               #
@@ -698,42 +534,57 @@ def createOneClass(sPCell, sClass, sClassDescription, sTemplate, sOutputPrefix, 
                 if (bSkipFirstLine):
                     bSkipFirstLine = False
                 else:
-                    txtTemplate = txtTemplate + sBuffer# + '\r\n'
+                    txtTemplate = txtTemplate + sBuffer
 
             #------------------------------------------------------------------#
             # Check if not in a template:                                      #
             #------------------------------------------------------------------#
-            if (not bTemplateBegin):
+            elif (not bTemplateBegin):
                 #--------------------------------------------------------------#
                 # Build the output text with the base file data:               #
                 #--------------------------------------------------------------#
-                txtData = txtData + sBuffer# + '\r\n'
+                txtData = txtData + sBuffer
 
             #------------------------------------------------------------------#
             # Replace the fields in the instance template if the template is   #
             # finished:                                                        #
             #------------------------------------------------------------------#
             elif (bTemplateBegin and bTemplateEnd):
-                txtData = processTemplate(c, txtTemplate, txtData)
+                #--------------------------------------------------------------#
+                # Get the list of instances for the template:                  #
+                #--------------------------------------------------------------#
+                if (bOne):
+                    try:
+                        query = cgSQL.sql[cgSQL.sqlCode.createClassOne]
+                        c.execute(query, ('RM', sClass, sPCell, sPCell, sPCell))
+                    except:
+                        errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClassOne, query, 'RM' + ', ' + sClass + ', ' + sPCell + ', ' + sPCell + ', ' + sPCell)
 
-            #------------------------------------------------------------------#
-            # Reset the instance template flags:                               #
-            #------------------------------------------------------------------#
-            elif (bTemplateBegin and bTemplateEnd):
+                elif (sLevel == 'PG'):
+                    try:
+                        query = cgSQL.sql[cgSQL.sqlCode.createClassNone]
+                        c.execute(query)
+                    except:
+                        errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClassNone, query, 'no parameters')
+                else:
+                    try:
+                        query = cgSQL.sql[cgSQL.sqlCode.createClassAll]
+                        c.execute(query, (sLevel.upper(),))
+                    except:
+                        errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClassAll, query, sLevel.upper())
+
+                #--------------------------------------------------------------#
+                # Replace the fields in the instance template:                 #
+                #--------------------------------------------------------------#
+                txtData = processTemplate(c, txtTemplate, txtData, bOne)
                 txtTemplate = ''
                 bTemplateBegin = False
                 bTemplateEnd = False
 
-    #----------------------------------------------------------------------#
-    # Close the input file:                                                #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Close the input file:                                                    #
+    #--------------------------------------------------------------------------#
     file.close()
-
-    #--------------------------------------------------------------------------#
-    # Replace the class information in the entire file:                        #
-    #--------------------------------------------------------------------------#
-    txtData.replace('@@CLASS@@', sClass)
-    txtData.replace('@@CLASSDESCRIPTION@@', sClassDescription)
 
     #--------------------------------------------------------------------------#
     # Replace any default parameters:                                          #
@@ -741,9 +592,19 @@ def createOneClass(sPCell, sClass, sClassDescription, sTemplate, sOutputPrefix, 
     txtData = defaultParameters(sPCell, txtData)
 
     #--------------------------------------------------------------------------#
+    # Replace the class information in the entire file if just one class:      #
+    #--------------------------------------------------------------------------#
+    if (bOne):
+        txtData = txtData.replace('@@CLASS@@', gClass)
+        txtData = txtData.replace('@@CLASSDESCRIPTION@@', gClassDescription)
+
+    #--------------------------------------------------------------------------#
     # Write the output instance file:                                          #
     #--------------------------------------------------------------------------#
-    sFileNameOut = pathOutput + '/' + sOutputPrefix + sClass + sOutputSuffix + '.awl'
+    if (bOne):
+        sFileNameOut = pathOutput + '/' + sOutputPrefix + sClass + sOutputSuffix + '.awl'
+    else:
+        sFileNameOut = pathOutput + '/' + sTemplate + '.awl'
     file = open(sFileNameOut, 'w')
     file.write(txtData)
     file.close()
@@ -759,22 +620,23 @@ def createOneClass(sPCell, sClass, sClassDescription, sTemplate, sOutputPrefix, 
 # c                     The cursor with the instance data.                     #
 # txtTemplate           The template string to look through.                   #
 # txtData               The running instance data string.                      #
+# bOne                  Create output file just the specified class.           #
 #------------------------------------------------------------------------------#
 # Returned parameters:                                                         #
 #                                                                              #
 # txtData               The output data string with the new instance data.     #
 #------------------------------------------------------------------------------#
-def processTemplate(c, txtTemplate, txtData):
+def processTemplate(c, txtTemplate, txtData, bOne):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    global errProc
     errProc = processTemplate.__name__
 
     #--------------------------------------------------------------------------#
     # Declare use of the global sqlite cursor object:                          #
     #--------------------------------------------------------------------------#
     global gClass
+    global gClassDescription
     global gInstance
 
     #--------------------------------------------------------------------------#
@@ -782,13 +644,13 @@ def processTemplate(c, txtTemplate, txtData):
     #--------------------------------------------------------------------------#
     iRow = 0
     iCounterBase = 0
+    txtInstance = ''
     for row in c:
         #----------------------------------------------------------------------#
-        # Enter a loop to process all of the fields in the                     #
-        # instance record:                                                     #
+        # Enter a loop to process all of the fields in the instance record:    #
         #----------------------------------------------------------------------#
-        iRow = iRow + 1
         sClass = ''
+        sClassDescription = ''
         sInstance = ''
         txtInstance = txtTemplate
         for fld in row.keys():
@@ -803,32 +665,33 @@ def processTemplate(c, txtTemplate, txtData):
                 # Get the class and instance names:                            #
                 #--------------------------------------------------------------#
                 if (fld.upper() == 'CLASS'):
-                    sClass = row[fld]
+                    gClass = row[fld]
+
+                elif (fld.upper() == 'CLASSDESCRIPTION'):
+                    gClassDescription = row[fld]
 
                 elif (fld.upper() == 'INSTANCE'):
-                    sInstance = row[fld]
+                    gInstance = row[fld]
 
         #----------------------------------------------------------------------#
         # Check if there are child attribute aliases in the template:          #
         #----------------------------------------------------------------------#
-        if (txtInstance.find('ATTR') > 0):
+        if (txtInstance.find('ATTR_BEGIN') >= 0):
             #------------------------------------------------------------------#
             # Process the attribute data:                                      #
             #------------------------------------------------------------------#
-            gClass = sClass
-            gInstance = sInstance
-            txtInstance = insertAttributeData(sClass, sInstance, txtInstance)
+            txtInstance = insertAttributeData(sClass, sInstance, txtInstance, 0)
 
             #------------------------------------------------------------------#
             # Replace any counters:                                            #
             #------------------------------------------------------------------#
             txtInstance = replaceCounter(iRow, txtInstance)
+            iRow = iRow + 1
 
         #----------------------------------------------------------------------#
-        # Add the instance template to the output data:                        #
+        # Add the instance data to the output file:                            #
         #----------------------------------------------------------------------#
         txtData = txtData + txtInstance
-        txtInstance = ''
 
     #--------------------------------------------------------------------------#
     # Return the template now it is filled with instance data:                 #
@@ -846,16 +709,16 @@ def processTemplate(c, txtTemplate, txtData):
 # sClass                The class to process children for.                     #
 # sInstance             The instance tag number.                               #
 # txtInstance           The instance data string.                              #
+# rl                    Recursion level.                                       #
 #------------------------------------------------------------------------------#
 # Returned parameters:                                                         #
 #                                                                              #
 # txtInstance           The updated instance data string with the new data.    #
 #------------------------------------------------------------------------------#
-def insertAttributeData(sClass, sInstance, txtInstance):
+def insertAttributeData(sClass, sInstance, txtInstance, rl):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    global errProc
     errProc = insertAttributeData.__name__
 
     #--------------------------------------------------------------------------#
@@ -872,38 +735,37 @@ def insertAttributeData(sClass, sInstance, txtInstance):
     #--------------------------------------------------------------------------#
     # Process all of the attributes in the template:                           #
     #--------------------------------------------------------------------------#
+    bRecursion = False
     iRow = 0
     iCounterBase = 0
     txtRecordData = ''
-    while (txtInstance.find('@@ATTR_BEGIN|') > 0):
+    while (txtInstance.find('@@ATTR_BEGIN|') >= 0):
         #----------------------------------------------------------------------#
-        # Get the attribute name from the template. It must be in the          #
-        # the enclosed in the format:                                          #
+        # Get the attribute name from the template. It must be enclosed in     #
+        # the format:                                                          #
         #   @@ATTR_BEGIN|<attr>@@                                              #
         #   @@ATTR_END|<attr>@@                                                #
         #----------------------------------------------------------------------#
         iTagBegin = txtInstance.find('@@ATTR_BEGIN|')
         iTagEnd = txtInstance.find('@@', iTagBegin + 13)
         if (iTagBegin > iTagEnd):
-            errorHandler(errorCode.noBeginPlaceholder, txtInstance)
+            errorHandler(errProc, errorCode.noBeginPlaceholder, txtInstance)
         else:
+            #------------------------------------------------------------------#
+            # Get the template text between the BEGIN and END tags. Error if   #
+            # no end tag:                                                      #
+            #------------------------------------------------------------------#
             sTemplateAttrName = txtInstance[iTagBegin + 13:iTagEnd]
-
-            #------------------------------------------------------------------#
-            # Get the template text between the BEGIN and END tags:            #
-            #------------------------------------------------------------------#
             iTagAttrEnd = txtInstance.find('@@ATTR_END|' + sTemplateAttrName)
-            if (iTagAttrEnd == 0):
-                errorHandler(errorCode.noEndPlaceholder, sTemplateAttrName, txtInstance)
-            else:
-                txtTemplate = txtInstance[iTagEnd + 3:iTagAttrEnd - 1]
+            if (iTagAttrEnd == -1):
+                errorHandler(errProc, errorCode.noEndPlaceholder, sTemplateAttrName, txtInstance)
 
             #------------------------------------------------------------------#
             # Get the instance file text before and after the template:        #
             #------------------------------------------------------------------#
+            txtTemplate = txtInstance[iTagEnd + 2:iTagAttrEnd]
             txtInstanceBegin = txtInstance[:iTagBegin]
-            txtInstanceEnd = txtInstance[-(iTagBegin + 14 + len(sTemplateAttrName) + 1 +
-                             len(txtTemplate) + 14 + len(sTemplateAttrName) + 2):]
+            txtInstanceEnd = txtInstance[iTagAttrEnd + 11 + len(sTemplateAttrName) + 4:]
 
             #------------------------------------------------------------------#
             # Strip out the extra carriage returns from the template text:     #
@@ -919,89 +781,116 @@ def insertAttributeData(sClass, sInstance, txtInstance):
             #------------------------------------------------------------------#
             # Set the query based on the attribute name:                       #
             #------------------------------------------------------------------#
+            parms = []
+            qparms = []
             try:
                 query = cgSQL.sql[cgSQL.sqlCode[sTemplateAttrName]]
                 parms = cgSQL.prm[cgSQL.sqlCode[sTemplateAttrName]]
             except:
-                errorHandler(errorCode.cannotGetSQL, sTemplateAttrName)
+                errorHandler(errProc, errorCode.cannotGetSQL, sTemplateAttrName)
 
             #------------------------------------------------------------------#
-            # Replace the parameters with their current values:                #
+            # Copy the list locally and replace the parameters with their      #
+            # current global values:                                           #
             #------------------------------------------------------------------#
-            for i in range(len(parms)):
-                if (parms[i] == 'gClass'):
-                    parms[i] = gClass
-                elif (parms[i] == 'gInstance'):
-                    parms[i] = gInstance
-                elif (parms[i] == 'gSelectParameter'):
-                    parms[i] = gSelectParameter
-                elif (parms[i] == 'gSelectSelection'):
-                    parms[i] = gSelectSelection
-                elif (parms[i] == 'gSFC'):
-                    parms[i] = gSFC
-                elif (parms[i] == 'gState'):
-                    parms[i] = gState
-#            for i in range(len(parms)):
-#                print(parms[i])
+            qparms = list(parms)
+            for i in range(len(qparms)):
+                if (qparms[i] == 'gClass'):
+                    qparms[i] = gClass
+                elif (qparms[i] == 'gInstance'):
+                    qparms[i] = gInstance
+                elif (qparms[i] == 'gSelectParameter'):
+                    qparms[i] = gSelectParameter
+                elif (qparms[i] == 'gSelectSelection'):
+                    qparms[i] = gSelectSelection
+                elif (qparms[i] == 'gSFC'):
+                    qparms[i] = gSFC
+                elif (qparms[i] == 'gState'):
+                    qparms[i] = gState
+
+#            for i in range(len(qparms)):
+#                print(qparms[i])
 
             #------------------------------------------------------------------#
             # Query the sqlite database:                                       #
             #------------------------------------------------------------------#
             try:
                 c = conn.cursor()
-                c.execute(query, parms)
+                c.execute(query, qparms)
             except:
-                errorHandler(errorCode.cannotQuery, query)
+                s = ''
+                for i in range(len(qparms)):
+                    if (len(s) > 0):
+                        s = s + ', '
+                    s = s + qparms[i]
+                errorHandler(errProc, errorCode.cannotQuery,
+                             cgSQL.sqlCode[sTemplateAttrName], query, s)
 
-            #--------------------------------------------------------------#
-            # Check to see if the recordset contains any data:             #
-            #--------------------------------------------------------------#
+            #------------------------------------------------------------------#
+            # Check to see if the recordset contains any data:                 #
+            #------------------------------------------------------------------#
+#            if (c.rowcount == -1):
             data = c.fetchall()
-            if data is None:
-                #----------------------------------------------------------#
-                # No data so leave any default value:                      #
-                #----------------------------------------------------------#
-                if (iDefaultBegin > 0):
-                    txtRecordData = txtTemplate[iDefaultBegin + 1 + 22:iDefaultEnd]
+#            if data is None:
+            if (len(data) == 0):
+                #--------------------------------------------------------------#
+                # No data so leave any default value:                          #
+                #--------------------------------------------------------------#
+                if (iDefaultBegin >= 0):
+                    txtRecordData = txtTemplate[iDefaultBegin + 22:iDefaultEnd]
                 else:
-                    #------------------------------------------------------#
-                    # not even a default value. Blank the template:        #
-                    #------------------------------------------------------#
+                    #----------------------------------------------------------#
+                    # not even a default value. Blank the template:            #
+                    #----------------------------------------------------------#
                     txtRecordData = ''
             else:
-                #----------------------------------------------------------#
-                # There is data so erase any default data:                 #
-                #----------------------------------------------------------#
-                if (iDefaultBegin > 0):
-                    txtTemplate = txtTemplate[:iDefaultBegin - 1] + txtTemplate[:iDefaultEnd + 20]
+                #--------------------------------------------------------------#
+                # There is data so erase any default data:                     #
+                #--------------------------------------------------------------#
+                if (iDefaultBegin >= 0):
+                    txtTemplate = txtTemplate[:iDefaultBegin] + txtTemplate[iDefaultEnd + 20:]
 
-                #----------------------------------------------------------#
-                # Enter a loop to replace the attribute field names:       #
-                #----------------------------------------------------------#
+                #--------------------------------------------------------------#
+                # Enter a loop to replace the attribute field names:           #
+                #--------------------------------------------------------------#
                 for row in data:
-                    #------------------------------------------------------#
-                    # Enter a loop to process all of the fields in the     #
-                    # instance record:                                     #
-                    #------------------------------------------------------#
-                    sClassRecursive = sClass
+#                for row in c:
+                    #----------------------------------------------------------#
+                    # Enter a loop to process all of the fields in the         #
+                    # instance record:                                         #
+                    #----------------------------------------------------------#
                     txtRecord = txtTemplate
-                    iRow = iRow + 1
                     for fld in row.keys():
-                        #--------------------------------------------------#
-                        # Set a null placeholder if no data:               #
-                        #--------------------------------------------------#
+                        #------------------------------------------------------#
+                        # Set a null placeholder if no data:                   #
+                        #------------------------------------------------------#
                         if row[fld] is None:
                             txtRecord = txtRecord.replace('@@' + fld.upper() + '@@', '##NULL##')
                         else:
-                            #----------------------------------------------#
-                            # Replace the placeholder with the db value:   #
-                            #----------------------------------------------#
-                            sValue = str(row[fld])
-                            txtRecord = txtRecord.replace('@@' + fld.upper() + '@@', sValue)
+                            #--------------------------------------------------#
+                            # Replace the placeholder with the db value:       #
+                            #--------------------------------------------------#
+                            if (isnumeric(row[fld])):
+                                sValue = str(row[fld])
+                            else:
+                                try:
+                                    row[fld].decode('ascii')
+                                    sValue = str(row[fld])
+                                except:
+#                                except UnicodeDecodeError:
+                                    s = ''
+                                    for i in range(len(qparms)):
+                                        if (len(s) > 0):
+                                            s = s + ', '
+                                        s = s + qparms[i]
+                                    errorHandler(errProc, errorCode.nonASCIICharacter,
+                                                 cgSQL.sqlCode[sTemplateAttrName], query, s)
 
-                            #----------------------------------------------#
-                            # Save the field data for iterative calls:     #
-                            #----------------------------------------------#
+                            #--------------------------------------------------#
+                            # Update the field name and save the field data    #
+                            # for iterative calls:                             #
+                            #--------------------------------------------------#
+                            txtRecord = txtRecord.replace('@@' + fld.upper() + '@@', sValue)
                             if (fld.upper() == 'CLASS'):
                                 gClass = sValue
 
@@ -1021,29 +910,34 @@ def insertAttributeData(sClass, sInstance, txtInstance):
                                 elif (fld.upper() == 'SELECTION'):
                                     gSelectSelection = sValue
 
-                    #------------------------------------------------------#
-                    # Process any further template child attribute tags:   #
-                    #------------------------------------------------------#
-                    if (txtRecord.find('ATTR') >= 0):
-                        txtRecord = insertAttributeData(gClass, gInstance, txtRecord)
+                    #----------------------------------------------------------#
+                    # Process any further template child attribute tags:       #
+                    #----------------------------------------------------------#
+                    if (txtRecord.find('ATTR_BEGIN') >= 0):
+                        bRecursion = True
+                        txtRecord = insertAttributeData(gClass, gInstance, txtRecord, rl + 1)
 
-                    #------------------------------------------------------#
-                    # Replace any counters:                                #
-                    #------------------------------------------------------#
+                    #----------------------------------------------------------#
+                    # Replace any counters:                                    #
+                    #----------------------------------------------------------#
                     txtRecord = replaceCounter(iRow, txtRecord)
+                    iRow = iRow + 1
 
-                    #------------------------------------------------------#
-                    # Build the attribute record string:                   #
-                    #------------------------------------------------------#
+                    #----------------------------------------------------------#
+                    # Build the attribute record string:                       #
+                    #----------------------------------------------------------#
                     if (len(txtRecord) > 0):
-                        txtRecordData = txtRecordData + txtRecord
+                        txtRecordData = txtRecordData + txtRecord + '\r\n'
 
-#                            if (Mid(txtRecordData, len(txtRecordData) - 1, 1) = Chr(13) and _
-#                                Mid(txtRecordData, len(txtRecordData), 1) = Chr(10) and _
-#                                Mid(txtRecordData, len(txtRecordData) - 3, 1) = Chr(13) and _
-#                                Mid(txtRecordData, len(txtRecordData) - 2, 1) = Chr(10)):
-#                            else:
-#                                txtRecordData = txtRecordData + '\r\n'
+#                    if (len(txtRecordData) < 2):
+#                        txtRecordData = txtRecordData + '\r\n'
+#
+#                    elif(ord(txtRecordData[-1:]) == 13 and
+#                       ord(txtRecordData[-3:-2]) == 13):
+#                        print(txtRecordData[:-4])
+#                        txtRecordData = txtRecordData[:-8]
+#                    else:
+#                        txtRecordData = txtRecordData + '\r\n'
 
             #------------------------------------------------------------------#
             # Exclude the tag markers from the code template string:           #
@@ -1078,7 +972,6 @@ def replaceCounter(iRecordCount, txtRecord):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    global errProc
     errProc = replaceCounter.__name__
 
     #--------------------------------------------------------------------------#
@@ -1107,7 +1000,7 @@ def replaceCounter(iRecordCount, txtRecord):
                 #--------------------------------------------------------------#
                 # Invalid default parameter value:                             #
                 #--------------------------------------------------------------#
-                errorHandler(errorCode.invalidCounter, sCounterBase)
+                errorHandler(errProc, errorCode.invalidCounter, sCounterBase)
 
         #----------------------------------------------------------------------#
         # Replace any additional counter placeholders:                         #
@@ -1139,7 +1032,6 @@ def defaultParameters(sPCell, txtInstance):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    global errProc
     errProc = defaultParameters.__name__
 
     #--------------------------------------------------------------------------#
@@ -1155,7 +1047,8 @@ def defaultParameters(sPCell, txtInstance):
         query = cgSQL.sql[cgSQL.sqlCode.defaultParameters]
         c.execute(query, (sPCell,))
     except:
-        errorHandler(errorCode.cannotQuery, query)
+        errorHandler(errProc, errorCode.cannotQuery,
+                     cgSQL.sqlCode.defaultParameters, query, sPCell)
 
     #--------------------------------------------------------------------------#
     # Process each row in the list of classes:                                 #
@@ -1165,10 +1058,10 @@ def defaultParameters(sPCell, txtInstance):
         # Replace the field placeholders:                                      #
         #----------------------------------------------------------------------#
         if (row['Parameter'] is None):
-            errorHandler(errorCode.invalidDefaultData, sPCell)
+            errorHandler(errProc, errorCode.invalidDefaultData, sPCell)
 
         elif (row['Default'] is None):
-            errorHandler(errorCode.invalidDefaultData, sPCell)
+            errorHandler(errProc, errorCode.invalidDefaultData, sPCell)
         else:
             p = row['Parameter']
             r = row['Default']
@@ -1196,7 +1089,6 @@ def populateSFCParameters(sClass):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    global errProc
     errProc = populateSFCParameters.__name__
 
     #--------------------------------------------------------------------------#
@@ -1212,7 +1104,8 @@ def populateSFCParameters(sClass):
         query = cgSQL.sql[cgSQL.sqlCode.populateSFCParmsSubstate]
         c.execute(query, (sClass, 'NONE'))
     except:
-        errorHandler(errorCode.cannotQuery, query)
+        errorHandler(errProc, errorCode.cannotQuery,
+                     cgSQL.sqlCode.populateSFCParmsSubstate, query, sClass + ', ' + 'NONE')
 
     #--------------------------------------------------------------------------#
     # Create a new cursor object for the SFC parameters:                       #
@@ -1231,7 +1124,7 @@ def populateSFCParameters(sClass):
         sFileNameIn = pathTemplates + '/sfc/fb' + sSFC + '.AWL'
         logging.info(sFileNameIn)
         if not os.path.exists(sFileNameIn):
-            errorHandler(errorCode.filenotExist, sFileNameIn)
+            errorHandler(errProc, errorCode.filenotExist, sFileNameIn)
 
         #----------------------------------------------------------------------#
         # Open the SFC file for reading:                                       #
@@ -1318,9 +1211,10 @@ def populateSFCParameters(sClass):
                     c1.execute(query, (sClass, '_' + sParameter + '%'))
                     data = c1.fetchone()
                 except:
-                    errorHandler(errorCode.cannotQuery, query)
+                    errorHandler(errProc, errorCode.cannotQuery,
+                                 cgSQL.sqlCode.populateSFCParmsChild, query, sClass + ', ' + '_' + sParameter + '%')
 
-                if data is None:
+                if (data is None):
                     bIsChild = False
                 else:
                     bIsChild = True
@@ -1334,7 +1228,10 @@ def populateSFCParameters(sClass):
                                       sParameter.upper(), sParameterDataType,
                                       sValue, sParameterDescription, bIsChild))
                 except:
-                    errorHandler(errorCode.cannotQuery, query)
+                    errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.populateSFCParmsInsert, query,
+                                 sClass + ', ' + sSFC + ', ' + sParameterType + ', ' + sParameter + ', ' +
+                                 sParameter.upper() + ', ' + sParameterDataType + ', ' +
+                                 sValue + ', ' + sParameterDescription + ', ' + bIsChild)
 
                 #--------------------------------------------------------------#
                 # Commit the changes the database:                             #
@@ -1342,7 +1239,7 @@ def populateSFCParameters(sClass):
                 try:
                     conn.commit()
                 except:
-                    errorHandler(errorCode.cannotCommit, query)
+                    errorHandler(errProc, errorCode.cannotCommit, query)
 
         #----------------------------------------------------------------------#
         # Finished with the data import. Close the file:                       #
