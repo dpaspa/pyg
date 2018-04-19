@@ -12,12 +12,14 @@
 #------------------------------------------------------------------------------#
 import argparse
 from enum import Enum
-import logging
 import openpyxl
 import os.path
 import sys
 from tqdm import trange
 from time import sleep
+
+import logging
+logging.basicConfig(level=logging.ERROR)
 
 #------------------------------------------------------------------------------#
 # Declare the application title and calling arguments help:                    #
@@ -25,25 +27,37 @@ from time import sleep
 appTitle = 'Interlock Generator'
 appVersion = '1'
 parser = argparse.ArgumentParser(description='Generates a list of Interlocks from a Safety Matrix worksheet')
-parser.add_argument('-i','--input', help='Path and file name of the input safety matrix worksheet file', required=True)
+parser.add_argument('-c','--config', help='Path and file name of the input safety matrix worksheet file', required=True)
 parser.add_argument('-s','--sheet', help='Name of the safety matrix worksheet', required=True)
+parser.add_argument('-d','--delete', help='Delete old data and start new', required=True)
 args = vars(parser.parse_args())
 
 #------------------------------------------------------------------------------#
 # Declare the error handling global variables and procedure:                   #
 #------------------------------------------------------------------------------#
-iErr = 0
-errProc = ''
-errParameters = []
-def errorHandler(eCode, *args):
-    global iErr
-    global errParameters
+def errorHandler(errProc, eCode, *args):
+    #--------------------------------------------------------------------------#
+    # Get the application specific error message and output the error:         #
+    #--------------------------------------------------------------------------#
+    sMsg = errorMessage[eCode]
 
-    iErr = eCode
-    errParameters = []
+    #--------------------------------------------------------------------------#
+    # Replace any error parameters:                                            #
+    #--------------------------------------------------------------------------#
+    i = 1
     for arg in args:
-        errParameters.append(arg)
-    reportComplete()
+        sMsg = sMsg.replace('@' + str(i), str(arg))
+        i = i + 1
+
+    #--------------------------------------------------------------------------#
+    # Output the error message and end:                                        #
+    #--------------------------------------------------------------------------#
+    print('\r\n')
+    print(appTitle + ' Version ' + appVersion + '\r\n' + 'ERROR ' +
+          str(eCode) + ' in Procedure ' + "'" + errProc + "'" + '\r\n' + '\r\n' + sMsg)
+    print('\r\n')
+    print(traceback.format_exception(*sys.exc_info()))
+    sys.exit()
 
 #------------------------------------------------------------------------------#
 # Enumerate the error numbers and map the error messages:                      #
@@ -69,7 +83,6 @@ errorMessage = {
 # Create a progress bar:                                                       #
 #------------------------------------------------------------------------------#
 p = trange(100, desc='Starting...', leave=False)
-#TQDMCallback(metric_format="{name}: {value:0.2f}")
 
 #------------------------------------------------------------------------------#
 # Function main                                                                #
@@ -81,14 +94,12 @@ def main():
     #--------------------------------------------------------------------------#
     # Define the procedure name:                                               #
     #--------------------------------------------------------------------------#
-    global errProc
     errProc = main.__name__
-    logging.basicConfig(level=logging.ERROR)
 
     #--------------------------------------------------------------------------#
     # Get the interlock configuration workbook name and check it exists:       #
     #--------------------------------------------------------------------------#
-    wbName = args['input']
+    wbName = args['config']
     if not os.path.exists(wbName):
         errorHandler(errorCode.fileNotExist, wbName)
 
@@ -101,35 +112,101 @@ def main():
         errorHandler(errorCode.cannotOpenWorkbook, wbName)
 
     #--------------------------------------------------------------------------#
+    # Check if the existing output worksheets are to be deleted:               #
+    #--------------------------------------------------------------------------#
+    deleteExisting = args['delete']
+    if (deleteExisting.upper() == 'Y' or deleteExisting.upper() == 'YES'):
+        #----------------------------------------------------------------------#
+        # Delete the Critical Interlock output worksheet if exists:            #
+        #----------------------------------------------------------------------#
+        wsoName = 'tblInterlockCR'
+        try:
+            wso = wb[wsoName]
+            wb.remove(wso)
+        except:
+            pass
+
+        #----------------------------------------------------------------------#
+        # Create a new blank Critical Interlock worksheet:                     #
+        #----------------------------------------------------------------------#
+        try:
+            wb.create_sheet(wsoName)
+            wso = wb[wsoName]
+        except:
+            errorHandler(errorCode.cannotCreateOutputSheet, wsoName)
+
+        #----------------------------------------------------------------------#
+        # Set the new Critical Interlock worksheet titles:                     #
+        #----------------------------------------------------------------------#
+        wso.cell(row=1, column=1).value = 'Target'
+        wso.cell(row=1, column=2).value = 'Interlock'
+
+        #----------------------------------------------------------------------#
+        # Delete the Non-Critical Interlock output worksheet if exists:        #
+        #----------------------------------------------------------------------#
+        wsoName = 'tblInterlockNCR'
+        try:
+            wso = wb[wsoName]
+            wb.remove(wso)
+        except:
+            pass
+
+        #----------------------------------------------------------------------#
+        # Create a new blank Non-Critical Interlock worksheet:                 #
+        #----------------------------------------------------------------------#
+        try:
+            wb.create_sheet(wsoName)
+            wso = wb[wsoName]
+        except:
+            errorHandler(errorCode.cannotCreateOutputSheet, wsoName)
+
+        #----------------------------------------------------------------------#
+        # Set the new Non-Critical Interlock worksheet titles:                 #
+        #----------------------------------------------------------------------#
+        wso.cell(row=1, column=1).value = 'Target'
+        wso.cell(row=1, column=2).value = 'Interlock'
+
+    #--------------------------------------------------------------------------#
+    # Get the new output worksheet object references:                          #
+    #--------------------------------------------------------------------------#
+    wsoCR = wb['tblInterlockCR']
+    wsoNCR = wb['tblInterlockNCR']
+
+    #--------------------------------------------------------------------------#
     # Get the input safety matrix worksheet:                                   #
     #--------------------------------------------------------------------------#
-    wsName = args['sheet']
+    wsiName = args['sheet']
     try:
-        wsi = wb[wsName]
+        wsi = wb[wsiName]
     except:
-        errorHandler(errorCode.noMatrixWorksheet, wsName)
+        errorHandler(errorCode.noMatrixWorksheet, wsiName)
 
     #--------------------------------------------------------------------------#
     # Process the critical interlocks:                                         #
     #--------------------------------------------------------------------------#
-    generateInterlocks(wb, wsi, 'X', 'tblInterlockCR', 50)
+    generateInterlocks(wb, wsi, wsoCR, wsiName, 'X', 50)
 
     #--------------------------------------------------------------------------#
     # Process the non-critical interlocks:                                     #
     #--------------------------------------------------------------------------#
-    generateInterlocks(wb, wsi, 'M', 'tblInterlockNCR', 50)
+    generateInterlocks(wb, wsi, wsoNCR, wsiName, 'M', 50)
 
     #--------------------------------------------------------------------------#
     # Save the changes if no error:                                            #
     #--------------------------------------------------------------------------#
-    if (iErr == 0):
-        wb.save(wbName)
+    wb.save(wbName)
 
     #--------------------------------------------------------------------------#
     # Report completion regardless of error:                                   #
     #--------------------------------------------------------------------------#
+    p.set_description('Interlock processing complete')
+    p.refresh()
     p.close()
-    reportComplete()
+
+    #--------------------------------------------------------------------------#
+    # Output a success message:                                                #
+    #--------------------------------------------------------------------------#
+    print('Congratulations... interlock code generation successful.')
 
 #------------------------------------------------------------------------------#
 # Function generateInterlocks                                                  #
@@ -141,61 +218,51 @@ def main():
 #                                                                              #
 # wb                    The workbook object.                                   #
 # wsi                   The input safety matrix worksheet object.              #
+# wsiName               The output sheet name.                                 #
 # sILMarker             The interlock marker, either "X" for critical          #
 #                       interlocks or "M" for non-critical interlocks          #
 #                       which are allowed to be manually overrridden.          #
-# sILSheet              The output sheet name.                                 #
 # pbwt                  The % weight of the procedure for the progress bar.    #
 #------------------------------------------------------------------------------#
-def generateInterlocks(wb, wsi, sILMarker, sILSheet, pbwt):
+def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, pbwt):
     #--------------------------------------------------------------------------#
     # Define the procedure name:                                               #
     #--------------------------------------------------------------------------#
-    global errProc
     errProc = generateInterlocks.__name__
 
     #--------------------------------------------------------------------------#
-    # Delete the output worksheet and create a blank new one:                  #
+    # Use the global progress bar:                                             #
     #--------------------------------------------------------------------------#
     global p
-    try:
-        wso = wb[sILSheet]
-        wb.remove(wso)
-        wb.create_sheet(sILSheet)
-        wso = wb[sILSheet]
-        logging.info(wso.title)
-    except:
-        errorHandler(errorCode.cannotCreateOutputSheet, sILSheet)
 
     #--------------------------------------------------------------------------#
-    # Set the new worksheet titles:                                            #
+    # Find the last row in the output sheet:                                   #
     #--------------------------------------------------------------------------#
-    wso.cell(row=1, column=1).value = 'Source'
-    wso.cell(row=1, column=2).value = 'Target'
-    wso.cell(row=1, column=3).value = 'Interlock'
     iRowOut = 2
+    while (not wso.cell(row=iRowOut, column=1).value is None):
+        iRowOut = iRowOut + 1
 
     #--------------------------------------------------------------------------#
     # Get the named ranges to orientate the data:                              #
     #--------------------------------------------------------------------------#
     try:
-        sNamedRange = 'ILEnd'
+        sNamedRange = wsiName + 'End'
         colILEnd = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].col_idx
-        sNamedRange = 'ILName'
+        sNamedRange = wsiName + 'Name'
         colILName = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].col_idx
-        sNamedRange = 'ILCode'
+        sNamedRange = wsiName + 'Code'
         colILCode = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].col_idx
-        sNamedRange = 'ILTarget'
+        sNamedRange = wsiName + 'Target'
         colILTarget = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].col_idx
         rowILTarget = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].row
-        sNamedRange = 'ILSource'
+        sNamedRange = wsiName + 'Source'
         colILSource = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].col_idx
         rowILSource = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].row
-        sNamedRange = 'ILState'
+        sNamedRange = wsiName + 'State'
         colILState = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].col_idx
-        sNamedRange = 'ILFunction'
+        sNamedRange = wsiName + 'Function'
         colILFunction = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].col_idx
-        sNamedRange = 'ILFunctionEnd'
+        sNamedRange = wsiName + 'FunctionEnd'
         colILFunctionEnd = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].col_idx
     except:
         errorHandler(errorCode.noNamedRange, sNamedRange)
@@ -208,13 +275,15 @@ def generateInterlocks(wb, wsi, sILMarker, sILSheet, pbwt):
     iRowMax = wsi.max_row
     for i in range(rowILSource + 1, iRowMax):
         #----------------------------------------------------------------------#
-        # Check if a new interlock:                                            #
+        # Check if a new interlock. Exit the loop if none:                     #
         #----------------------------------------------------------------------#
         sName = wsi.cell(row=i, column=colILName).value
+        if (sName is None):
+            break;
         num = iRowMax - rowILSource - 1
         pc = pbwt * 1.0 / num
         p.update(pc)
-        p.set_description(sILSheet + ' ' + sName)
+        p.set_description(wsiName + ' ' + sName)
         p.refresh()
         sleep(0.01)
         if (sName != sNamePrevious):
@@ -248,7 +317,10 @@ def generateInterlocks(wb, wsi, sILMarker, sILSheet, pbwt):
                 if (not sFunction is None):
                     sExpression = sExpression + sFunction
 
-                sExpression = sExpression + '\r\n' + sCode
+                if (sCode[:1] == '('):
+                    sExpression = sExpression + sCode
+                else:
+                    sExpression = sExpression + ' ' + sCode
 
                 if (not sFunctionEnd is None):
                     sExpression = sExpression + '\r\n' + sFunctionEnd
@@ -281,9 +353,8 @@ def generateInterlocks(wb, wsi, sILMarker, sILSheet, pbwt):
                     #----------------------------------------------------------#
                     # Add the interlock to the output list:                    #
                     #----------------------------------------------------------#
-                    wso.cell(row=iRowOut, column=1).value = sSource
-                    wso.cell(row=iRowOut, column=2).value = sTarget
-                    wso.cell(row=iRowOut, column=3).value = sExpression
+                    wso.cell(row=iRowOut, column=1).value = sTarget
+                    wso.cell(row=iRowOut, column=2).value = sExpression
                     iRowOut = iRowOut + 1
 
                 #--------------------------------------------------------------#
@@ -301,52 +372,6 @@ def generateInterlocks(wb, wsi, sILMarker, sILSheet, pbwt):
     #--------------------------------------------------------------------------#
     p.set_description('Processing complete')
     p.refresh()
-    return iErr
-
-#------------------------------------------------------------------------------#
-# Function reportComplete                                                      #
-#                                                                              #
-# Description:                                                                 #
-# Reports the completion status of the operation.                              #
-#------------------------------------------------------------------------------#
-def reportComplete():
-    #--------------------------------------------------------------------------#
-    # Declare global parameters:                                               #
-    #--------------------------------------------------------------------------#
-    global iErr
-    global errProc
-    global errParameters
-
-    #--------------------------------------------------------------------------#
-    # Check if successful completion:                                          #
-    #--------------------------------------------------------------------------#
-    if (iErr == 0):
-        #----------------------------------------------------------------------#
-        # Output a success message:                                            #
-        #----------------------------------------------------------------------#
-        print('Congratulations! Operation successful.')
-    else:
-        #----------------------------------------------------------------------#
-        # Get the application specific error message and output the error:     #
-        #----------------------------------------------------------------------#
-        sMsg = errorMessage[iErr]
-
-        #----------------------------------------------------------------------#
-        # Check if there are any error parameters to replace:                  #
-        #----------------------------------------------------------------------#
-        if (not errParameters is None):
-            #------------------------------------------------------------------#
-            # Enter a loop to replace each parameter:                          #
-            #------------------------------------------------------------------#
-            for i in range(0, len(errParameters)):
-                sMsg = sMsg.replace('@' + str(i + 1), errParameters[i])
-
-        #----------------------------------------------------------------------#
-        # Output the error message and end:                                    #
-        #----------------------------------------------------------------------#
-        logging.critical(appTitle + ' Version ' + appVersion + '\r\n' + 'ERROR ' +
-                         str(iErr) + ' in Procedure ' + "'" + errProc + "'" + '\r\n' + sMsg)
-        sys.exit()
 
 #------------------------------------------------------------------------------#
 # Call the main function:                                                      #

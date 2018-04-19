@@ -30,6 +30,11 @@ parser.add_argument('-i','--input', help='Path and file name of the input CSV fi
 args = vars(parser.parse_args())
 
 #------------------------------------------------------------------------------#
+# Declare global variables:                                                    #
+#------------------------------------------------------------------------------#
+csvBaseName = ''
+
+#------------------------------------------------------------------------------#
 # Declare the error handling global variables and procedure:                   #
 #------------------------------------------------------------------------------#
 iErr = 0
@@ -83,6 +88,11 @@ def main():
     logging.basicConfig(level=logging.ERROR)
 
     #--------------------------------------------------------------------------#
+    # Use the file name global variable:                                       #
+    #--------------------------------------------------------------------------#
+    global csvBaseName
+
+    #--------------------------------------------------------------------------#
     # Get the input CSV file name and check it exists:                         #
     #--------------------------------------------------------------------------#
     csvName = args['input']
@@ -100,6 +110,9 @@ def main():
     #--------------------------------------------------------------------------#
     # Define the CSV dialect being used:                                       #
     #--------------------------------------------------------------------------#
+    csvBaseName = os.path.basename(csvName)
+    p.set_description('Converting: ' + csvBaseName)
+    p.refresh()
     csv.register_dialect('colons', delimiter=':')
     csv.register_dialect('commas', delimiter=',')
     reader = csv.reader(f, dialect='commas')
@@ -127,7 +140,6 @@ def main():
             ws.cell(row=row_index + 1, column=column_index + 1).value = cell
 
         p.update(100 * 1.0 / numLines)
-        p.refresh()
         sleep(0.01)
 
     #--------------------------------------------------------------------------#
@@ -139,6 +151,8 @@ def main():
     #--------------------------------------------------------------------------#
     # Report completion regardless of error:                                   #
     #--------------------------------------------------------------------------#
+    p.set_description(csvBaseName + ': Processing complete')
+    p.refresh()
     p.close()
     reportComplete()
 
@@ -163,7 +177,7 @@ def reportComplete():
         #----------------------------------------------------------------------#
         # Output a success message:                                            #
         #----------------------------------------------------------------------#
-        print('Congratulations! Operation successful.')
+        print('Congratulations... csv2xlsx conversion of ' + csvBaseName + ' successful.')
     else:
         #----------------------------------------------------------------------#
         # Get the application specific error message and output the error:     #
