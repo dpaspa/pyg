@@ -26,6 +26,7 @@ class sqlCode(Enum):
     createProgramFiles                 = -5
     createProgramFilesCount            = -6
     defaultParameters                  = -7
+    documentInfo                       = -199
     populateSFCParmsChild              = -8
     populateSFCParmsInsert             = -9
     populateSFCParmsSubstate           = -10
@@ -35,8 +36,12 @@ class sqlCode(Enum):
     CHILD                              = -14
     CHILD_ACQUIRE                      = -15
     CHILD_INIT_COMMAND                 = -16
-    CR_IL                              = -17
-    NCR_IL                             = -18
+    CRIL                               = -120
+    CRIL_EXISTS                        = -121
+    CRIL_INSTANCE                      = -122
+    NCRIL                              = -123
+    NCRIL_EXISTS                       = -124
+    NCRIL_INSTANCE                     = -125
     HYGIENE                            = -19
     INSTANCE_ALL                       = -21
     INSTANCE_BLK                       = -22
@@ -80,8 +85,12 @@ prm = {
     sqlCode.CHILD                      : ['gClass'],
     sqlCode.CHILD_ACQUIRE              : ['gClass', 'gState'],
     sqlCode.CHILD_INIT_COMMAND         : ['gClass', 'gState'],
-    sqlCode.CR_IL                      : ['gInstance'],
-    sqlCode.NCR_IL                     : ['gInstance'],
+    sqlCode.CRIL                       : [],
+    sqlCode.CRIL_EXISTS                : ['gInstance'],
+    sqlCode.CRIL_INSTANCE              : ['gInstance'],
+    sqlCode.NCRIL                      : [],
+    sqlCode.NCRIL_EXISTS               : ['gInstance'],
+    sqlCode.NCRIL_INSTANCE             : ['gInstance'],
     sqlCode.HYGIENE                    : ['gClass'],
     sqlCode.INSTANCE_ALL               : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.INSTANCE_BLK               : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
@@ -190,6 +199,11 @@ sql = {
                                           'WHERE upper([Level]) = ? '
                                           'ORDER BY File'
                                          ),
+    sqlCode.documentInfo               : ('SELECT * '
+                                          'FROM tblDocument '
+                                          'WHERE upper(docClass) = ? AND '
+                                                'upper(docScope) = ?'
+                                         ),
     sqlCode.defaultParameters          : ('SELECT * '
                                           'FROM tblParameter_Default'
                                          ),
@@ -219,6 +233,17 @@ sql = {
                                           'WHERE upper([Level]) = ? '
                                           'ORDER BY [Class]'
                                          ),
+    sqlCode.versionHistory             : ('SELECT printf("%d",V.Ver) AS Ver, '
+                                                  'V.ChangedBy, '
+                                                  'substr("00"||printf("%d",V.D), -2, 2) || "-" '
+                                                      '|| substr("00"||printf("%d",V.M), -2, 2) || "-" || '
+                                                      'printf("%d",V.Y) AS ChangedDate, '
+                                                  'V.ChangeNumber, '
+                                                  'V.Description '
+                                          'FROM tblRevisionHistory AS V '
+                                          'WHERE upper(V.KeyName) = ? AND '
+                                                'V.KeyValue = ? ORDER BY V.Ver DESC '
+                                         ),
     sqlCode.CHILD                      : ('SELECT * '
                                           'FROM tblClass_Child '
                                           'WHERE [Class] = ? '
@@ -235,12 +260,30 @@ sql = {
                                           'WHERE [Class] = ? AND State = ? '
                                           'ORDER BY childAlias'
                                          ), # gClass, gState
-    sqlCode.CR_IL                      : ('SELECT * '
-                                          'FROM tblInterlockCR '
+    sqlCode.CRIL                       : ('SELECT DISTINCT Target, Description '
+                                          'FROM tblInterlockCRIL '
+                                          'ORDER BY Target'
+                                         ),
+    sqlCode.CRIL_EXISTS                : ('SELECT Target '
+                                          'FROM tblInterlockCRIL '
+                                          'WHERE Target = ? '
+                                          'LIMIT 1'
+                                         ), # gInstance
+    sqlCode.CRIL_INSTANCE              : ('SELECT * '
+                                          'FROM tblInterlockCRIL '
                                           'WHERE Target = ?'
                                          ), # gInstance
-    sqlCode.NCR_IL                     : ('SELECT * '
-                                          'FROM tblInterlockNCR '
+    sqlCode.NCRIL                      : ('SELECT DISTINCT Target, Description '
+                                          'FROM tblInterlockNCRIL '
+                                          'ORDER BY Target'
+                                         ),
+    sqlCode.NCRIL_EXISTS               : ('SELECT Target '
+                                          'FROM tblInterlockNCRIL '
+                                          'WHERE Target = ? '
+                                          'LIMIT 1'
+                                         ), # gInstance
+    sqlCode.NCRIL_INSTANCE             : ('SELECT * '
+                                          'FROM tblInterlockNCRIL '
                                           'WHERE Target = ?'
                                          ), # gInstance
     sqlCode.HYGIENE                    : ('SELECT * '
@@ -710,16 +753,5 @@ sql = {
                                           'FROM tblClass AS C INNER JOIN '
                                                  'tblClass_Transition AS T ON C.ID = T.ClassID '
                                           'ORDER BY C.Level, C.Class, T.Transition'
-                                         ),
-    sqlCode.versionHistory             : ('SELECT printf("%d",V.Ver) AS Ver, '
-                                                  'V.ChangedBy, '
-                                                  'substr("00"||printf("%d",V.D), -2, 2) || "-" '
-                                                      '|| substr("00"||printf("%d",V.M), -2, 2) || "-" || '
-                                                      'printf("%d",V.Y) AS ChangedDate, '
-                                                  'V.ChangeNumber, '
-                                                  'V.Description '
-                                          'FROM tblRevisionHistory AS V '
-                                          'WHERE upper(V.KeyName) = ? AND '
-                                                'V.KeyValue = ? ORDER BY V.Ver DESC '
                                          ),
 }

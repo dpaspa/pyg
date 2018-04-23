@@ -17,6 +17,7 @@ from enum import Enum
 import openpyxl
 import os.path
 import sys
+from shutil import copyfile
 import traceback
 from tqdm import trange
 from time import sleep
@@ -46,6 +47,7 @@ c = 1
 gClass = ''
 gClassDescription = ''
 gInstance = ''
+gILTable = ''
 gParent = ''
 gSelectParameter = ''
 gSelectSelection = ''
@@ -197,7 +199,7 @@ def main():
     # Delete the sqlite database file if it already exists so it can be        #
     # created anew with refreshed data:                                        #
     #--------------------------------------------------------------------------#
-    dbName = 'cg.db'
+    dbName = os.path.dirname(wbName) + '/config.db'
     try:
         os.remove(dbName)
     except OSError:
@@ -215,10 +217,10 @@ def main():
     # Connect to the new persistent sqlite database file:                      #
     #--------------------------------------------------------------------------#
     try:
-        conn = sqlite3.connect('cg.db')
+        conn = sqlite3.connect(dbName)
         conn.row_factory = sqlite3.Row
     except:
-        errorHandler(errProc, errorCode.cannotConnectDB, 'cg.db')
+        errorHandler(errProc, errorCode.cannotConnectDB, dbName)
 
     #--------------------------------------------------------------------------#
     # Create the SFC Parameters table:                                         #
@@ -233,7 +235,7 @@ def main():
     #--------------------------------------------------------------------------#
     # Get the progress weighting:                                              #
     #--------------------------------------------------------------------------#
-    pbChunks = 23.0
+    pbChunks = 27.0
 
     #--------------------------------------------------------------------------#
     # Create the overall program files:                                        #
@@ -248,6 +250,11 @@ def main():
     createProgramFiles(sParent, 'UN', 100 * 1 / pbChunks)
     createProgramFiles(sParent, 'PC', 100 * 1 / pbChunks)
     createProgramFiles(sParent, 'IL', 100 * 1 / pbChunks)
+
+    #--------------------------------------------------------------------------#
+    # Process the Interlocks for the selected parent:                          #
+    #--------------------------------------------------------------------------#
+    processLevel(sParent, 'IL', 100 * 4 / pbChunks)
 
     #--------------------------------------------------------------------------#
     # Process the Control Modules for the selected parent:                     #
@@ -359,9 +366,10 @@ def processLevel(sParent, sLevel, pbwt):
                     sPrefix, row['inheritsInstance'], row['nameInstance'], True)
 
         #----------------------------------------------------------------------#
-        # Update the SFC parameters in the database:                           #
+        # Update the SFC parameters in the database if not interlocks:         #
         #----------------------------------------------------------------------#
-        populateSFCParameters(sClass)
+        if (sLevel == 'EM' or sLevel == 'UN' or sLevel == 'PC'):
+            populateSFCParameters(sClass)
 
         #----------------------------------------------------------------------#
         # Create the function block class file:                                #
@@ -481,6 +489,7 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
     # Declare use of the global sqlite cursor object:                          #
     #--------------------------------------------------------------------------#
     global conn
+    global gILTable
     global pathOutput
     global pathTemplates
 
@@ -492,7 +501,23 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
     #--------------------------------------------------------------------------#
     # Get the list of instances for the template:                              #
     #--------------------------------------------------------------------------#
-    if (bOne):
+    if (sClass == 'IL'):
+        gILTable = sNameOutput
+        if (gILTable == 'CRIL' or gILTable == 'IL'):
+            try:
+                query = cgSQL.sql[cgSQL.sqlCode.CRIL]
+                c.execute(query)
+            except:
+                errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.CRIL)
+
+        elif (gILTable == 'NCRIL'):
+            try:
+                query = cgSQL.sql[cgSQL.sqlCode.NCRIL]
+                c.execute(query)
+            except:
+                errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.NCRIL)
+
+    elif (bOne):
         try:
             query = cgSQL.sql[cgSQL.sqlCode.createClassOne]
             c.execute(query, ('RM', sClass, sParent, sParent, sParent, sParent, sParent))
@@ -538,7 +563,7 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
             #------------------------------------------------------------------#
             # Check if a blank line:                                           #
             #------------------------------------------------------------------#
-            if (len(sBuffer) == 0):
+            if (sBuffer is None):
                 if (bTemplateBegin and not bTemplateEnd):
                     if (ord(txtTemplate[-1:]) == 13):
                         txtTemplate = txtTemplate + '\n'
@@ -616,7 +641,7 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
         #----------------------------------------------------------------------#
         # Write the output instance file:                                      #
         #----------------------------------------------------------------------#
-        if (bOne):
+        if (bOne or sClass == 'IL'):
             sFileNameOut = pathOutput + '/' + sPrefix + sNameOutput + '.awl'
         else:
             sFileNameOut = pathOutput + '/' + sTemplate + '.awl'
@@ -681,13 +706,15 @@ def processTemplate(c, txtTemplate, txtData, bOne):
                 # Get the class and instance names:                            #
                 #--------------------------------------------------------------#
                 if (fld.upper() == 'CLASS'):
-                    gClass = row[fld]
+                    sClass = row[fld]
+                    gClass = sClass
 
                 elif (fld.upper() == 'CLASSDESCRIPTION'):
                     gClassDescription = row[fld]
 
-                elif (fld.upper() == 'INSTANCE'):
-                    gInstance = row[fld]
+                elif (fld.upper() == 'INSTANCE' or fld.upper() == 'TARGET'):
+                    sInstance = row[fld]
+                    gInstance = sInstance
 
         #----------------------------------------------------------------------#
         # Check if there are child attribute aliases in the template:          #
@@ -816,6 +843,8 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
             for i in range(len(qparms)):
                 if (qparms[i] == 'gClass'):
                     qparms[i] = gClass
+                elif (qparms[i] == 'gILTable'):
+                    qparms[i] = gILTable
                 elif (qparms[i] == 'gInstance'):
                     qparms[i] = gInstance
                 elif (qparms[i] == 'gParent'):
@@ -912,7 +941,7 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
                             if (fld.upper() == 'CLASS'):
                                 gClass = sValue
 
-                            if (fld.upper() == 'INSTANCE'):
+                            elif (fld.upper() == 'INSTANCE' or fld.upper() == 'TARGET'):
                                 gInstance = sValue
 
                             elif (fld.upper() == 'SFC'):

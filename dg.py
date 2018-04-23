@@ -16,6 +16,7 @@ from enum import Enum
 from docx import Document
 import openpyxl
 import os.path
+from shutil import copyfile
 import sys
 import traceback
 from tqdm import trange
@@ -24,6 +25,9 @@ import sqlite3
 from xls2db import xls2db
 import collections
 import datetime
+import PyPDF2
+#from pyPdf import PdfFileReader, PdfFileWriter
+import subprocess
 import cgSQL
 
 import logging
@@ -36,18 +40,21 @@ appTitle = 'Document Generator'
 appVersion = '1'
 parser = argparse.ArgumentParser(description='Generates PLC code from a configuration spreadsheet and set of code templates')
 parser.add_argument('-c','--config', help='Configuration spreadsheet', required=True)
-parser.add_argument('-i','--input', help='Input document template file', required=True)
+parser.add_argument('-b','--inputBase', help='Input base document template file', required=True)
+parser.add_argument('-r','--inputRecord', help='Input record document template file', required=False)
 parser.add_argument('-o','--output', help='Output for the generated document file', required=True)
-parser.add_argument('-p','--parent', help='Parent object to generate document files for', required=True)
-parser.add_argument('-l','--level', help='Object hierarchy level to generate document files for', required=True)
+parser.add_argument('-s','--scope', help='The document scope', required=True)
+parser.add_argument('-t','--type', help='The document type', required=True)
 args = vars(parser.parse_args())
 
 #------------------------------------------------------------------------------#
 # Declare global variables:                                                    #
 #------------------------------------------------------------------------------#
-c = 1
+gcBase = 1
+gcQuery = ''
 gClass = ''
 gClassDescription = ''
+gDocScope = ''
 gDocType = ''
 gInstance = ''
 gLevel = ''
@@ -107,10 +114,11 @@ class errorCode(Enum):
     invalidPCellData                   = -22
     invalidPCellRecords                = -23
     noClassDBSheet                     = -24
-    noEndPlaceholder                   = -36
-    noCodeTemplateFile                 = -37
-    nonASCIICharacter                  = -38
-    unknownAttribute                   = -39
+    noCodeTemplateFile                 = -36
+    noEndPlaceholder                   = -37
+    noRecordDocument                   = -40
+    nonASCIICharacter                  = -41
+    unknownAttribute                   = -42
 
 errorMessage = {
     errorCode.cannotCommit             : 'Cannot commit changes to sqlite database',
@@ -130,9 +138,10 @@ errorMessage = {
     errorCode.invalidLevelData         : 'Class level @1 has no records!',
     errorCode.invalidPCellData         : 'PCell @1 has no initial code data!',
     errorCode.invalidPCellRecords      : 'PCell @1 initial code data does not have one record!',
-    errorCode.noEndPlaceholder         : 'No valid END placholder in query string @1.',
     errorCode.noClassDBSheet           : 'idb Template Worksheet does not include a template called @1.',
     errorCode.noCodeTemplateFile       : 'Code template file @1 does not exist!',
+    errorCode.noEndPlaceholder         : 'No valid END placholder in query string @1.',
+    errorCode.noRecordDocument         : 'No record document specified with record data.',
     errorCode.nonASCIICharacter        : 'Query expression returned a non ascii-encoded unicode string',
     errorCode.unknownAttribute         : 'Attribute @1 is unknown.',
 }
@@ -168,34 +177,28 @@ def main():
     # Declare global and local variables:                                      #
     #--------------------------------------------------------------------------#
     global conn
-    global gLevel
-    global gParent
+    global gDocScope
+    global gDocType
     global pathOutput
     global pathTemplates
 
     #--------------------------------------------------------------------------#
-    # Get the hierarchy level:                                                 #
+    # Get the document scope and type:                                         #
     #--------------------------------------------------------------------------#
-    sLevel = args['level']
-    gLevel = sLevel.upper()
-
-    #--------------------------------------------------------------------------#
-    # Get the parent object:                                                   #
-    #--------------------------------------------------------------------------#
-    sParent = args['parent']
-    gParent = sParent.upper()
+    gDocScope = args['scope'].upper()
+    gDocType = args['type'].upper()
 
     #--------------------------------------------------------------------------#
     # Get the input document template file path and name and check it exists:  #
     #--------------------------------------------------------------------------#
-    sInput = args['input']
-    if not os.path.exists(sInput):
-        errorHandler(errProc, errorCode.filenotExist, sInput)
+    sInputBase = args['inputBase']
+    if not os.path.exists(sInputBase):
+        errorHandler(errProc, errorCode.filenotExist, sInputBase)
 
     #--------------------------------------------------------------------------#
     # Get the output generated document file path and name:                    #
     #--------------------------------------------------------------------------#
-    sOutput = args['output']
+    sOutputBase = args['output']
 
     #--------------------------------------------------------------------------#
     # Get the code configuration workbook name and check it exists:            #
@@ -205,10 +208,16 @@ def main():
         errorHandler(errProc, errorCode.filenotExist, wbName)
 
     #--------------------------------------------------------------------------#
+    # Copy it to a new file so the base spreadsheet cannot be affected:        #
+    #--------------------------------------------------------------------------#
+    wbNameDB = os.path.dirname(wbName) + '/configdb.xlsx'
+    copyfile(wbName, wbNameDB)
+
+    #--------------------------------------------------------------------------#
     # Delete the sqlite database file if it already exists so it can be        #
     # created anew with refreshed data:                                        #
     #--------------------------------------------------------------------------#
-    dbName = 'dg.db'
+    dbName = os.path.dirname(wbName) + '/dg.db'
     try:
         os.remove(dbName)
     except OSError:
@@ -218,18 +227,18 @@ def main():
     # Convert the configuration workbook from xlsx to sqlite database format:  #
     #--------------------------------------------------------------------------#
     try:
-        xls2db(wbName, dbName)
+        xls2db(wbNameDB, dbName)
     except:
-        errorHandler(errProc, errorCode.cannotConvertWorkbook, wbName, dbName)
+        errorHandler(errProc, errorCode.cannotConvertWorkbook, wbNameDB, dbName)
 
     #--------------------------------------------------------------------------#
     # Connect to the new persistent sqlite database file:                      #
     #--------------------------------------------------------------------------#
     try:
-        conn = sqlite3.connect('dg.db')
+        conn = sqlite3.connect(dbName)
         conn.row_factory = sqlite3.Row
     except:
-        errorHandler(errProc, errorCode.cannotConnectDB, 'dg.db')
+        errorHandler(errProc, errorCode.cannotConnectDB, dbName)
 
     #--------------------------------------------------------------------------#
     # Create the SFC Parameters table:                                         #
@@ -247,42 +256,64 @@ def main():
     pbChunks = 1.0
 
     #--------------------------------------------------------------------------#
-    # Create the overall program index file:                                   #
+    # Create the base document:                                                #
     #--------------------------------------------------------------------------#
-#    createIndexFile(sParent, 'PG', 100 * 1 / pbChunks)
+    createDocument(sInputBase, sOutputBase, 100 * 1 / pbChunks)
 
     #--------------------------------------------------------------------------#
-    # Create the document:                                                     #
+    # Print the base document to PDF:                                          #
     #--------------------------------------------------------------------------#
-    createDocument(sParent, sLevel, sInput, sOutput, 100 * 1 / pbChunks)
-#    createIndexFile(sParent, 'EM', 100 * 1 / pbChunks)
-#    createIndexFile(sParent, 'UN', 100 * 1 / pbChunks)
-#    createIndexFile(sParent, 'PC', 100 * 1 / pbChunks)
+    sBaseName = os.path.basename(sOutputBase)
+    sBaseDir = os.path.dirname(sOutputBase)
+    printPDF(sOutputBase, sBaseDir)
+    sFileName = os.path.splitext(sBaseName)[0]
+    sOutputBasePDF = sBaseDir + '/' + sFileName + '.pdf'
+    print('sOutputBasePDF = ' + sOutputBasePDF)
 
     #--------------------------------------------------------------------------#
-    # Process the Control Modules for the selected Parent:                     #
+    # Check if the document has base data for mulitple records:                #
     #--------------------------------------------------------------------------#
-#    processLevel(sParent, 'CM', 100 * 4 / pbChunks)
+    if (not gcBase is None):
+        #----------------------------------------------------------------------#
+        # Get the input record document template file path and name and check  #
+        # it exists:                                                           #
+        #----------------------------------------------------------------------#
+        if (args['inputRecord'] is None):
+            errorHandler(errProc, errorCode.noRecordDocument)
 
-    #--------------------------------------------------------------------------#
-    # Process the Control Modules for the selected Parent:                     #
-    #--------------------------------------------------------------------------#
-#    processLevel(sParent, 'EM', 100 * 4 / pbChunks)
+        sInputRecord = args['inputRecord']
+        if not os.path.exists(sInputRecord):
+            errorHandler(errProc, errorCode.filenotExist, sInputRecord)
 
-    #--------------------------------------------------------------------------#
-    # Process the Control Modules for the selected Parent:                     #
-    #--------------------------------------------------------------------------#
-#    processLevel(sParent, 'UN', 100 * 4 / pbChunks)
+        #----------------------------------------------------------------------#
+        # Process each row in the cursor to append the new record document:    #
+        #----------------------------------------------------------------------#
+        for row in gcBase:
+            #------------------------------------------------------------------#
+            # Define a temporary output document;                              #
+            #------------------------------------------------------------------#
+            sOutput = os.path.dirname(sOutputBase) + '/t.docx'
 
-    #--------------------------------------------------------------------------#
-    # Process the Control Modules for the selected Parent:                     #
-    #--------------------------------------------------------------------------#
-#    processLevel(sParent, 'PC', 100 * 4 / pbChunks)
+            #------------------------------------------------------------------#
+            # Create the record document:                                      #
+            #------------------------------------------------------------------#
+            createDocument(sInputRecord, sOutput, 100 * 1 / pbChunks)
 
-    #--------------------------------------------------------------------------#
-    # Finally create any program files that need all blocks defined:           #
-    #--------------------------------------------------------------------------#
-#    createIndexFile(sParent, 'BLK', 100 * 1 / pbChunks)
+            #------------------------------------------------------------------#
+            # Print the document to PDF:                                       #
+            #------------------------------------------------------------------#
+            printPDF(sOutput, sBaseDir)
+
+            #------------------------------------------------------------------#
+            # Append the record document PDF to the base document PDF:         #
+            #------------------------------------------------------------------#
+            sOutputPDF = sBaseDir + '/t.pdf'
+            print('sOutputPDF = ' + sOutputPDF)
+            sOutputBaseCopy = sBaseDir + '/p.pdf'
+            copyfile(sOutputBasePDF, sOutputBaseCopy)
+            appendPDF(sOutputBaseCopy, sOutputPDF, sOutputBasePDF)
+#            os.rename(sOutputBase, os.path.dirname(sOutputBase) + '/t.docx')
+#            os.remove(sOutputBaseTemp)
 
     #--------------------------------------------------------------------------#
     # Commit the changes to the database and close the connection:             #
@@ -302,55 +333,34 @@ def main():
     #--------------------------------------------------------------------------#
     print('Congratulations! Operation successful.')
 
-#    def paragraph_replace(self, search, replace):
-#        searchre = re.compile(search)
-#        for paragraph in self.paragraphs:
-#            paragraph_text = paragraph.text
-#            if paragraph_text:
-#                if searchre.search(paragraph_text):
-#                    self.clear_paragraph(paragraph)
-#                    paragraph.add_run(re.sub(search, replace, paragraph_text))
-#        return paragraph
-
-#    def clear_paragraph(self, paragraph):
-#        p_element = paragraph._p
-#        p_child_elements = [elm for elm in p_element.iterchildren()]
-#        for child_element in p_child_elements:
-#            p_element.remove(child_element)
-
-
-#        document = Document()
-#        paragraph = document.add_paragraph('Lorem ipsum dolor sit amet.')
-#        prior_paragraph = paragraph.insert_paragraph_before('Lorem ipsum')
-#        document.add_heading('The REAL meaning of the universe')
-#        document.add_heading('The role of dolphins', level=2)
-#        table = document.add_table(rows=2, cols=2)
-#        paragraph = document.add_paragraph('Lorem ipsum dolor sit amet.')
-#        paragraph.style = 'Normal'
-#        document.save('./test.odt')
-
-#table = document.add_table(1, 3)
-
 #------------------------------------------------------------------------------#
 # Function: createDocument                                                     #
 #                                                                              #
 # Description:                                                                 #
-# Creates a document using sqlite data and a document template. The document   #
-# template must have the query definitions deifned within it. A base query is  #
-# defined in the document's "Comments" property and sub-table definitions are  #
-# defined in each table as a query string in the first row, followed by a row  #
-# of column headings followed by a row of cell data attributes using @@ data   #
-# field placeholders.                                                          #
+# Creates a document using sqlite data and a document template.                #
+# The document template must have the query definitions defined within it in   #
+# tables with the query string in the first row. Different types of queries    #
+# are handled as follows:                                                      #
+#                                                                              #
+# IMAGE      An image will be inserted in the table cell.                      #
+# SQLBASE    Base data for the document, such as document number and title.    #
+# SQLRECORD  A sub-document in a multi-record compound document. The first     #
+#            document will be the parent header document and each record will  #
+#            be appended as a child document.                                  #
+# SQLROW     Multi-record table. The table must include a row of column        #
+#            headings followed by a row of cell data attributes using @@ data  #
+#            field placeholders.                                               #
+# SQLSTATIC  A table of any cell arrangement to be populated without changing  #
+#            the table structure.                                              #
+
 #------------------------------------------------------------------------------#
 # Calling parameters:                                                          #
 #                                                                              #
-# sParent               The parent tree object to generate code for.           #
-# sLevel                The level to process, either CM, EM, UN or PC.         #
 # sInput                The input document template to use.                    #
-# sOutput               The output document to save.                           #
+# sOutput               The output document to create.                         #
 # pbwt                  The % weight of the procedure for the progress bar.    #
 #------------------------------------------------------------------------------#
-def createDocument(sParent, sLevel, sInput, sOutput, pbwt):
+def createDocument(sInput, sOutput, pbwt):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
@@ -362,15 +372,11 @@ def createDocument(sParent, sLevel, sInput, sOutput, pbwt):
     #--------------------------------------------------------------------------#
     c = 1
     global conn
+    global gcQuery
     global gClass
     global gDocType
     global gLevel
     global gParent
-
-    #--------------------------------------------------------------------------#
-    # Set the global parent and level variables:                               #
-    #--------------------------------------------------------------------------#
-    gLevel = sLevel
 
     #--------------------------------------------------------------------------#
     # Open the input document:                                                 #
@@ -378,9 +384,202 @@ def createDocument(sParent, sLevel, sInput, sOutput, pbwt):
     document = Document(sInput)
 
     #--------------------------------------------------------------------------#
-    # Get the document type from the core properties:                          #
+    # Get the document properties:                                             #
     #--------------------------------------------------------------------------#
-    gDocType = document.core_properties.subject
+    setDocumentProperties(document)
+
+    #--------------------------------------------------------------------------#
+    # Get the latest document version number:                                  #
+    #--------------------------------------------------------------------------#
+    getVersionNumber(document)
+
+    #--------------------------------------------------------------------------#
+    # Process each table in the document:                                      #
+    #--------------------------------------------------------------------------#
+    for table in document.tables:
+        #----------------------------------------------------------------------#
+        # Get the table data source and check it is a valid SQL SELECT query:  #
+        #----------------------------------------------------------------------#
+        rowSQL = table.rows[0]
+        txtQuery = rowSQL.cells[0].text
+
+        #----------------------------------------------------------------------#
+        # Finished with the query row already so delete it:                    #
+        #----------------------------------------------------------------------#
+        remove_row(table, rowSQL)
+
+        #----------------------------------------------------------------------#
+        # Check for non-ascii characters. Can't be a anchor string in that     #
+        # case:                                                                #
+        #----------------------------------------------------------------------#
+        try:
+            txtQuery.decode('ascii')
+        except:
+            #------------------------------------------------------------------#
+            # Just ignore this table:                                          #
+            #------------------------------------------------------------------#
+            pass
+        else:
+            #------------------------------------------------------------------#
+            # Check if an image anchor:                                        #
+            #------------------------------------------------------------------#
+            if (txtQuery[:5].upper() == 'IMAGE'):
+                #--------------------------------------------------------------#
+                # Insert the image:                                            #
+                #--------------------------------------------------------------#
+                tableInsertImage(txtQuery[6:], data)
+
+            #------------------------------------------------------------------#
+            # Check if base query data for the entire document:                #
+            #------------------------------------------------------------------#
+            elif (txtQuery[:7].upper() == 'SQLBASE'):
+                #--------------------------------------------------------------#
+                # Get the base data for the document:                          #
+                #--------------------------------------------------------------#
+                gcQuery = txtQuery[8:]
+                getBaseData()
+
+            #------------------------------------------------------------------#
+            # Check if a base query record table:                              #
+            #------------------------------------------------------------------#
+            elif (txtQuery[:9].upper() == 'SQLRECORD'):
+                #--------------------------------------------------------------#
+                # Must be a valid query. Insert the data:                      #
+                #--------------------------------------------------------------#
+                tableBaseRecord(table)
+
+            #------------------------------------------------------------------#
+            # Check if an append table rows query:                             #
+            #------------------------------------------------------------------#
+            elif (txtQuery[:6].upper() == 'SQLROW'):
+                #--------------------------------------------------------------#
+                # Must be a valid query. Insert the data:                      #
+                #--------------------------------------------------------------#
+                tableAddRows(txtQuery[7:], table)
+
+            #------------------------------------------------------------------#
+            # Check if a static table query:                                   #
+            #------------------------------------------------------------------#
+            elif (txtQuery[:9].upper() == 'SQLSTATIC'):
+                #--------------------------------------------------------------#
+                # Must be a valid query. Insert the data:                      #
+                #--------------------------------------------------------------#
+                tableStaticFields(txtQuery[10:], table)
+            else:
+                #--------------------------------------------------------------#
+                # Ignore other content:                                        #
+                #--------------------------------------------------------------#
+                pass
+
+    #--------------------------------------------------------------------------#
+    # Save the output document:                                                #
+    #--------------------------------------------------------------------------#
+    document.save(sOutput)
+
+    #--------------------------------------------------------------------------#
+    # Update the progress message:                                             #
+    #--------------------------------------------------------------------------#
+    p.set_description(gDocScope + ' files complete')
+    p.refresh()
+
+#------------------------------------------------------------------------------#
+# Function: getBaseData                                                        #
+#                                                                              #
+# Description:                                                                 #
+# Gets the underlying document cursor for multi-record compound documents.     #
+#------------------------------------------------------------------------------#
+def getBaseData():
+    #--------------------------------------------------------------------------#
+    # Define the procedure name and trap any programming errors:               #
+    #--------------------------------------------------------------------------#
+    errProc = getBaseData.__name__
+
+    #--------------------------------------------------------------------------#
+    # Declare use of the global base data cursor:                              #
+    #--------------------------------------------------------------------------#
+    global gcBase
+    global gcQuery
+
+    #--------------------------------------------------------------------------#
+    # Execute the query and get the data:                                      #
+    #--------------------------------------------------------------------------#
+    gcBase = getQueryData(gcQuery)
+
+#------------------------------------------------------------------------------#
+# Function: setDocumentProperties                                              #
+#                                                                              #
+# Description:                                                                 #
+# Sets the core document properties for version number and date and retrieves  #
+# the document type.                                                           #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# document              The document to get properties for.                    #
+#------------------------------------------------------------------------------#
+def setDocumentProperties(document):
+    #--------------------------------------------------------------------------#
+    # Define the procedure name and trap any programming errors:               #
+    #--------------------------------------------------------------------------#
+    errProc = setDocumentProperties.__name__
+
+    #--------------------------------------------------------------------------#
+    # Declare use of the global sqlite connection object:                      #
+    #--------------------------------------------------------------------------#
+    global conn
+    global gDocScope
+    global gDocType
+
+    #--------------------------------------------------------------------------#
+    # Set the document type from the core properties:                          #
+    #--------------------------------------------------------------------------#
+    document.core_properties.comments = gDocScope
+    document.core_properties.subject = gDocType
+
+    #--------------------------------------------------------------------------#
+    # Get the document information:                                            #
+    #--------------------------------------------------------------------------#
+    try:
+        c = conn.cursor()
+        query = cgSQL.sql[cgSQL.sqlCode.documentInfo]
+        c.execute(query, (gDocType.upper(), gDocScope.upper()))
+    except:
+        errorHandler(errProc, errorCode.cannotQuery,
+                     cgSQL.sqlCode.documentInfo, query, gDocType + ', ' + gDocScope)
+
+    #--------------------------------------------------------------------------#
+    # Set the document number into the core properties:                        #
+    #--------------------------------------------------------------------------#
+    data = c.fetchone()
+    if (data is None):
+        pass
+    else:
+        #----------------------------------------------------------------------#
+        # Set the document version information into the core properties:       #
+        #----------------------------------------------------------------------#
+        document.core_properties.company = data['docNumber']
+        document.core_properties.title = data['docTitle']
+
+#------------------------------------------------------------------------------#
+# Function: getVersionNumber                                                   #
+#                                                                              #
+# Description:                                                                 #
+# Gets the core document properties for version number and date and retrieves  #
+# the document type.                                                           #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# document              The document to get properties for.                    #
+#------------------------------------------------------------------------------#
+def getVersionNumber(document):
+    #--------------------------------------------------------------------------#
+    # Define the procedure name and trap any programming errors:               #
+    #--------------------------------------------------------------------------#
+    errProc = getVersionNumber.__name__
+
+    #--------------------------------------------------------------------------#
+    # Declare use of the global sqlite connection object:                      #
+    #--------------------------------------------------------------------------#
+    global conn
 
     #--------------------------------------------------------------------------#
     # Get the version history for the document:                                #
@@ -391,145 +590,34 @@ def createDocument(sParent, sLevel, sInput, sOutput, pbwt):
         c.execute(query, (gDocType.upper(), gLevel))
     except:
         errorHandler(errProc, errorCode.cannotQuery,
-                     cgSQL.sqlCode.populateSFCParmsSubstate, query, sClass + ', ' + 'NONE')
+                     cgSQL.sqlCode.versionHistory, query, gDocType + ', ' + gLevel)
 
     #--------------------------------------------------------------------------#
-    # Set the document version information into the core properties:           #
+    # Set the document version information into the core properties. The last  #
+    # version number is first in the returned descending order cursor:         #
     #--------------------------------------------------------------------------#
     data = c.fetchone()
     if (data is None):
-        #----------------------------------------------------------------------#
-        # Set the document to version 1:                                       #
-        #----------------------------------------------------------------------#
-        document.core_properties.category = '1'
-        now = datetime.datetime.now()
-        document.core_properties.keywords = str(now)
+        pass
     else:
         #----------------------------------------------------------------------#
         # Set the document version information into the core properties:       #
         #----------------------------------------------------------------------#
         document.core_properties.category = data['Ver']
         document.core_properties.keywords = data['ChangedDate']
-#        sDocNum = txtQuery = document.core_properties.company
 
-    #--------------------------------------------------------------------------#
-    # Get the base query data for the entire document and other properties:    #
-    #--------------------------------------------------------------------------#
-    txtQuery = document.core_properties.comments
-
-#    queryDoc = core_properties.comments
-    #--------------------------------------------------------------------------#
-    # Check for non-ascii characters. Can't be a query string in that case:    #
-    #--------------------------------------------------------------------------#
-    try:
-        txtQuery.decode('ascii')
-    except:
-        pass
-#        errorHandler(errProc, errorCode.nonASCIICharacter)
-    else:
-        #----------------------------------------------------------------------#
-        # Execute the query and get the data:                                  #
-        #----------------------------------------------------------------------#
-        c = getQueryData(txtQuery)
-        if (not c is None):
-            #------------------------------------------------------------------#
-            # Process each row in the data set:                                #
-            #------------------------------------------------------------------#
-            data = c.fetchone()
-#            for row in c:
-            gClass = data['Class']
-
-            #------------------------------------------------------------------#
-            # Process each table in the document:                              #
-            #------------------------------------------------------------------#
-            for table in document.tables:
-                #--------------------------------------------------------------#
-                # Get the table data source and check it is a valid SQL SELECT #
-                # query:                                                       #
-                #--------------------------------------------------------------#
-                rowSQL = table.rows[0]
-                txtQuery = rowSQL.cells[0].text
-
-                #--------------------------------------------------------------#
-                # Check for non-ascii characters. Can't be a anchor string in  #
-                # that case:                                                   #
-                #--------------------------------------------------------------#
-                try:
-                    txtQuery.decode('ascii')
-                except:
-                    pass
-            #        errorHandler(errProc, errorCode.nonASCIICharacter)
-                else:
-                    #----------------------------------------------------------#
-                    # Check if the base query data table:                      #
-                    #----------------------------------------------------------#
-                    if (txtQuery[:7].upper() == 'SQLBASE'):
-                        #------------------------------------------------------#
-                        # Update the data row in the table:                    #
-                        #------------------------------------------------------#
-                        cells = table.rows[2].cells
-                        for i in range(0, len(cells)):
-                            #--------------------------------------------------#
-                            # Replace the field placeholders in the cell text: #
-                            #--------------------------------------------------#
-                            s = cells[i].text
-                            for fld in data.keys():
-                                s = s.replace('@@' + fld.upper() + '@@', str(data[fld]))
-                            para = cells[i].paragraphs[0]
-                            para.text = ''
-                            run = para.add_run(s)
-                            para.style = 'NormalTableTitle'
-
-                        #------------------------------------------------------#
-                        # Delete the query row:                                #
-                        #------------------------------------------------------#
-                        remove_row(table, table.rows[0])
-
-                    #----------------------------------------------------------#
-                    # Check if an image anchor:                                #
-                    #----------------------------------------------------------#
-                    elif (txtQuery[:5].upper() == 'IMAGE'):
-                        #------------------------------------------------------#
-                        # Insert the image:                                    #
-                        #------------------------------------------------------#
-                        tableInsertImage(rowSQL, txtQuery, data)
-
-                    #----------------------------------------------------------#
-                    # Check if an append table rows query:                     #
-                    #----------------------------------------------------------#
-                    elif (txtQuery[:6].upper() == 'SQLROW'):
-                        #------------------------------------------------------#
-                        # Must be a valid query. Insert the data:              #
-                        #------------------------------------------------------#
-                        tableAddRows(rowSQL, txtQuery[8:], table)
-
-                    #----------------------------------------------------------#
-                    # Check if a static table query:                           #
-                    #----------------------------------------------------------#
-                    elif (txtQuery[:9].upper() == 'SQLSTATIC'):
-                        #------------------------------------------------------#
-                        # Must be a valid query. Insert the data:              #
-                        #------------------------------------------------------#
-                        tableStaticFields(rowSQL, txtQuery[11:], table)
-                    else:
-                        #------------------------------------------------------#
-                        # Ignore other content:                                #
-                        #------------------------------------------------------#
-                        pass
-
-        #----------------------------------------------------------------------#
-        # Save the output document:                                            #
-        #----------------------------------------------------------------------#
-        document.save(sOutput)
-
-        #----------------------------------------------------------------------#
-        # Update the progress message:                                         #
-        #----------------------------------------------------------------------#
-    #    srDocument(document, 'replaceme', 'okbaby')
-        p.set_description(sLevel + ' files complete')
-        p.refresh()
-
-def tableAddRows(rowSQL, txtQuery, table):
+#------------------------------------------------------------------------------#
+# Function: tableAddRows                                                       #
+#                                                                              #
+# Description:                                                                 #
+# Adds one table row for each row in the cursor.                               #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# query                 The query string to get the data for.                  #
+# table                 The table in the document being processed.             #
+#------------------------------------------------------------------------------#
+def tableAddRows(query, table):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
@@ -543,12 +631,12 @@ def tableAddRows(rowSQL, txtQuery, table):
     #--------------------------------------------------------------------------#
     # Execute the query and get the data:                                      #
     #--------------------------------------------------------------------------#
-    c = getQueryData(txtQuery)
+    c = getQueryData(query)
     if (not c is None):
         #----------------------------------------------------------------------#
         # Get the column attribute row:                                        #
         #----------------------------------------------------------------------#
-        rowAttr = table.rows[2]
+        rowAttr = table.rows[1]
         cellsAttr = rowAttr.cells
 
         #----------------------------------------------------------------------#
@@ -576,9 +664,40 @@ def tableAddRows(rowSQL, txtQuery, table):
         # Clean up the table by deleting the query and attribute rows:         #
         #----------------------------------------------------------------------#
         remove_row(table, rowAttr)
-        remove_row(table, rowSQL)
 
-def tableInsertImage(rowSQL, txtQuery, data):
+#------------------------------------------------------------------------------#
+# Function: tableBaseRecord                                                    #
+#                                                                              #
+# Description:                                                                 #
+# A table which includes fields from the document base cursor.                 #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# table                 The table in the document being processed.             #
+#------------------------------------------------------------------------------#
+def tableBaseRecord(table):
+    #--------------------------------------------------------------------------#
+    # Define the procedure name and trap any programming errors:               #
+    #--------------------------------------------------------------------------#
+    errProc = tableBaseRecord.__name__
+
+    #--------------------------------------------------------------------------#
+    # Refresh the base data cursor:                                            #
+    #--------------------------------------------------------------------------#
+    global gcBase
+    getBaseData()
+
+    #--------------------------------------------------------------------------#
+    # Simply process the table as a static field table with the global data:   #
+    #--------------------------------------------------------------------------#
+    for row in gcBase:
+        for fld in row.keys():
+            try:
+                srTable(table, '@@' + fld.upper() + '@@', str(row[fld]), 'NormalTableTitle')
+            except:
+                pass
+
+def tableInsertImage(sImage, data):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
@@ -587,7 +706,6 @@ def tableInsertImage(rowSQL, txtQuery, data):
     #--------------------------------------------------------------------------#
     # Get the image file:                                                      #
     #--------------------------------------------------------------------------#
-    sImage = txtQuery[6:]
     for fld in data.keys():
         sImage = sImage.replace('@@' + fld.upper() + '@@', str(data[fld]))
 
@@ -606,7 +724,7 @@ def tableInsertImage(rowSQL, txtQuery, data):
     run.add_picture(sImage)
     para.style = 'NormalTableCentre'
 
-def tableStaticFields(rowSQL, txtQuery, table):
+def tableStaticFields(query, table):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
@@ -620,19 +738,14 @@ def tableStaticFields(rowSQL, txtQuery, table):
     #--------------------------------------------------------------------------#
     # Execute the query and get the data:                                      #
     #--------------------------------------------------------------------------#
-    c = getQueryData(txtQuery)
+    c = getQueryData(query)
     row = c.fetchone()
     if (not row is None):
         #----------------------------------------------------------------------#
         # Process each field in the data row:                                  #
         #----------------------------------------------------------------------#
         for fld in row.keys():
-            srTable(table, '@@' + fld.upper() + '@@', str(row[fld]))
-
-        #----------------------------------------------------------------------#
-        # Clean up the table by deleting the query and attribute rows:         #
-        #----------------------------------------------------------------------#
-        remove_row(table, rowSQL)
+            srTable(table, '@@' + fld.upper() + '@@', str(row[fld]), 'NormalTable')
 
 def getQueryData(txtQuery):
     #--------------------------------------------------------------------------#
@@ -675,6 +788,7 @@ def getQueryParameters(txtQuery):
     # Declare use of the global variables:                                     #
     #--------------------------------------------------------------------------#
     global gClass
+    global gDocScope
     global gDocType
     global gInstance
     global gLevel
@@ -722,6 +836,8 @@ def getQueryParameters(txtQuery):
     for i in range(len(parms)):
         if (parms[i].upper() == 'CLASS'):
             parms[i] = gClass
+        elif (parms[i].upper() == 'DOCSCOPE'):
+            parms[i] = gDocScope.upper()
         elif (parms[i].upper() == 'DOCTYPE'):
             parms[i] = gDocType.upper()
         elif (parms[i].upper() == 'INSTANCE'):
@@ -741,35 +857,37 @@ def getQueryParameters(txtQuery):
     q = Query(query=txtQuery, parms=parms)
     return q;
 
-def srParagraph(paragraph, txtSearch, txtReplace):
+def srParagraph(paragraph, txtSearch, txtReplace, style):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
     errProc = srParagraph.__name__
 
-    for run in paragraph.runs:
-        while (txtSearch in run.text):
-            text = run.text.split(txtSearch)
-            run.text = text[0] + txtReplace + text[1]
+    s = paragraph.text
+    s = s.replace(txtSearch, txtReplace)
+    paragraph.text = ''
+    run = paragraph.add_run(s)
+    paragraph.style = style
 
-def srDocument(document, txtSearch, txtReplace):
+def srDocument(document, txtSearch, txtReplace, style):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
     errProc = srDocument.__name__
 
     for paragraph in document.paragraphs:
-        srParagraph(paragraph, txtSearch, txtReplace)
+        srParagraph(paragraph, txtSearch, txtReplace, style)
 
-def srTable(table, txtSearch, txtReplace):
+def srTable(table, txtSearch, txtReplace, style):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
     errProc = srTable.__name__
 
-    for cell in table.cells:
-        for paragraph in cell.paragraphs:
-            srParagraph(paragraph, txtSearch, txtReplace)
+    for row in table.rows:
+        for cell in row.cells:
+            for paragraph in cell.paragraphs:
+                srParagraph(paragraph, txtSearch, txtReplace, style)
 
 def remove_row(t, r):
     #--------------------------------------------------------------------------#
@@ -780,6 +898,33 @@ def remove_row(t, r):
     tbl = t._tbl
     tr = r._tr
     tbl.remove(tr)
+
+def appendPDF(sParent, sChild, sOutput):
+    pdfParent = open(sParent, 'rb')
+    pdfChild = open(sChild, 'rb')
+
+    merger = PyPDF2.PdfFileMerger()
+
+    merger.append(fileobj=pdfParent)
+    merger.append(fileobj=pdfChild)
+    merger.write(open(sOutput, 'wb'))
+#    output = PdfFileWriter()
+#    pdfParent = PdfFileReader(file( "out.pdf", "rb"))
+#    pdfChild = PdfFileReader(file("out1.pdf", "rb"))
+
+#    output.addPage(pdfParent.getPage(0))
+#    output.addPage(pdfChild.getPage(0))
+
+#    outputStream = file(r"output.pdf", "wb")
+#    output.write(outputStream)
+#    outputStream.close()
+
+def printPDF(sDocument, outDir):
+    #--------------------------------------------------------------------------#
+    # Save the output document as PDF:                                         #
+    #--------------------------------------------------------------------------#
+    output = subprocess.check_output(['libreoffice', '--convert-to', 'pdf' , '--outdir', outDir, sDocument])
+    print output
 
 #------------------------------------------------------------------------------#
 # Call the main function:                                                      #
