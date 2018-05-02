@@ -29,10 +29,11 @@ appVersion = '1'
 parser = argparse.ArgumentParser(description='Generates a list of Interlocks from a Safety Matrix worksheet')
 parser.add_argument('-c','--config', help='Path and file name of the input safety matrix worksheet file', required=True)
 parser.add_argument('-s','--sheet', help='Name of the safety matrix worksheet', required=True)
-parser.add_argument('-d','--delete', help='Delete old data and start new', required=True)
-parser.add_argument('-a','--at', help='Replace at character', required=True)
-parser.add_argument('-l','--dollar', help='Replace dollar character', required=True)
-parser.add_argument('-p','--percent', help='Replace percent character', required=True)
+parser.add_argument('-d','--delete', help='Delete old data and start new interlock list if "y"', required=True)
+parser.add_argument('-a','--at', help='Replace at character with tag prefix number, such as 1, 2, 3 or 4', required=True)
+parser.add_argument('-l','--dollar', help='Replace dollar character with equipment letter, such as M or S', required=True)
+parser.add_argument('-n','--percent', help='Replace percent character with equipment prefix number, such as 1 or 2 for M1 or M2', required=True)
+parser.add_argument('-p','--parent', help='Parent object to generate code files for', required=True)
 args = vars(parser.parse_args())
 
 #------------------------------------------------------------------------------#
@@ -141,7 +142,7 @@ def main():
         #----------------------------------------------------------------------#
         # Set the new Critical Interlock worksheet titles:                     #
         #----------------------------------------------------------------------#
-        wso.cell(row=1, column=1).value = 'Target'
+        wso.cell(row=1, column=1).value = 'Instance'
         wso.cell(row=1, column=2).value = 'Description'
         wso.cell(row=1, column=3).value = 'DescriptionIL'
         wso.cell(row=1, column=4).value = 'Interlock'
@@ -168,7 +169,7 @@ def main():
         #----------------------------------------------------------------------#
         # Set the new Non-Critical Interlock worksheet titles:                 #
         #----------------------------------------------------------------------#
-        wso.cell(row=1, column=1).value = 'Target'
+        wso.cell(row=1, column=1).value = 'Instance'
         wso.cell(row=1, column=2).value = 'Description'
         wso.cell(row=1, column=3).value = 'DescriptionIL'
         wso.cell(row=1, column=4).value = 'Interlock'
@@ -189,6 +190,11 @@ def main():
         errorHandler(errorCode.noMatrixWorksheet, wsiName)
 
     #--------------------------------------------------------------------------#
+    # Get the parent object in the hierarchy:                                  #
+    #--------------------------------------------------------------------------#
+    sParent = args['parent']
+
+    #--------------------------------------------------------------------------#
     # Get the placeholder replacement characters:                              #
     #--------------------------------------------------------------------------#
     at = args['at']
@@ -198,12 +204,12 @@ def main():
     #--------------------------------------------------------------------------#
     # Process the critical interlocks:                                         #
     #--------------------------------------------------------------------------#
-    generateInterlocks(wb, wsi, wsoCR, wsiName, 'X', 50, at, dollar, percent)
+    generateInterlocks(wb, wsi, wsoCR, wsiName, 'X', sParent, 50, at, dollar, percent)
 
     #--------------------------------------------------------------------------#
     # Process the non-critical interlocks:                                     #
     #--------------------------------------------------------------------------#
-    generateInterlocks(wb, wsi, wsoNCR, wsiName, 'M', 50, at, dollar, percent)
+    generateInterlocks(wb, wsi, wsoNCR, wsiName, 'M', sParent, 50, at, dollar, percent)
 
     #--------------------------------------------------------------------------#
     # Save the changes if no error:                                            #
@@ -236,12 +242,13 @@ def main():
 # sILMarker             The interlock marker, either "X" for critical          #
 #                       interlocks or "M" for non-critical interlocks          #
 #                       which are allowed to be manually overrridden.          #
+# sParent               The parent object in the hierarchy.                    #
 # pbwt                  The % weight of the procedure for the progress bar.    #
 # at                    Replacement character for the at placeholder.          #
 # dollar                Replacement character for the dollar placeholder.      #
 # percent               Replacement character for the percent placeholder.     #
 #------------------------------------------------------------------------------#
-def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, pbwt, at, dollar, percent):
+def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, sParent, pbwt, at, dollar, percent):
     #--------------------------------------------------------------------------#
     # Define the procedure name:                                               #
     #--------------------------------------------------------------------------#
@@ -294,14 +301,14 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, pbwt, at, dollar, perce
     iCol = colILSource
     sNamePrevious = ''
     iRowMax = wsi.max_row
-    for i in range(rowILSource + 1, iRowMax):
+    for i in range(rowILSource + 1, iRowMax + 1):
         #----------------------------------------------------------------------#
         # Check if a new interlock. Exit the loop if none:                     #
         #----------------------------------------------------------------------#
         sName = wsi.cell(row=i, column=colILName).value
         if (sName is None):
             break;
-        num = iRowMax - rowILSource - 1
+        num = iRowMax + 1 - rowILSource - 1
         pc = pbwt * 1.0 / num
         p.update(pc)
         p.set_description(wsiName + ' ' + sName)
@@ -313,6 +320,7 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, pbwt, at, dollar, perce
             #------------------------------------------------------------------#
             iRow = i
             iRowNext = iRow
+            sExplanation = ''
             sExpression = ''
             sNameNext = wsi.cell(row=iRowNext, column=colILName).value
             while (sNameNext == sName):
@@ -342,7 +350,13 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, pbwt, at, dollar, perce
                 # Build the interlock code:                                    #
                 #--------------------------------------------------------------#
                 if (not sFunction is None):
-                    sExpression = sExpression + '    ' + sFunction
+                    sExpression = sExpression + sFunction
+                    if (len(sExplanation) == 0):
+                        sExplanation = sDescriptionIL
+                    elif (sFunction == 'A'):
+                        sExplanation = sExplanation + ' and ' + sDescriptionIL
+                    elif (sFunction == 'O'):
+                        sExplanation = sExplanation + ' or ' + sDescriptionIL
 
                 if (sCode[:1] == '('):
                     sExpression = sExpression + sCode
@@ -359,7 +373,6 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, pbwt, at, dollar, perce
                 sNameNext = wsi.cell(row=iRowNext, column=colILName).value
                 if (sName == sNameNext):
                     sExpression = sExpression + '\r\n'
-                    sDescriptionIL = sDescriptionIL + '\r\n'
 
             #------------------------------------------------------------------#
             # Enter another loop to process all of the safety interlock data   #
@@ -385,7 +398,7 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, pbwt, at, dollar, perce
                     #----------------------------------------------------------#
                     wso.cell(row=iRowOut, column=1).value = sTarget
                     wso.cell(row=iRowOut, column=2).value = sDescriptionTarget
-                    wso.cell(row=iRowOut, column=3).value = sDescriptionIL
+                    wso.cell(row=iRowOut, column=3).value = sExplanation
                     wso.cell(row=iRowOut, column=4).value = sExpression
                     iRowOut = iRowOut + 1
 

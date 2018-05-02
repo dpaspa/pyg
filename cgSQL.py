@@ -33,6 +33,11 @@ class sqlCode(Enum):
     processLevel                       = -11
     processLevelCount                  = -12
     versionHistory                     = -13
+    VERHIST                            = -513
+    ANALOG                             = -214
+    ANALOG_EMBED                       = -215
+    CALL_LEVEL                         = -414
+    CALL_LIST                          = -415
     CHILD                              = -14
     CHILD_ACQUIRE                      = -15
     CHILD_INIT_COMMAND                 = -16
@@ -45,6 +50,7 @@ class sqlCode(Enum):
     HYGIENE                            = -19
     INSTANCE_ALL                       = -21
     INSTANCE_BLK                       = -22
+    LINK                               = -623
     OWNER                              = -23
     PARENT                             = -24
     PARM_CHILD_VAR_INPUT               = -25
@@ -82,6 +88,9 @@ class sqlCode(Enum):
     TRANSITION                         = -83
 
 prm = {
+    sqlCode.ANALOG                     : ['gClass'],
+    sqlCode.ANALOG_EMBED               : ['gClass'],
+    sqlCode.CALL_LIST                  : ['gLevel'],
     sqlCode.CHILD                      : ['gClass'],
     sqlCode.CHILD_ACQUIRE              : ['gClass', 'gState'],
     sqlCode.CHILD_INIT_COMMAND         : ['gClass', 'gState'],
@@ -94,6 +103,7 @@ prm = {
     sqlCode.HYGIENE                    : ['gClass'],
     sqlCode.INSTANCE_ALL               : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.INSTANCE_BLK               : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
+    sqlCode.LINK                       : ['gInstance'],
     sqlCode.OWNER                      : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.PARENT                     : [],
     sqlCode.PARM_VAR_INPUT             : ['gClass'],
@@ -157,12 +167,7 @@ sql = {
                                                  'I.GParent, '
                                                  'I.GGParent, '
                                                  'I.GGGParent, '
-                                                 'I.Module, '
-                                                 'I.NumInstance, '
-                                                 'I.lnk1Tag, '
-                                                 'I.lnk1Class, '
-                                                 'I.lnk2Tag, '
-                                                 'I.lnk2Class, '
+                                                 'printf("%d", I.NC) AS NC, '
                                                  'I.childAlias, '
                                                  'I.childAliasClass, '
                                                  'C.Description AS ClassDescription '
@@ -244,6 +249,57 @@ sql = {
                                           'WHERE upper(V.KeyName) = ? AND '
                                                 'V.KeyValue = ? ORDER BY V.Ver DESC '
                                          ),
+    sqlCode.ANALOG                     : ('SELECT printf("%d",T.ID) AS ID, '
+                                                 'T.Instance, '
+                                                 'T.[Class], '
+                                                 'T.Description, '
+                                                 'A.rangeLow, '
+                                                 'A.rangeHigh, '
+                                                 'A.limitLL, '
+                                                 'A.limitL, '
+                                                 'A.limitH, '
+                                                 'A.limitHH, '
+                                                 'printf("%d",A.enableLL) AS ENABLELL, '
+                                                 'printf("%d",A.enableL) AS ENABLEL, '
+                                                 'printf("%d",A.enableH) AS ENABLEH, '
+                                                 'printf("%d",A.enableHH) AS ENABLEHH '
+                                          'FROM tblInstance AS T INNER JOIN '
+                                                 'tblClass_Analog AS A ON T.ClassID = A.ClassID '
+                                          'WHERE T.Class = ? AND '
+                                                'A.Embedded = "FALSE" '
+                                          'ORDER BY T.Parent, T.Instance'
+                                         ), # gClass
+    sqlCode.ANALOG_EMBED               : ('SELECT printf("%d",T.ID) AS ID, '
+                                                 'T.Instance, '
+                                                 'T.[Class], '
+                                                 'T.Description, '
+                                                 'A.rangeLow, '
+                                                 'A.rangeHigh, '
+                                                 'A.limitLL, '
+                                                 'A.limitL, '
+                                                 'A.limitH, '
+                                                 'A.limitHH, '
+                                                 'printf("%d",A.enableLL) AS ENABLELL, '
+                                                 'printf("%d",A.enableL) AS ENABLEL, '
+                                                 'printf("%d",A.enableH) AS ENABLEH, '
+                                                 'printf("%d",A.enableHH) AS ENABLEHH '
+                                          'FROM tblInstance AS T INNER JOIN '
+                                                 'tblClass_Analog AS A ON T.ClassID = A.ClassID '
+                                          'WHERE T.Class = ? AND '
+                                                'A.Embedded = "TRUE" '
+                                          'ORDER BY T.Parent, T.Instance'
+                                         ), # gClass
+    sqlCode.CALL_LEVEL                 : ('SELECT [Level] '
+                                          'FROM tblClass '
+                                          'WHERE upper([Level]) = ? '
+                                          'ORDER BY [Class] '
+                                          'LIMIT 1'
+                                         ),
+    sqlCode.CALL_LIST                  : ('SELECT * '
+                                          'FROM tblClass '
+                                          'WHERE upper([Level]) = ? '
+                                          'ORDER BY [Class]'
+                                         ),
     sqlCode.CHILD                      : ('SELECT * '
                                           'FROM tblClass_Child '
                                           'WHERE [Class] = ? '
@@ -260,31 +316,31 @@ sql = {
                                           'WHERE [Class] = ? AND State = ? '
                                           'ORDER BY childAlias'
                                          ), # gClass, gState
-    sqlCode.CRIL                       : ('SELECT DISTINCT Target, Description '
+    sqlCode.CRIL                       : ('SELECT DISTINCT Instance, Description '
                                           'FROM tblInterlockCRIL '
-                                          'ORDER BY Target'
+                                          'ORDER BY Instance'
                                          ),
-    sqlCode.CRIL_EXISTS                : ('SELECT Target '
+    sqlCode.CRIL_EXISTS                : ('SELECT Instance '
                                           'FROM tblInterlockCRIL '
-                                          'WHERE Target = ? '
+                                          'WHERE Instance = ? '
                                           'LIMIT 1'
                                          ), # gInstance
     sqlCode.CRIL_INSTANCE              : ('SELECT * '
                                           'FROM tblInterlockCRIL '
-                                          'WHERE Target = ?'
+                                          'WHERE Instance = ?'
                                          ), # gInstance
-    sqlCode.NCRIL                      : ('SELECT DISTINCT Target, Description '
+    sqlCode.NCRIL                      : ('SELECT DISTINCT Instance, Description '
                                           'FROM tblInterlockNCRIL '
-                                          'ORDER BY Target'
+                                          'ORDER BY Instance'
                                          ),
-    sqlCode.NCRIL_EXISTS               : ('SELECT Target '
+    sqlCode.NCRIL_EXISTS               : ('SELECT Instance '
                                           'FROM tblInterlockNCRIL '
-                                          'WHERE Target = ? '
+                                          'WHERE Instance = ? '
                                           'LIMIT 1'
                                          ), # gInstance
     sqlCode.NCRIL_INSTANCE             : ('SELECT * '
                                           'FROM tblInterlockNCRIL '
-                                          'WHERE Target = ?'
+                                          'WHERE Instance = ?'
                                          ), # gInstance
     sqlCode.HYGIENE                    : ('SELECT * '
                                           'FROM tblClass '
@@ -302,12 +358,7 @@ sql = {
                                                  'I.GParent, '
                                                  'I.GGParent, '
                                                  'I.GGGParent, '
-                                                 'I.Module, '
-                                                 'I.NumInstance, '
-                                                 'I.lnk1Tag, '
-                                                 'I.lnk1Class, '
-                                                 'I.lnk2Tag, '
-                                                 'I.lnk2Class, '
+                                                 'printf("%d", I.NC) AS NC, '
                                                  'I.childAlias, '
                                                  'I.childAliasClass, '
                                                  'C.Description AS ClassDescription '
@@ -332,12 +383,7 @@ sql = {
                                                  'I.GParent, '
                                                  'I.GGParent, '
                                                  'I.GGGParent, '
-                                                 'I.Module, '
-                                                 'I.NumInstance, '
-                                                 'I.lnk1Tag, '
-                                                 'I.lnk1Class, '
-                                                 'I.lnk2Tag, '
-                                                 'I.lnk2Class, '
+                                                 'printf("%d", I.NC) AS NC, '
                                                  'I.childAlias, '
                                                  'I.childAliasClass, '
                                                  'C.Description AS ClassDescription '
@@ -352,6 +398,10 @@ sql = {
                                                  'I.GGGParent = ?) '
                                           'ORDER BY I.[Level], I.Instance'
                                          ),
+    sqlCode.LINK                       : ('SELECT * '
+                                          'FROM tblInstance_Link '
+                                          'WHERE [Instance] = ?'
+                                         ), # gInstance
     sqlCode.OWNER                      : ('SELECT printf("%d",I.ID) AS ID, '
                                                  'I.[Level], '
                                                  'I.Instance, '
@@ -363,12 +413,7 @@ sql = {
                                                  'I.GParent, '
                                                  'I.GGParent, '
                                                  'I.GGGParent, '
-                                                 'I.Module, '
-                                                 'I.NumInstance, '
-                                                 'I.lnk1Tag, '
-                                                 'I.lnk1Class, '
-                                                 'I.lnk2Tag, '
-                                                 'I.lnk2Class, '
+                                                 'printf("%d", I.NC) AS NC, '
                                                  'I.childAlias, '
                                                  'I.childAliasClass, '
                                                  'C.Description AS ClassDescription '
@@ -670,12 +715,7 @@ sql = {
                                                  'I.GParent, '
                                                  'I.GGParent, '
                                                  'I.GGGParent, '
-                                                 'I.Module, '
-                                                 'I.NumInstance, '
-                                                 'I.lnk1Tag, '
-                                                 'I.lnk1Class, '
-                                                 'I.lnk2Tag, '
-                                                 'I.lnk2Class, '
+                                                 'printf("%d", I.NC) AS NC, '
                                                  'I.childAlias, '
                                                  'I.childAliasClass, '
                                                  'C.Description AS ClassDescription '
@@ -710,9 +750,35 @@ sql = {
                                                  'IO.PDO, '
                                                  'IO.PAI, '
                                                  'IO.PAO, '
-                                                 'CASE WHEN IO.DI=1 THEN "DI" WHEN IO.DO=1 THEN "DO" WHEN IO.AI=1 THEN "AI" WHEN IO.AO=1 THEN "AO" WHEN IO.PDI=1 THEN "PDI" WHEN IO.PDO=1 THEN "PDO" WHEN IO.PAI=1 THEN "PAI" WHEN IO.PAO=1 THEN "PAO" END IOClass, '
-                                                 'CASE WHEN IO.DI=1 THEN "%I" WHEN IO.DO=1 THEN "%Q" WHEN IO.AI=1 THEN "%IW" WHEN IO.AO=1 THEN "%QW" WHEN IO.PDI=1 THEN "PDI" WHEN IO.PDO=1 THEN "PDO" WHEN IO.PAI=1 THEN "PAI" WHEN IO.PAO=1 THEN "PAO" END Prefix, '
-                                                 'CASE WHEN IO.DI=1 THEN "Bool" WHEN IO.DO=1 THEN "Bool" WHEN IO.AI=1 THEN "Int" WHEN IO.AO=1 THEN "Int" WHEN IO.PDI=1 THEN "Bool" WHEN IO.PDO=1 THEN "Bool" WHEN IO.PAI=1 THEN "Int" WHEN IO.PAO=1 THEN "Int" END DataType, '
+                                                 'CASE '
+                                                      'WHEN IO.DI=1 THEN "DI" '
+                                                      'WHEN IO.DO=1 THEN "DO" '
+                                                      'WHEN IO.AI=1 THEN "AI" '
+                                                      'WHEN IO.AO=1 THEN "AO" '
+                                                      'WHEN IO.PDI=1 THEN "PDI" '
+                                                      'WHEN IO.PDO=1 THEN "PDO" '
+                                                      'WHEN IO.PAI=1 THEN "PAI" '
+                                                      'WHEN IO.PAO=1 THEN "PAO" '
+                                                 'END IOClass, '
+                                                 'CASE '
+                                                      'WHEN IO.DI=1 THEN "%I" '
+                                                      'WHEN IO.DO=1 THEN "%Q" '
+                                                      'WHEN IO.AI=1 THEN "%I" '
+                                                      'WHEN IO.AO=1 THEN "%QW" '
+                                                      'WHEN IO.PDI=1 THEN "PDI" '
+                                                      'WHEN IO.PDO=1 THEN "PDO" '
+                                                      'WHEN IO.PAI=1 THEN "PAI" '
+                                                      'WHEN IO.PAO=1 THEN "PAO" '
+                                                 'END Prefix, '
+                                                 'CASE WHEN IO.DI=1 THEN "Bool" '
+                                                      'WHEN IO.DO=1 THEN "Bool" '
+                                                      'WHEN IO.AI=1 THEN "Word" '
+                                                      'WHEN IO.AO=1 THEN "Real" '
+                                                      'WHEN IO.PDI=1 THEN "Bool" '
+                                                      'WHEN IO.PDO=1 THEN "Bool" '
+                                                      'WHEN IO.PAI=1 THEN "Word" '
+                                                      'WHEN IO.PAO=1 THEN "Real" '
+                                                 'END DataType, '
                                                  'IO.eInstruction , '
                                                  'IO.eVerify, '
                                                  'IO.eResult, '
@@ -753,5 +819,30 @@ sql = {
                                           'FROM tblClass AS C INNER JOIN '
                                                  'tblClass_Transition AS T ON C.ID = T.ClassID '
                                           'ORDER BY C.Level, C.Class, T.Transition'
+                                         ),
+    sqlCode.VERHIST                    : ('SELECT printf("%d",V.Ver) AS Ver, '
+                                                 'V.ChangedBy, '
+                                                 'substr("00"||printf("%d",V.D), -2, 2) '
+                                                 '|| "-" || CASE '
+                                                     'WHEN V.M=1 THEN "Jan" '
+                                                     'WHEN V.M=2 THEN "Feb" '
+                                                     'WHEN V.M=3 THEN "Mar" '
+                                                     'WHEN V.M=4 THEN "Apr" '
+                                                     'WHEN V.M=5 THEN "May" '
+                                                     'WHEN V.M=6 THEN "Jun" '
+                                                     'WHEN V.M=7 THEN "Jul" '
+                                                     'WHEN V.M=8 THEN "Aug" '
+                                                     'WHEN V.M=9 THEN "Sep" '
+                                                     'WHEN V.M=10 THEN "Oct" '
+                                                     'WHEN V.M=11 THEN "Nov" '
+                                                     'WHEN V.M=12 THEN "Dec" '
+                                                 'END || "-" || '
+                                                 'printf("%d",V.Y) AS ChangedDate, '
+                                                 'V.ChangeNumber, '
+                                                 'V.Description '
+                                          'FROM tblRevisionHistory AS V '
+                                          'WHERE upper(V.KeyName) = @@DOCTYPE@@ AND '
+                                                'V.KeyValue = @@SCOPE@@ '
+                                                'ORDER BY V.Ver DESC'
                                          ),
 }

@@ -1,0 +1,1 @@
+python dg.py -c /home/dpaspa/Dropbox/Business/Synertec/OP.SMS/datasheet/config.xlsx -d /home/dpaspa/Dropbox/Business/Synertec/OP.SMS/datasheet/specClassPhysicalParent.docx -r dataSheet -k class -o /home/dpaspa/Dropbox/Business/Synertec/OP.SMS/datasheet/rptPhysical.docx -s CM -t specificationEqData

@@ -48,6 +48,7 @@ gClass = ''
 gClassDescription = ''
 gInstance = ''
 gILTable = ''
+gLevel = ''
 gParent = ''
 gSelectParameter = ''
 gSelectSelection = ''
@@ -168,12 +169,13 @@ def main():
     # Declare global and local variables:                                      #
     #--------------------------------------------------------------------------#
     global conn
+    global gLevel
     global pathOutput
     global pathTemplates
     global gParent
 
     #--------------------------------------------------------------------------#
-    # Get the input code template path:                                        #
+    # Get the parent object in the hierarchy:                                  #
     #--------------------------------------------------------------------------#
     sParent = args['parent']
     gParent = sParent
@@ -254,27 +256,32 @@ def main():
     #--------------------------------------------------------------------------#
     # Process the Interlocks for the selected parent:                          #
     #--------------------------------------------------------------------------#
-    processLevel(sParent, 'IL', 100 * 4 / pbChunks)
+    gLevel = 'IL'
+    processLevel(sParent, gLevel, 100 * 4 / pbChunks)
 
     #--------------------------------------------------------------------------#
     # Process the Control Modules for the selected parent:                     #
     #--------------------------------------------------------------------------#
-    processLevel(sParent, 'CM', 100 * 4 / pbChunks)
+    gLevel = 'CM'
+    processLevel(sParent, gLevel, 100 * 4 / pbChunks)
 
     #--------------------------------------------------------------------------#
     # Process the Control Modules for the selected parent:                     #
     #--------------------------------------------------------------------------#
-    processLevel(sParent, 'EM', 100 * 4 / pbChunks)
+    gLevel = 'EM'
+    processLevel(sParent, gLevel, 100 * 4 / pbChunks)
 
     #--------------------------------------------------------------------------#
     # Process the Control Modules for the selected parent:                     #
     #--------------------------------------------------------------------------#
-    processLevel(sParent, 'UN', 100 * 4 / pbChunks)
+    gLevel = 'UN'
+    processLevel(sParent, gLevel, 100 * 4 / pbChunks)
 
     #--------------------------------------------------------------------------#
     # Process the Control Modules for the selected parent:                     #
     #--------------------------------------------------------------------------#
-    processLevel(sParent, 'PC', 100 * 4 / pbChunks)
+    gLevel = 'PC'
+    processLevel(sParent, gLevel, 100 * 4 / pbChunks)
 
     #--------------------------------------------------------------------------#
     # Finally create any program files that need all blocks defined:           #
@@ -383,6 +390,16 @@ def processLevel(sParent, sLevel, pbwt):
         #----------------------------------------------------------------------#
         p.set_description(sParent + ': ' + sClass + ' complete')
         p.refresh()
+
+    #--------------------------------------------------------------------------#
+    # Create the instance DBs for the level:                                   #
+    #--------------------------------------------------------------------------#
+    createClass(sLevel, sParent, '', '', '', 'idb', 'idb' + sLevel + 's', False)
+
+    #--------------------------------------------------------------------------#
+    # Create fcCall to be called from OB1 and scan each instance:              #
+    #--------------------------------------------------------------------------#
+    createClass(sLevel, sParent, '', '', '', 'fcCall', 'fcCall' + sLevel + 's', False)
 
     #--------------------------------------------------------------------------#
     # Update the progress message:                                             #
@@ -501,9 +518,17 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
     #--------------------------------------------------------------------------#
     # Get the list of instances for the template:                              #
     #--------------------------------------------------------------------------#
-    if (sClass == 'IL'):
+    if (sTemplate == 'fcCall' or sTemplate == 'idb'):
+        try:
+#            query = cgSQL.sql[cgSQL.sqlCode.createClassAll]
+            query = cgSQL.sql[cgSQL.sqlCode.CALL_LEVEL]
+            c.execute(query, (sLevel.upper(),))
+        except:
+            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.CALL_LEVEL, query, sLevel.upper())
+
+    elif (sClass == 'IL'):
         gILTable = sNameOutput
-        if (gILTable == 'CRIL' or gILTable == 'IL'):
+        if (gILTable == 'CRIL'): # or gILTable == 'IL'):
             try:
                 query = cgSQL.sql[cgSQL.sqlCode.CRIL]
                 c.execute(query)
@@ -641,7 +666,7 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
         #----------------------------------------------------------------------#
         # Write the output instance file:                                      #
         #----------------------------------------------------------------------#
-        if (bOne or sClass == 'IL'):
+        if (bOne or sClass == 'IL' or sTemplate == 'fcCall' or sTemplate == 'idb'):
             sFileNameOut = pathOutput + '/' + sPrefix + sNameOutput + '.awl'
         else:
             sFileNameOut = pathOutput + '/' + sTemplate + '.awl'
@@ -678,6 +703,7 @@ def processTemplate(c, txtTemplate, txtData, bOne):
     global gClass
     global gClassDescription
     global gInstance
+    global gLevel
     global gParent
 
     #--------------------------------------------------------------------------#
@@ -712,7 +738,7 @@ def processTemplate(c, txtTemplate, txtData, bOne):
                 elif (fld.upper() == 'CLASSDESCRIPTION'):
                     gClassDescription = row[fld]
 
-                elif (fld.upper() == 'INSTANCE' or fld.upper() == 'TARGET'):
+                elif (fld.upper() == 'INSTANCE'):
                     sInstance = row[fld]
                     gInstance = sInstance
 
@@ -770,6 +796,7 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
     global conn
     global gClass
     global gInstance
+    global gLevel
     global gParent
     global gSelectParameter
     global gSelectSelection
@@ -847,6 +874,8 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
                     qparms[i] = gILTable
                 elif (qparms[i] == 'gInstance'):
                     qparms[i] = gInstance
+                elif (qparms[i] == 'gLevel'):
+                    qparms[i] = gLevel
                 elif (qparms[i] == 'gParent'):
                     qparms[i] = gParent
                 elif (qparms[i] == 'gSelectParameter'):
@@ -899,14 +928,27 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
                     txtTemplate = txtTemplate[:iDefaultBegin] + txtTemplate[iDefaultEnd + 20:]
 
                 #--------------------------------------------------------------#
+                # If special LINK template then don't refresh the record       #
+                # template in the loop below:                                  #
+                #--------------------------------------------------------------#
+                if (sTemplateAttrName == 'LINK'):
+                    txtRecord = txtTemplate
+
+                #--------------------------------------------------------------#
                 # Enter a loop to replace the attribute field names:           #
                 #--------------------------------------------------------------#
                 for row in data:
                     #----------------------------------------------------------#
+                    # If not a LINK template then each row of the cursor is a  #
+                    # different record in the file:                            #
+                    #----------------------------------------------------------#
+                    if (sTemplateAttrName != 'LINK'):
+                        txtRecord = txtTemplate
+
+                    #----------------------------------------------------------#
                     # Enter a loop to process all of the fields in the         #
                     # instance record:                                         #
                     #----------------------------------------------------------#
-                    txtRecord = txtTemplate
                     for fld in row.keys():
                         #------------------------------------------------------#
                         # Set a null placeholder if no data:                   #
@@ -937,11 +979,17 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
                             # Update the field name and save the field data    #
                             # for iterative calls:                             #
                             #--------------------------------------------------#
-                            txtRecord = txtRecord.replace('@@' + fld.upper() + '@@', sValue)
+                            if (sTemplateAttrName == 'LINK'):
+                                sLink = row['LINK']
+                            else:
+                                sLink = ''
+
+                            txtRecord = txtRecord.replace('@@' + sLink + fld.upper() + '@@', sValue)
+
                             if (fld.upper() == 'CLASS'):
                                 gClass = sValue
 
-                            elif (fld.upper() == 'INSTANCE' or fld.upper() == 'TARGET'):
+                            elif (fld.upper() == 'INSTANCE'):
                                 gInstance = sValue
 
                             elif (fld.upper() == 'SFC'):
@@ -970,16 +1018,30 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
                     iRow = iRow + 1
 
                     #----------------------------------------------------------#
-                    # Build the attribute record string:                       #
+                    # Build the attribute record string if not a LINK:         #
                     #----------------------------------------------------------#
-                    if (len(txtRecord) > 2):
-                        if (ord(txtRecord[-2:-1]) == 13):
-                            txtRecordData = txtRecordData + txtRecord[:-1] + '\n'
+                    if (sTemplateAttrName != 'LINK'):
+                        if (len(txtRecord) > 2):
+                            if (ord(txtRecord[-2:-1]) == 13):
+                                txtRecordData = txtRecordData + txtRecord[:-1] + '\n'
 
-                        elif (ord(txtRecord[-1:]) == 13):
-                            txtRecordData = txtRecordData + txtRecord + '\n'
-                        else:
-                            txtRecordData = txtRecordData + txtRecord + '\r\n'
+                            elif (ord(txtRecord[-1:]) == 13):
+                                txtRecordData = txtRecordData + txtRecord + '\n'
+                            else:
+                                txtRecordData = txtRecordData + txtRecord + '\r\n'
+
+            #------------------------------------------------------------------#
+            # Build the attribute record string if not a LINK:                 #
+            #------------------------------------------------------------------#
+            if (sTemplateAttrName == 'LINK' and len(data) != 0):
+                if (len(txtRecord) > 2):
+                    if (ord(txtRecord[-2:-1]) == 13):
+                        txtRecordData = txtRecordData + txtRecord[:-1] + '\n'
+
+                    elif (ord(txtRecord[-1:]) == 13):
+                        txtRecordData = txtRecordData + txtRecord + '\n'
+                    else:
+                        txtRecordData = txtRecordData + txtRecord + '\r\n'
 
             #------------------------------------------------------------------#
             # Exclude the tag markers from the code template string:           #
@@ -1237,6 +1299,7 @@ def populateSFCParameters(sClass):
                 #--------------------------------------------------------------#
                 # Set the code data type based on the actual data type:        #
                 #--------------------------------------------------------------#
+                sValue = ''
                 if (sParameterDataType.upper() == 'BOOL'):
                     sValue = 'FALSE'
 
