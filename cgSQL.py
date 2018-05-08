@@ -27,11 +27,12 @@ class sqlCode(Enum):
     createProgramFilesCount            = -6
     defaultParameters                  = -7
     documentInfo                       = -199
-    populateSFCParmsChild              = -8
-    populateSFCParmsInsert             = -9
-    populateSFCParmsSubstate           = -10
+    checkIfChildParameter              = -8
+    insertGlobalParameters             = -9
+    listUserParametersSFC              = -10
     processLevel                       = -11
     processLevelCount                  = -12
+    tblCreateGlobalParameter           = -878
     versionHistory                     = -13
     VERHIST                            = -513
     ANALOG                             = -214
@@ -56,26 +57,13 @@ class sqlCode(Enum):
     PARM_CHILD_VAR_INPUT               = -25
     PARM_CHILD_VAR_OUTPUT              = -26
     PARM_CHILD_VAR_IN_OUT              = -27
-    PARM_SFC_VAR_INPUT                 = -34
-    PARM_SFC_VAR_IN_OUT                = -35
-    PARM_SFC_VAR_OUTPUT                = -41
-    PARM_SFC_CHILD_VAR_INPUT           = -42
-    PARM_SFC_CHILD_VAR_OUTPUT          = -43
-    PARM_SFC_CHILD_VAR_IN_OUT          = -44
-    PARM_SFC_DATA_VAR_INPUT            = -45
-    PARM_SFC_DATA_VAR_OUTPUT           = -51
-    PARM_SFC_DATA_VAR_IN_OUT           = -52
-    PARM_SFC_CONFIRM                   = -53
-    PARM_SFC_LOG                       = -54
-    PARM_SFC_PROMPT                    = -55
     PARM_INSTANCE_VAR_INPUT            = -61
     PARM_INSTANCE_VAR_OUTPUT           = -62
     PARM_INSTANCE_VAR_IN_OUT           = -63
-    PARM_VAR                           = -64
-    PARM_VAR_INPUT                     = -97
-    PARM_VAR_IN_OUT                    = -98
-    PARM_VAR_OUTPUT                    = -99
-    PARM_VAR_TEMP                      = -65
+    PARM_INSTANCE_VAR                  = -64
+    PARM_CLASS_VAR_INPUT               = -97
+    PARM_CLASS_VAR_IN_OUT              = -98
+    PARM_CLASS_VAR_OUTPUT              = -99
     REQUIREMENT                        = -69
     SCOPE                              = -70
     SELECT                             = -71
@@ -86,6 +74,24 @@ class sqlCode(Enum):
     TAGS                               = -81
     TIMER                              = -82
     TRANSITION                         = -83
+    pChildIN                           = -350
+    pChildIN_OUT                       = -351
+    pChildOUT                          = -352
+    pSFCConfirm                        = -353
+    pSFCLog                            = -354
+    pSFCPrompt                         = -355
+    pSFCListIN                         = -356
+    pSFCListIN_OUT                     = -357
+    pSFCListOUT                        = -358
+    pSFCCallingIN                      = -359
+    pSFCCallingIN_OUT                  = -360
+    pSFCCallingOUT                     = -361
+    pSFCChildIN                        = -365
+    pSFCChildIN_OUT                    = -366
+    pSFCChildOUT                       = -367
+    pBLKCallingIN                      = -368
+    pBLKCallingIN_OUT                  = -369
+    pBLKCallingOUT                     = -370
 
 prm = {
     sqlCode.ANALOG                     : ['gClass'],
@@ -106,28 +112,13 @@ prm = {
     sqlCode.LINK                       : ['gInstance'],
     sqlCode.OWNER                      : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.PARENT                     : [],
-    sqlCode.PARM_VAR_INPUT             : ['gClass'],
-    sqlCode.PARM_VAR_IN_OUT            : ['gClass'],
-    sqlCode.PARM_VAR_OUTPUT            : ['gClass'],
-    sqlCode.PARM_CHILD_VAR_INPUT       : ['gClass'],
-    sqlCode.PARM_CHILD_VAR_OUTPUT      : ['gClass', 'gState'],
-    sqlCode.PARM_CHILD_VAR_IN_OUT      : ['gClass', 'gState'],
-    sqlCode.PARM_SFC_VAR_INPUT         : ['gSFC'],
-    sqlCode.PARM_SFC_VAR_IN_OUT        : ['gSFC'],
-    sqlCode.PARM_SFC_VAR_OUTPUT        : ['gSFC'],
-    sqlCode.PARM_SFC_CHILD_VAR_INPUT   : ['gSFC'],
-    sqlCode.PARM_SFC_CHILD_VAR_IN_OUT  : ['gSFC'],
-    sqlCode.PARM_SFC_CHILD_VAR_OUTPUT  : ['gSFC'],
-    sqlCode.PARM_SFC_DATA_VAR_INPUT    : ['gClass'],
-    sqlCode.PARM_SFC_DATA_VAR_IN_OUT   : ['gClass'],
-    sqlCode.PARM_SFC_DATA_VAR_OUTPUT   : ['gClass'],
-    sqlCode.PARM_SFC_CONFIRM           : ['gClass'],
-    sqlCode.PARM_SFC_LOG               : ['gClass'],
-    sqlCode.PARM_SFC_PROMPT            : ['gClass'],
-    sqlCode.PARM_INSTANCE_VAR_INPUT    : ['gInstance'],
-    sqlCode.PARM_INSTANCE_VAR_IN_OUT   : ['gInstance'],
-    sqlCode.PARM_INSTANCE_VAR_OUTPUT   : ['gInstance'],
-    sqlCode.PARM_VAR                   : ['gInstance'],
+#    sqlCode.PARM_CLASS_VAR_INPUT             : ['gClass'],
+#    sqlCode.PARM_CLASS_VAR_IN_OUT            : ['gClass'],
+#    sqlCode.PARM_CLASS_VAR_OUTPUT            : ['gClass'],
+#    sqlCode.PARM_INSTANCE_VAR_INPUT    : ['gInstance'],
+#    sqlCode.PARM_INSTANCE_VAR_IN_OUT   : ['gInstance'],
+#    sqlCode.PARM_INSTANCE_VAR_OUTPUT   : ['gInstance'],
+#    sqlCode.PARM_INSTANCE_VAR          : ['gInstance'],
     sqlCode.SELECT                     : ['gClass'],
     sqlCode.SELVALUE                   : ['gClass', 'gSelectParameter' , 'gSelectSelection'],
     sqlCode.SFC                        : ['gClass'],
@@ -135,6 +126,24 @@ prm = {
     sqlCode.STATE_TIMER                : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.TAGS                       : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.TIMER                      : ['gClass'],
+    sqlCode.pChildIN                   : ['gClass'],
+    sqlCode.pChildIN_OUT               : ['gClass'],
+    sqlCode.pChildOUT                  : ['gClass'],
+    sqlCode.pSFCConfirm                : ['gClass'],
+    sqlCode.pSFCLog                    : ['gClass'],
+    sqlCode.pSFCPrompt                 : ['gClass'],
+    sqlCode.pSFCListIN                 : ['gSFC'],
+    sqlCode.pSFCListIN_OUT             : ['gSFC'],
+    sqlCode.pSFCListOUT                : ['gSFC'],
+    sqlCode.pSFCCallingIN              : ['gSFC'],
+    sqlCode.pSFCCallingIN_OUT          : ['gSFC'],
+    sqlCode.pSFCCallingOUT             : ['gSFC'],
+    sqlCode.pSFCChildIN                : ['gSFC'],
+    sqlCode.pSFCChildIN_OUT            : ['gSFC'],
+    sqlCode.pSFCChildOUT               : ['gSFC'],
+    sqlCode.pBLKCallingIN              : ['gClass'],
+    sqlCode.pBLKCallingIN_OUT          : ['gClass'],
+    sqlCode.pBLKCallingOUT             : ['gClass'],
 }
 
 sql = {
@@ -168,31 +177,16 @@ sql = {
                                                  'I.GGParent, '
                                                  'I.GGGParent, '
                                                  'printf("%d", I.NC) AS NC, '
-                                                 'I.childAlias, '
-                                                 'I.childAliasClass, '
                                                  'C.Description AS ClassDescription '
                                           'FROM tblInstance AS I LEFT JOIN '
                                                   'tblClass AS C ON I.ClassID = C.ID '
-                                          'WHERE I.[Level] != ? '
-                                                 'AND I.[Class] = ? AND '
+                                          'WHERE I.[Class] = ? AND '
                                                  '(I.Instance = ? OR '
                                                  'I.Parent = ? OR '
                                                  'I.GParent = ? OR '
                                                  'I.GGParent = ? OR '
                                                  'I.GGGParent = ?) '
                                           'ORDER BY I.Instance'
-                                         ),
-    sqlCode.createParameterSFC         : ('CREATE TABLE IF NOT EXISTS '
-                                          'tblParameter_SFC ('
-                                                 '[Class] text NOT NULL, '
-                                                 'SFC text NOT NULL, '
-                                                 'ParameterType text NOT NULL, '
-                                                 'sfcParameter text NOT NULL, '
-                                                 'blockParameter text NOT NULL, '
-                                                 'ParameterDataType text NOT NULL, '
-                                                 'ParameterValue text, '
-                                                 'ParameterDescription text, '
-                                                 'isChild integer)'
                                          ),
     sqlCode.createProgramFiles         : ('SELECT * '
                                           'FROM tblFile '
@@ -211,22 +205,6 @@ sql = {
                                          ),
     sqlCode.defaultParameters          : ('SELECT * '
                                           'FROM tblParameter_Default'
-                                         ),
-    sqlCode.populateSFCParmsChild      : ('SELECT childSFCAlias '
-                                          'FROM tblClass_Child '
-                                          'WHERE Class = ? '
-                                               'AND childSFCAlias LIKE '
-                                               'substr(?, 1, length(childSFCAlias)) || "%"'
-                                         ), # gClass, sParameter
-
-    sqlCode.populateSFCParmsInsert     : ('INSERT INTO tblParameter_SFC '
-                                          'VALUES (?,?,?,?,?,?,?,?,?)'
-                                         ),
-    sqlCode.populateSFCParmsSubstate   : ('SELECT * '
-                                          'FROM tblClass_State '
-                                          'WHERE [Class] = ? '
-                                                 'AND upper(SFC) != ? '
-                                          'ORDER BY State'
                                          ),
     sqlCode.processLevel               : ('SELECT * '
                                           'FROM tblClass '
@@ -259,10 +237,10 @@ sql = {
                                                  'A.limitL, '
                                                  'A.limitH, '
                                                  'A.limitHH, '
-                                                 'printf("%d",A.enableLL) AS ENABLELL, '
-                                                 'printf("%d",A.enableL) AS ENABLEL, '
-                                                 'printf("%d",A.enableH) AS ENABLEH, '
-                                                 'printf("%d",A.enableHH) AS ENABLEHH '
+                                                 'A.enableLL, '
+                                                 'A.enableL, '
+                                                 'A.enableH, '
+                                                 'A.enableHH '
                                           'FROM tblInstance AS T INNER JOIN '
                                                  'tblClass_Analog AS A ON T.ClassID = A.ClassID '
                                           'WHERE T.Class = ? AND '
@@ -279,10 +257,10 @@ sql = {
                                                  'A.limitL, '
                                                  'A.limitH, '
                                                  'A.limitHH, '
-                                                 'printf("%d",A.enableLL) AS ENABLELL, '
-                                                 'printf("%d",A.enableL) AS ENABLEL, '
-                                                 'printf("%d",A.enableH) AS ENABLEH, '
-                                                 'printf("%d",A.enableHH) AS ENABLEHH '
+                                                 'A.enableLL, '
+                                                 'A.enableL, '
+                                                 'A.enableH, '
+                                                 'A.enableHH '
                                           'FROM tblInstance AS T INNER JOIN '
                                                  'tblClass_Analog AS A ON T.ClassID = A.ClassID '
                                           'WHERE T.Class = ? AND '
@@ -305,13 +283,27 @@ sql = {
                                           'WHERE [Class] = ? '
                                           'ORDER BY childAlias'
                                          ), # gClass
-    sqlCode.CHILD_ACQUIRE              : ('SELECT * '
+    sqlCode.CHILD_ACQUIRE              : ('SELECT childAliasTag, '
+                                                 'childAlias, '
+                                                 'childClass, '
+                                                 'printf("%d", childIndex) AS CHILDINDEX, '
+                                                 'trueStatement, '
+                                                 'trueCommand, '
+                                                 'falseStatement, '
+                                                 'falseCommand '
                                           'FROM tblClass_ChildStateValues '
                                           'WHERE [Class] = ? AND [State] = ? '
                                                  'AND childAcquire = "TRUE" '
                                           'ORDER BY childAlias'
                                          ), # gClass, gState
-    sqlCode.CHILD_INIT_COMMAND         : ('SELECT * '
+    sqlCode.CHILD_INIT_COMMAND         : ('SELECT childAliasTag, '
+                                                 'childAlias, '
+                                                 'childClass, '
+                                                 'printf("%d", childIndex) AS CHILDINDEX, '
+                                                 'trueStatement, '
+                                                 'trueCommand, '
+                                                 'falseStatement, '
+                                                 'falseCommand '
                                           'FROM tblClass_ChildStateValues '
                                           'WHERE [Class] = ? AND State = ? '
                                           'ORDER BY childAlias'
@@ -359,8 +351,8 @@ sql = {
                                                  'I.GGParent, '
                                                  'I.GGGParent, '
                                                  'printf("%d", I.NC) AS NC, '
-                                                 'I.childAlias, '
-                                                 'I.childAliasClass, '
+                                                 'I.instanceChildAlias, '
+                                                 'I.instanceChildAliasClass, '
                                                  'C.Description AS ClassDescription '
                                           'FROM tblInstance AS I LEFT JOIN '
                                                  'tblClass AS C ON I.ClassID = C.ID '
@@ -384,13 +376,13 @@ sql = {
                                                  'I.GGParent, '
                                                  'I.GGGParent, '
                                                  'printf("%d", I.NC) AS NC, '
-                                                 'I.childAlias, '
-                                                 'I.childAliasClass, '
+                                                 'I.instanceChildAlias, '
+                                                 'I.instanceChildAliasClass, '
                                                  'C.Description AS ClassDescription '
                                           'FROM tblInstance AS I LEFT JOIN '
                                                  'tblClass AS C ON I.ClassID = C.ID '
                                           'WHERE I.[Level] != "CM" AND '
-                                                 'I.[Level] != "PC" AND '
+                                                 'I.[Level] != "CP" AND '
                                                  '(I.Instance = ? OR '
                                                  'I.Parent = ? OR '
                                                  'I.GParent = ? OR '
@@ -414,8 +406,8 @@ sql = {
                                                  'I.GGParent, '
                                                  'I.GGGParent, '
                                                  'printf("%d", I.NC) AS NC, '
-                                                 'I.childAlias, '
-                                                 'I.childAliasClass, '
+                                                 'I.instanceChildAlias, '
+                                                 'I.instanceChildAliasClass, '
                                                  'C.Description AS ClassDescription '
                                           'FROM tblInstance AS I LEFT JOIN '
                                                  'tblClass AS C ON I.ClassID = C.ID '
@@ -435,228 +427,130 @@ sql = {
                                                  '[Level] = "PC" '
                                           'ORDER BY [Level], [Class]'
                                          ),
-    sqlCode.PARM_CHILD_VAR_INPUT       : ('SELECT P.Parameter, '
-                                                 'P.ParameterClass, '
-                                                 'P.ParameterDataType, '
-                                                 'P.ParameterType, '
-                                                 'P.childParameterAlias, '
-                                                 'P.ParameterDescription, '
-                                                 'C.childAlias, '
-                                                 'C.childAliasClass, '
-                                                 'C.childAliasDescription, '
-                                                 'S.State, '
-                                                 'S.StateDescription '
-                                          'FROM tblClass_Parameter AS P '
-                                                 'INNER JOIN tblClass_Child AS C ON '
-                                                 'P.childParameterAlias = c.childAlias '
-                                          'INNER JOIN tblClass_State AS S ON '
-                                                 'P.State = S.State '
-                                          'WHERE C.Class = ? AND ParameterType = "VAR_INPUT" '
-                                          'ORDER BY P.Parameter'
-                                         ), # gClass
-    sqlCode.PARM_VAR_INPUT             : ('SELECT P.Parameter, '
-                                                 'P.ParameterClass, '
-                                                 'P.ParameterDataType, '
-                                                 'P.ParameterType, '
-                                                 'P.childParameterAlias, '
-                                                 'P.ParameterDescription '
-                                          'FROM tblClass_Parameter AS P '
-                                          'WHERE P.ParameterClass = ? AND '
-                                                 'length(P.childParameterAlias) = 0 '
-                                                 'AND ParameterType = "VAR_INPUT" '
-                                          'ORDER BY P.Parameter '
-                                         ), # gClass
-    sqlCode.PARM_VAR_IN_OUT            : ('SELECT P.Parameter, '
-                                                 'P.ParameterClass, '
-                                                 'P.ParameterDataType, '
-                                                 'P.ParameterType, '
-                                                 'P.childParameterAlias, '
-                                                 'P.ParameterDescription '
-                                          'FROM tblClass_Parameter AS P '
-                                          'WHERE P.ParameterClass = ? AND '
-                                                 'length(P.childParameterAlias) = 0 '
-                                                 'AND ParameterType = "VAR_IN_OUT" '
-                                          'ORDER BY P.Parameter '
-                                         ), # gClass
-    sqlCode.PARM_VAR_OUTPUT            : ('SELECT P.Parameter, '
-                                                 'P.ParameterClass, '
-                                                 'P.ParameterDataType, '
-                                                 'P.ParameterType, '
-                                                 'P.childParameterAlias, '
-                                                 'P.ParameterDescription '
-                                          'FROM tblClass_Parameter AS P '
-                                          'WHERE P.ParameterClass = ? AND '
-                                                 'length(P.childParameterAlias) = 0 '
-                                                 'AND ParameterType = "VAR_OUTPUT" '
-                                          'ORDER BY P.Parameter '
-                                         ), # gClass
-    sqlCode.PARM_SFC_VAR_INPUT         : ('SELECT * '
-                                          'FROM tblParameter_SFC '
-                                          'WHERE SFC = ? AND '
-                                                 'ParameterType = "VAR_INPUT"'
-                                         ), # gSFC
-    sqlCode.PARM_SFC_VAR_IN_OUT        : ('SELECT * '
-                                          'FROM tblParameter_SFC '
-                                          'WHERE SFC = ? AND '
-                                                 'ParameterType = "VAR_IN_OUT"'
-                                         ), # gSFC
-    sqlCode.PARM_SFC_VAR_OUTPUT        : ('SELECT * '
-                                          'FROM tblParameter_SFC '
-                                          'WHERE SFC = ? AND '
-                                                 'ParameterType = "VAR_OUTPUT"'
-                                         ), # gSFC
-    sqlCode.PARM_SFC_CHILD_VAR_INPUT   : ('SELECT sfcParameter, '
-                                                 'blockParameter, '
-                                                 'ParameterType, '
-                                                 'ParameterDataType, '
-                                                 'ParameterDescription '
-                                          'FROM tblParameter_SFC '
-                                          'WHERE SFC = ? AND '
-                                                 'ParameterType = "VAR_INPUT" AND '
-                                                 'isChild = "TRUE"'
-                                         ), # gSFC
-    sqlCode.PARM_SFC_CHILD_VAR_IN_OUT  : ('SELECT sfcParameter, '
-                                                 'blockParameter, '
-                                                 'ParameterType, '
-                                                 'ParameterDataType, '
-                                                 'ParameterDescription '
-                                          'FROM tblParameter_SFC '
-                                          'WHERE SFC = ? AND '
-                                                 'ParameterType = "VAR_IN_OUT" AND '
-                                                 'isChild = "TRUE"'
-                                         ), # gSFC
-    sqlCode.PARM_SFC_CHILD_VAR_OUTPUT  : ('SELECT sfcParameter, '
-                                                 'blockParameter, '
-                                                 'ParameterType, '
-                                                 'ParameterDataType, '
-                                                 'ParameterDescription '
-                                          'FROM tblParameter_SFC '
-                                          'WHERE SFC = ? AND '
-                                                 'ParameterType = "VAR_OUTPUT" AND '
-                                                 'isChild = "TRUE"'
-                                         ), # gSFC
-    sqlCode.PARM_SFC_DATA_VAR_INPUT    : ('SELECT DISTINCT '
-                                                 'blockParameter, '
-                                                 'ParameterDataType, '
-                                                 'ParameterDescription '
-                                          'FROM tblParameter_SFC '
-                                          'WHERE [Class] = ? AND '
-                                                 'ParameterType = "VAR_INPUT" AND '
-                                                 'isChild = "FALSE"'
-                                         ), # gClass
-    sqlCode.PARM_SFC_DATA_VAR_IN_OUT   : ('SELECT DISTINCT '
-                                                 'blockParameter, '
-                                                 'ParameterDataType, '
-                                                 'ParameterDescription '
-                                          'FROM tblParameter_SFC '
-                                          'WHERE [Class] = ? AND '
-                                                 'ParameterType = "VAR_IN_OUT" AND '
-                                                 'isChild = "FALSE"'
-                                         ), # gClass
-    sqlCode.PARM_SFC_DATA_VAR_OUTPUT   : ('SELECT DISTINCT '
-                                                 'blockParameter, '
-                                                 'ParameterDataType, '
-                                                 'ParameterDescription '
-                                          'FROM tblParameter_SFC '
-                                          'WHERE [Class] = ? AND '
-                                                 'ParameterType = "VAR_OUTPUT" AND '
-                                                 'isChild = "FALSE"'
-                                         ), # gClass
-    sqlCode.PARM_SFC_CONFIRM           : ('SELECT [Class], '
-                                                 'SFC, '
-                                                 'ParameterType, '
-                                                 'sfcParameter, '
-                                                 'blockParameter, '
-                                                 'ParameterDataType, '
-                                                 'ParameterValue, '
-                                                 'ParameterDescription, '
-                                                 'Replace(sfcParameter,"_confirm",".confirm") AS dbEventParameter '
-                                          'FROM tblParameter_SFC '
-                                          'WHERE [Class] = ? AND '
-                                                 'blockParameter LIKE "%CONFIRM%"'
-                                'ORDER BY SFC, sfcParameter'
-                                         ), # gClass
-    sqlCode.PARM_SFC_LOG               : ('SELECT * '
-                                          'FROM tblParameter_SFC '
-                                          'WHERE [Class] = ? AND '
-                                                 'substr(blockParameter, 1, 4) = "LOG_" '
-                                          'ORDER BY SFC, sfcParameter'
-                                         ), # gClass
-    sqlCode.PARM_SFC_PROMPT            : ('SELECT * '
-                                          'FROM tblParameter_SFC '
-                                          'WHERE [Class] = ? AND '
-                                                 'substr(blockParameter, 1, 7) = "PROMPT_" AND '
-                                                 'blockParameter NOT LIKE "%CONFIRM%" '
-                                          'ORDER BY SFC, sfcParameter'
-                                         ), # gClass
-    sqlCode.PARM_INSTANCE_VAR_INPUT    : ('SELECT printf("%d",T.ID) AS ID, '
-                                                 'T.Instance, '
-                                                 'T.[Class], '
-                                                 'T.Description, '
-                                                 'P.Parameter, '
-                                                 'P.ParameterDataType, '
-                                                 'P.ParameterType, '
-                                                 'P.ParameterDescription, '
-                                                 'P.UoM, '
-                                                 'P.ParameterMin, '
-                                                 'P.ParameterMax, '
-                                                 'P.ParameterValue '
-                                          'FROM tblInstance AS T INNER JOIN '
-                                                 'tblClass_Parameter AS P ON T.ClassID = P.ClassID '
-                                          'WHERE T.Instance = ? AND P.ParameterType = "VAR_INPUT" '
-                                          'ORDER BY T.Parent, T.Instance, P.Parameter'
-                                         ), # gInstance
-    sqlCode.PARM_INSTANCE_VAR_IN_OUT   : ('SELECT printf("%d",T.ID) AS ID, '
-                                                 'T.Instance, '
-                                                 'T.[Class], '
-                                                 'T.Description, '
-                                                 'P.Parameter, '
-                                                 'P.ParameterDataType, '
-                                                 'P.ParameterType, '
-                                                 'P.ParameterDescription, '
-                                                 'P.UoM, '
-                                                 'P.ParameterMin, '
-                                                 'P.ParameterMax, '
-                                                 'P.ParameterValue '
-                                          'FROM tblInstance AS T INNER JOIN '
-                                                 'tblClass_Parameter AS P ON T.ClassID = P.ClassID '
-                                          'WHERE T.Instance = ? AND P.ParameterType = "VAR_IN_OUT" '
-                                          'ORDER BY T.Parent, T.Instance, P.Parameter'
-                                         ), # gInstance
-    sqlCode.PARM_INSTANCE_VAR_OUTPUT   : ('SELECT printf("%d",T.ID) AS ID, '
-                                                 'T.Instance, '
-                                                 'T.[Class], '
-                                                 'T.Description, '
-                                                 'P.Parameter, '
-                                                 'P.ParameterDataType, '
-                                                 'P.ParameterType, '
-                                                 'P.ParameterDescription, '
-                                                 'P.UoM, '
-                                                 'P.ParameterMin, '
-                                                 'P.ParameterMax, '
-                                                 'P.ParameterValue '
-                                          'FROM tblInstance AS T INNER JOIN '
-                                                 'tblClass_Parameter AS P ON T.ClassID = P.ClassID '
-                                          'WHERE T.Instance = ? AND P.ParameterType = "VAR_OUTPUT" '
-                                          'ORDER BY T.Parent, T.Instance, P.Parameter'
-                                         ), # gInstance
-    sqlCode.PARM_VAR                   : ('SELECT printf("%d",T.ID) AS ID, '
-                                                 'T.Instance, '
-                                                 'T.[Class], '
-                                                 'T.Description, '
-                                                 'P.Parameter, '
-                                                 'P.ParameterDataType, '
-                                                 'P.ParameterType, '
-                                                 'P.ParameterDescription, '
-                                                 'P.UoM, '
-                                                 'P.ParameterMin, '
-                                                 'P.ParameterMax, '
-                                                 'P.ParameterValue '
-                                          'FROM tblInstance AS T INNER JOIN '
-                                                 'tblClass_Parameter AS P ON T.ClassID = P.ClassID '
-                                          'WHERE T.Instance = ? AND P.ParameterType = "VAR" '
-                                          'ORDER BY T.Parent, T.Instance, P.Parameter'
-                                         ), # gInstance
+#    sqlCode.PARM_CHILD_VAR_INPUT       : ('SELECT P.Parameter, '
+#                                                 'P.ParameterClass, '
+#                                                 'P.ParameterDataType, '
+#                                                 'P.ParameterType, '
+#                                                 'P.childParameterAlias, '
+#                                                 'P.ParameterDescription, '
+#                                                 'C.childAlias, '
+#                                                 'C.childAliasBlock, '
+#                                                 'C.childAliasClass, '
+#                                                 'C.childAliasDescription, '
+#                                                 'S.State, '
+#                                                 'S.StateDescription '
+#                                          'FROM tblClass_Parameter AS P '
+#                                                 'INNER JOIN tblClass_Child AS C ON '
+#                                                 'P.childParameterAlias = c.childAlias '
+#                                          'INNER JOIN tblClass_State AS S ON '
+#                                                 'P.State = S.State '
+#                                          'WHERE C.Class = ? AND ParameterType = "VAR_INPUT" '
+#                                          'ORDER BY P.Parameter'
+#                                         ), # gClass
+#    sqlCode.PARM_CLASS_VAR_INPUT       : ('SELECT P.Parameter, '
+#                                                 'P.ParameterClass, '
+#                                                 'P.ParameterDataType, '
+##                                                 'P.ParameterType, '
+#                                                 'P.childParameterAlias, '
+#                                                 'P.ParameterDescription '
+#                                          'FROM tblClass_Parameter AS P '
+#                                          'WHERE P.ParameterClass = ? AND '
+#                                                 'length(P.childParameterAlias) = 0 '
+#                                                 'AND ParameterType = "VAR_INPUT" '
+#                                          'ORDER BY P.Parameter '
+#                                         ), # gClass
+#    sqlCode.PARM_CLASS_VAR_IN_OUT      : ('SELECT P.Parameter, '
+#                                                 'P.ParameterClass, '
+#                                                 'P.ParameterDataType, '
+#                                                 'P.ParameterType, '
+#                                                 'P.childParameterAlias, '
+#                                                 'P.ParameterDescription '
+#                                          'FROM tblClass_Parameter AS P '
+#                                          'WHERE P.ParameterClass = ? AND '
+#                                                 'length(P.childParameterAlias) = 0 '
+#                                                 'AND ParameterType = "VAR_IN_OUT" '
+#                                          'ORDER BY P.Parameter '
+#                                         ), # gClass
+#    sqlCode.PARM_CLASS_VAR_OUTPUT      : ('SELECT P.Parameter, '
+#                                                 'P.ParameterClass, '
+#                                                 'P.ParameterDataType, '
+#                                                 'P.ParameterType, '
+#                                                 'P.childParameterAlias, '
+#                                                 'P.ParameterDescription '
+#                                          'FROM tblClass_Parameter AS P '
+#                                          'WHERE P.ParameterClass = ? AND '
+#                                                 'length(P.childParameterAlias) = 0 '
+#                                                 'AND ParameterType = "VAR_OUTPUT" '
+#                                          'ORDER BY P.Parameter '
+#                                         ), # gClass
+#    sqlCode.PARM_INSTANCE_VAR_INPUT    : ('SELECT printf("%d",T.ID) AS ID, '
+#                                                 'T.Instance, '
+#                                                 'T.[Class], '
+#                                                 'T.Description, '
+#                                                 'P.Parameter, '
+#                                                 'P.ParameterDataType, '
+##                                                 'P.ParameterType, '
+#                                                 'P.ParameterDescription, '
+#                                                 'P.UoM, '
+#                                                 'P.ParameterMin, '
+#                                                 'P.ParameterMax, '
+#                                                 'P.ParameterValue '
+#                                          'FROM tblInstance AS T INNER JOIN '
+#                                                 'tblClass_Parameter AS P ON T.ClassID = P.ClassID '
+#                                          'WHERE T.Instance = ? AND P.ParameterType = "VAR_INPUT" '
+#                                          'ORDER BY T.Parent, T.Instance, P.Parameter'
+#                                         ), # gInstance
+#    sqlCode.PARM_INSTANCE_VAR_IN_OUT   : ('SELECT printf("%d",T.ID) AS ID, '
+#                                                 'T.Instance, '
+#                                                 'T.[Class], '
+#                                                 'T.Description, '
+#                                                 'P.Parameter, '
+#                                                 'P.ParameterDataType, '
+#                                                 'P.ParameterType, '
+#                                                 'P.ParameterDescription, '
+#                                                 'P.UoM, '
+#                                                 'P.ParameterMin, '
+#                                                 'P.ParameterMax, '
+#                                                 'P.ParameterValue '
+#                                          'FROM tblInstance AS T INNER JOIN '
+#                                                 'tblClass_Parameter AS P ON T.ClassID = P.ClassID '
+#                                          'WHERE T.Instance = ? AND P.ParameterType = "VAR_IN_OUT" '
+#                                          'ORDER BY T.Parent, T.Instance, P.Parameter'
+#                                         ), # gInstance
+#    sqlCode.PARM_INSTANCE_VAR_OUTPUT   : ('SELECT printf("%d",T.ID) AS ID, '
+#                                                 'T.Instance, '
+#                                                 'T.[Class], '
+#                                                 'T.Description, '
+#                                                 'P.Parameter, '
+#                                                 'P.ParameterDataType, '
+#                                                 'P.ParameterType, '
+#                                                 'P.ParameterDescription, '
+#                                                 'P.UoM, '
+#                                                 'P.ParameterMin, '
+#                                                 'P.ParameterMax, '
+#                                                 'P.ParameterValue '
+#                                          'FROM tblInstance AS T INNER JOIN '
+#                                                 'tblClass_Parameter AS P ON T.ClassID = P.ClassID '
+#                                          'WHERE T.Instance = ? AND P.ParameterType = "VAR_OUTPUT" '
+#                                          'ORDER BY T.Parent, T.Instance, P.Parameter'
+#                                         ), # gInstance
+#    sqlCode.PARM_INSTANCE_VAR          : ('SELECT printf("%d",T.ID) AS ID, '
+#                                                 'T.Instance, '
+#                                                 'T.[Class], '
+#                                                 'T.Description, '
+#                                                 'P.Parameter, '
+#                                                 'P.ParameterDataType, '
+#                                                 'P.ParameterType, '
+#                                                 'P.ParameterDescription, '
+#                                                 'P.UoM, '
+#                                                 'P.ParameterMin, '
+#                                                 'P.ParameterMax, '
+#                                                 'P.ParameterValue '
+#                                          'FROM tblInstance AS T INNER JOIN '
+#                                                 'tblClass_Parameter AS P ON T.ClassID = P.ClassID '
+#                                          'WHERE T.Instance = ? AND P.ParameterType = "VAR" '
+#                                          'ORDER BY T.Parent, T.Instance, P.Parameter'
+#                                         ), # gInstance
     sqlCode.REQUIREMENT                : ('SELECT printf("%d",C.ID) AS ID, '
                                                  'C.Class, '
                                                  'F.ClassID, '
@@ -716,8 +610,6 @@ sql = {
                                                  'I.GGParent, '
                                                  'I.GGGParent, '
                                                  'printf("%d", I.NC) AS NC, '
-                                                 'I.childAlias, '
-                                                 'I.childAliasClass, '
                                                  'C.Description AS ClassDescription '
                                           'FROM tblInstance AS I '
                                           'LEFT JOIN tblClass AS C ON I.ClassID = C.ID '
@@ -750,35 +642,9 @@ sql = {
                                                  'IO.PDO, '
                                                  'IO.PAI, '
                                                  'IO.PAO, '
-                                                 'CASE '
-                                                      'WHEN IO.DI=1 THEN "DI" '
-                                                      'WHEN IO.DO=1 THEN "DO" '
-                                                      'WHEN IO.AI=1 THEN "AI" '
-                                                      'WHEN IO.AO=1 THEN "AO" '
-                                                      'WHEN IO.PDI=1 THEN "PDI" '
-                                                      'WHEN IO.PDO=1 THEN "PDO" '
-                                                      'WHEN IO.PAI=1 THEN "PAI" '
-                                                      'WHEN IO.PAO=1 THEN "PAO" '
-                                                 'END IOClass, '
-                                                 'CASE '
-                                                      'WHEN IO.DI=1 THEN "%I" '
-                                                      'WHEN IO.DO=1 THEN "%Q" '
-                                                      'WHEN IO.AI=1 THEN "%I" '
-                                                      'WHEN IO.AO=1 THEN "%QW" '
-                                                      'WHEN IO.PDI=1 THEN "PDI" '
-                                                      'WHEN IO.PDO=1 THEN "PDO" '
-                                                      'WHEN IO.PAI=1 THEN "PAI" '
-                                                      'WHEN IO.PAO=1 THEN "PAO" '
-                                                 'END Prefix, '
-                                                 'CASE WHEN IO.DI=1 THEN "Bool" '
-                                                      'WHEN IO.DO=1 THEN "Bool" '
-                                                      'WHEN IO.AI=1 THEN "Word" '
-                                                      'WHEN IO.AO=1 THEN "Real" '
-                                                      'WHEN IO.PDI=1 THEN "Bool" '
-                                                      'WHEN IO.PDO=1 THEN "Bool" '
-                                                      'WHEN IO.PAI=1 THEN "Word" '
-                                                      'WHEN IO.PAO=1 THEN "Real" '
-                                                 'END DataType, '
+                                                 'IO.IOClass, '
+                                                 'IO.Prefix, '
+                                                 'IO.dataType, '
                                                  'IO.eInstruction , '
                                                  'IO.eVerify, '
                                                  'IO.eResult, '
@@ -845,4 +711,182 @@ sql = {
                                                 'V.KeyValue = @@SCOPE@@ '
                                                 'ORDER BY V.Ver DESC'
                                          ),
+    sqlCode.checkIfChildParameter      : ('SELECT childAlias '
+                                          'FROM tblClass_Child '
+                                          'WHERE Class = ? '
+                                               'AND childAlias LIKE '
+                                               'substr(?, 1, length(childAlias)) || "%"'
+                                         ), # gClass, sParameter
+    sqlCode.insertGlobalParameters     : ('INSERT INTO pGlobal '
+                                          'VALUES (?,?,?,?,?,?,?,?,?)'
+                                         ),
+    sqlCode.listUserParametersSFC      : ('SELECT * '
+                                          'FROM tblClass_State '
+                                          'WHERE [Class] = ? '
+                                                 'AND upper(SFC) != ? '
+                                          'ORDER BY State'
+                                         ),
+    sqlCode.tblCreateGlobalParameter   : ('CREATE TABLE IF NOT EXISTS '
+                                          'pGlobal ('
+                                                 'parameterClass text NOT NULL, '
+                                                 'parameterSFC text, '
+                                                 'parameterType text NOT NULL, '
+                                                 'childParameter text NOT NULL, '
+                                                 'blockParameter text NOT NULL, '
+                                                 'parameterDataType text NOT NULL, '
+                                                 'parameterValue text, '
+                                                 'parameterDescription text, '
+                                                 'isChild boolean)'
+                                         ),
+    sqlCode.pSFCConfirm                : ('SELECT parameterClass, '
+                                                 'parameterSFC, '
+                                                 'parameterType, '
+                                                 'childParameter, '
+                                                 'blockParameter, '
+                                                 'parameterDataType, '
+                                                 'parameterValue, '
+                                                 'parameterDescription, '
+                                                 'Replace(childParameter,"_confirm",".confirm") AS dbEventParameter '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                 'substr(blockParameter, 1, 7) = "PROMPT_" AND '
+                                                 'blockParameter LIKE "%CONFIRM%"'
+                                          'ORDER BY parameterSFC, childParameter'
+                                         ), # gClass
+    sqlCode.pChildIN                   : ('SELECT * FROM pGlobal '
+                                          'WHERE parameterClass IN '
+                                                    '(SELECT childAliasClass '
+                                                     'FROM tblClass_Child '
+                                                     'WHERE parameterClass = ?) AND '
+                                                'parameterSFC = "" AND '
+                                                'parameterType = "VAR_INPUT"'
+                                         ), # gClass
+    sqlCode.pChildIN_OUT               : ('SELECT * FROM pGlobal '
+                                          'WHERE parameterClass IN '
+                                                    '(SELECT childAliasClass '
+                                                     'FROM tblClass_Child '
+                                                     'WHERE parameterClass = ?) AND '
+                                                'parameterSFC = "" AND '
+                                                'parameterType = "VAR_INPUT"'
+                                         ), # gClass
+    sqlCode.pChildOUT                  : ('SELECT * FROM pGlobal '
+                                          'WHERE parameterClass IN '
+                                                    '(SELECT childAliasClass '
+                                                     'FROM tblClass_Child '
+                                                     'WHERE parameterClass = ?) AND '
+                                                'parameterSFC = "" AND '
+                                                'parameterType = "VAR_INPUT"'
+                                         ), # gClass
+    sqlCode.pSFCLog                    : ('SELECT * '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                'substr(blockParameter, 1, 4) = "LOG_" '
+                                          'ORDER BY parameterSFC, childParameter'
+                                         ), # gClass
+    sqlCode.pSFCPrompt                 : ('SELECT * '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                'substr(blockParameter, 1, 7) = "PROMPT_" AND '
+                                                'blockParameter NOT LIKE "%CONFIRM%" '
+                                          'ORDER BY parameterSFC, childParameter'
+                                         ), # gClass
+    sqlCode.pSFCListIN                 : ('SELECT * '
+                                          'FROM pGlobal '
+                                          'WHERE parameterSFC = ? AND '
+                                                'parameterType = "VAR_INPUT"'
+                                         ), # gSFC
+    sqlCode.pSFCListIN_OUT             : ('SELECT * '
+                                          'FROM pGlobal '
+                                          'WHERE parameterSFC = ? AND '
+                                                'parameterType = "VAR_IN_OUT"'
+                                         ), # gSFC
+    sqlCode.pSFCListOUT                : ('SELECT * '
+                                          'FROM pGlobal '
+                                          'WHERE parameterSFC = ? AND '
+                                                'parameterType = "VAR_OUTPUT"'
+                                         ), # gSFC
+    sqlCode.pSFCChildIN                : ('SELECT childParameter, '
+                                                'blockParameter, '
+                                                'parameterType, '
+                                                'parameterDataType, '
+                                                'parameterDescription '
+                                          'FROM pGlobal '
+                                          'WHERE parameterSFC = ? AND '
+                                                'parameterType = "VAR_INPUT" AND '
+                                                'isChild = 1'
+                                         ), # gSFC
+    sqlCode.pSFCChildIN_OUT            : ('SELECT childParameter, '
+                                                'blockParameter, '
+                                                'parameterType, '
+                                                'parameterDataType, '
+                                                'parameterDescription '
+                                          'FROM pGlobal '
+                                          'WHERE parameterSFC = ? AND '
+                                                'parameterType = "VAR_IN_OUT" AND '
+                                                'isChild = 1'
+                                         ), # gSFC
+    sqlCode.pSFCChildOUT               : ('SELECT childParameter, '
+                                                'blockParameter, '
+                                                'parameterType, '
+                                                'parameterDataType, '
+                                                'parameterDescription '
+                                          'FROM pGlobal '
+                                          'WHERE parameterSFC = ? AND '
+                                                'parameterType = "VAR_OUTPUT" AND '
+                                                'isChild = 1'
+                                         ), # gSFC
+    sqlCode.pSFCCallingIN              : ('SELECT DISTINCT '
+                                                'blockParameter, '
+                                                'parameterDataType, '
+                                                'parameterDescription '
+                                          'FROM pGlobal '
+                                          'WHERE parameterSFC = ? AND '
+                                                'parameterType = "VAR_INPUT" AND '
+                                                'isChild = 0'
+                                         ), # gClass
+    sqlCode.pSFCCallingIN_OUT          : ('SELECT DISTINCT '
+                                                'blockParameter, '
+                                                'parameterDataType, '
+                                                'parameterDescription '
+                                          'FROM pGlobal '
+                                          'WHERE parameterSFC = ? AND '
+                                                'parameterType = "VAR_OUTPUT" AND '
+                                                'isChild = 0'
+                                         ), # gClass
+    sqlCode.pSFCCallingOUT             : ('SELECT DISTINCT '
+                                                'blockParameter, '
+                                                'parameterDataType, '
+                                                'parameterDescription '
+                                          'FROM pGlobal '
+                                          'WHERE parameterSFC = ? AND '
+                                                'parameterType = "VAR_IN_OUT" AND '
+                                                'isChild = 0'
+                                         ), # gClass
+    sqlCode.pBLKCallingIN              : ('SELECT DISTINCT '
+                                                'blockParameter, '
+                                                'parameterDataType, '
+                                                'parameterDescription '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                'parameterType = "VAR_INPUT" AND '
+                                                'isChild = 0'
+                                         ), # gClass
+    sqlCode.pBLKCallingIN_OUT          : ('SELECT DISTINCT '
+                                                'blockParameter, '
+                                                'parameterDataType, '
+                                                'parameterDescription '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                'parameterType = "VAR_OUTPUT" AND '
+                                                'isChild = 0'
+                                         ), # gClass
+    sqlCode.pBLKCallingOUT             : ('SELECT DISTINCT '
+                                                'blockParameter, '
+                                                'parameterDataType, '
+                                                'parameterDescription '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                'parameterType = "VAR_IN_OUT" AND '
+                                                'isChild = 0'
+                                         ), # gClass
 }

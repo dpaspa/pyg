@@ -225,11 +225,11 @@ def main():
         errorHandler(errProc, errorCode.cannotConnectDB, dbName)
 
     #--------------------------------------------------------------------------#
-    # Create the SFC Parameters table:                                         #
+    # Create the global parameters table:                                      #
     #--------------------------------------------------------------------------#
     try:
         c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.createParameterSFC]
+        query = cgSQL.sql[cgSQL.sqlCode.tblCreateGlobalParameter]
         c.execute(query)
     except:
         errorHandler(errProc, errorCode.cannotCreateTable, query)
@@ -369,19 +369,15 @@ def processLevel(sParent, sLevel, pbwt):
         # Create the instance FB (ifb) of the class:                           #
         #----------------------------------------------------------------------#
         sPrefix = 'ifb'
+        gClass = sClass
         createClass(sLevel, sParent, sClass, row['Description'],
                     sPrefix, row['inheritsInstance'], row['nameInstance'], True)
-
-        #----------------------------------------------------------------------#
-        # Update the SFC parameters in the database if not interlocks:         #
-        #----------------------------------------------------------------------#
-        if (sLevel == 'EM' or sLevel == 'UN' or sLevel == 'PC'):
-            populateSFCParameters(sClass)
 
         #----------------------------------------------------------------------#
         # Create the function block class file:                                #
         #----------------------------------------------------------------------#
         sPrefix = 'fb'
+        gClass = sClass
         createClass(sLevel, sParent, sClass, row['Description'],
                     sPrefix, row['inheritsClass'], row['nameClass'], True)
 
@@ -545,9 +541,9 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
     elif (bOne):
         try:
             query = cgSQL.sql[cgSQL.sqlCode.createClassOne]
-            c.execute(query, ('RM', sClass, sParent, sParent, sParent, sParent, sParent))
+            c.execute(query, (sClass, sParent, sParent, sParent, sParent, sParent))
         except:
-            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClassOne, query, 'RM' + ', ' + sClass + ', ' + sParent + ', ' + sParent + ', ' + sParent + ', ' + sParent)
+            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClassOne, query, sClass + ', ' + sParent + ', ' + sParent + ', ' + sParent + ', ' + sParent)
 
     elif (sLevel == 'PG' or sLevel == 'BLK'):
         try:
@@ -673,6 +669,19 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
         file = open(sFileNameOut, 'w')
         file.write(txtData)
         file.close()
+
+        #----------------------------------------------------------------------#
+        # Update the function block user parameters in the descendants         #
+        # parameter list if not the interlock class:                           #
+        #----------------------------------------------------------------------#
+        if (len(sNameOutput) > 0 and sNameOutput != 'IL'):
+            listUserParametersBlock(sClass, sFileNameOut)
+
+        #----------------------------------------------------------------------#
+        # Update the SFC user parameters in the descendants parameter list:    #
+        #----------------------------------------------------------------------#
+        if (sLevel == 'EM' or sLevel == 'UN' or sLevel == 'PC'):
+            listUserParametersSFC(sClass)
 
 #------------------------------------------------------------------------------#
 # Function: processTemplate                                                    #
@@ -914,7 +923,7 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
                 # No data so leave any default value:                          #
                 #--------------------------------------------------------------#
                 if (iDefaultBegin >= 0):
-                    txtRecordData = txtTemplate[iDefaultBegin + 22:iDefaultEnd]
+                    txtRecordData = txtTemplate[iDefaultBegin + 24:iDefaultEnd]
                 else:
                     #----------------------------------------------------------#
                     # Not even a default value. Blank the template:            #
@@ -925,7 +934,7 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
                 # There is data so erase any default data:                     #
                 #--------------------------------------------------------------#
                 if (iDefaultBegin >= 0):
-                    txtTemplate = txtTemplate[:iDefaultBegin] + txtTemplate[iDefaultEnd + 20:]
+                    txtTemplate = txtTemplate[:iDefaultBegin] + txtTemplate[iDefaultEnd + 22:]
 
                 #--------------------------------------------------------------#
                 # If special LINK template then don't refresh the record       #
@@ -1183,21 +1192,43 @@ def defaultParameters(sParent, txtInstance):
     return txtInstance
 
 #------------------------------------------------------------------------------#
-# Function: populateSFCParameters                                              #
+# Function: listUserParametersBlock                                            #
 #                                                                              #
 # Description:                                                                 #
-# Updates the internal table tblParameter_SFC with SFC parameters from the     #
-# Visio generated sfc awl files for each SFC.                                  #
+# Gets the user parameters from the function block code file.                  #
 #------------------------------------------------------------------------------#
 # Calling parameters:                                                          #
 #                                                                              #
-# sClass                The class to process the instances for.                #
+# sClass                The class to process the code files for.               #
+# sFileNameIn           The input file name to parse.                          #
 #------------------------------------------------------------------------------#
-def populateSFCParameters(sClass):
+def listUserParametersBlock(sClass, sFileNameIn):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    errProc = populateSFCParameters.__name__
+    errProc = listUserParametersBlock.__name__
+
+    #--------------------------------------------------------------------------#
+    # Get the list of user parameters which are inheritied from the parent:    #
+    #--------------------------------------------------------------------------#
+    addGlobalParameters(sClass, '', sFileNameIn)
+
+#------------------------------------------------------------------------------#
+# Function: listUserParametersSFC                                              #
+#                                                                              #
+# Description:                                                                 #
+# Gets the user SFC parameters from the SFC function block code files for a    #
+# specified module class.                                                      #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# sClass                The class to process the SFC class code files for.     #
+#------------------------------------------------------------------------------#
+def listUserParametersSFC(sClass):
+    #--------------------------------------------------------------------------#
+    # Define the procedure name and trap any programming errors:               #
+    #--------------------------------------------------------------------------#
+    errProc = listUserParametersSFC.__name__
 
     #--------------------------------------------------------------------------#
     # Declare use of the global sqlite cursor object:                          #
@@ -1209,11 +1240,52 @@ def populateSFCParameters(sClass):
     #--------------------------------------------------------------------------#
     try:
         c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.populateSFCParmsSubstate]
+        query = cgSQL.sql[cgSQL.sqlCode.listUserParametersSFC]
         c.execute(query, (sClass, 'NONE'))
     except:
         errorHandler(errProc, errorCode.cannotQuery,
-                     cgSQL.sqlCode.populateSFCParmsSubstate, query, sClass + ', ' + 'NONE')
+                     cgSQL.sqlCode.listUserParametersSFC, query, sClass + ', ' + 'NONE')
+
+    #--------------------------------------------------------------------------#
+    # Process each row in the list of classes:                                 #
+    #--------------------------------------------------------------------------#
+    for row in c:
+        #----------------------------------------------------------------------#
+        # Get the SFC file name and extract the user parameters:               #
+        #----------------------------------------------------------------------#
+        sSFC = row['SFC']
+        sFileNameIn = pathTemplates + '/sfc/fb' + sSFC + '.AWL'
+        addGlobalParameters(sClass, sSFC, sFileNameIn)
+
+#------------------------------------------------------------------------------#
+# Function: addGlobalParameters                                                #
+#                                                                              #
+# Description:                                                                 #
+# Updates the internal table pGlobal with parameters from the awl code file.   #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# sClass                The class to process the instances for.                #
+# sSFC                  The SFC file name or blank if block class module.      #
+# sFileNameIn           The input code file name to parse.                     #
+#------------------------------------------------------------------------------#
+def addGlobalParameters(sClass, sSFC, sFileNameIn):
+    #--------------------------------------------------------------------------#
+    # Define the procedure name and trap any programming errors:               #
+    #--------------------------------------------------------------------------#
+    errProc = addGlobalParameters.__name__
+
+    #--------------------------------------------------------------------------#
+    # Declare use of the global sqlite cursor object:                          #
+    #--------------------------------------------------------------------------#
+    global conn
+
+    #--------------------------------------------------------------------------#
+    # Make sure the file exists before processing it:                          #
+    #--------------------------------------------------------------------------#
+    logging.info(sFileNameIn)
+    if not os.path.exists(sFileNameIn):
+        errorHandler(errProc, errorCode.filenotExist, sFileNameIn)
 
     #--------------------------------------------------------------------------#
     # Create a new cursor object for the SFC parameters:                       #
@@ -1221,139 +1293,127 @@ def populateSFCParameters(sClass):
     c1 = conn.cursor()
 
     #--------------------------------------------------------------------------#
-    # Process each row in the list of classes:                                 #
+    # Open the code file for reading:                                          #
     #--------------------------------------------------------------------------#
-    for row in c:
+    sParameterType = ''
+    file = open(sFileNameIn, 'r')
+    for sBuffer in file:
         #----------------------------------------------------------------------#
-        # Check if the FB template file for the SFC does not exist. It must be #
-        # generated from Visio:                                                #
+        # Read the next line in the file:                                      #
         #----------------------------------------------------------------------#
-        sSFC = row['SFC']
-        sFileNameIn = pathTemplates + '/sfc/fb' + sSFC + '.AWL'
-        logging.info(sFileNameIn)
-        if not os.path.exists(sFileNameIn):
-            errorHandler(errProc, errorCode.filenotExist, sFileNameIn)
+        sBuffer = sBuffer.replace('\t', ' ')
+        sBuffer = sBuffer.strip()
 
         #----------------------------------------------------------------------#
-        # Open the SFC file for reading:                                       #
+        # Check if the start of each parameter data type:                      #
         #----------------------------------------------------------------------#
-        sParameterType = ''
-        file = open(sFileNameIn, 'r')
-        for sBuffer in file:
-            #------------------------------------------------------------------#
-            # Read the next line in the file:                                  #
-            #------------------------------------------------------------------#
-            sBuffer = sBuffer.replace('\t', ' ')
-            sBuffer = sBuffer.strip()
+        if (sBuffer == 'VAR_INPUT'):
+            sParameterType = 'VAR_INPUT'
 
-            #------------------------------------------------------------------#
-            # Check if the start of each parameter data type:                  #
-            #------------------------------------------------------------------#
-            if (sBuffer == 'VAR_INPUT'):
-                sParameterType = 'VAR_INPUT'
+        elif (sBuffer == 'VAR_OUTPUT'):
+            sParameterType = 'VAR_OUTPUT'
 
-            elif (sBuffer == 'VAR_OUTPUT'):
-                sParameterType = 'VAR_OUTPUT'
+        elif (sBuffer == 'VAR_IN_OUT'):
+            sParameterType = 'VAR_IN_OUT'
 
-            elif (sBuffer == 'VAR_IN_OUT'):
-                sParameterType = 'VAR_IN_OUT'
+        elif (sBuffer == 'VAR'):
+            sParameterType = 'VAR'
 
-            elif (sBuffer == 'VAR'):
-                sParameterType = 'VAR'
-
-            elif (sBuffer == 'BEGIN'):
-                sParameterType = 'DONE'
-
-            #------------------------------------------------------------------#
-            # Check if not reached the parameter definition                    #
-            # section:                                                         #
-            #------------------------------------------------------------------#
-            if (sParameterType is None):
-                pass
-
-            #------------------------------------------------------------------#
-            # Check if all parameter data types processed:                     #
-            #------------------------------------------------------------------#
-            elif (sParameterType.upper() == 'DONE'):
-                #--------------------------------------------------------------#
-                # Don't need the rest of the file. Exit the loop:              #
-                #--------------------------------------------------------------#
-                break
-
-            #------------------------------------------------------------------#
-            # Check if a a user defined sequence parameter:                    #
-            #------------------------------------------------------------------#
-            elif (sBuffer[:1] == '_'):
-                #--------------------------------------------------------------#
-                # Get the parameter data based on the definition code,         #
-                # for example...                                               #
-                # _flowpath_WFI :BOOL ;   //flowpath_WFI/CS_WFI:               #
-                #--------------------------------------------------------------#
-                sParameter = sBuffer[:sBuffer.find(' ')]
-                sParameterBlock = sParameter.upper()[1:]
-                sParameterDataType = sBuffer[sBuffer.find(':') + 1:
-                                             sBuffer.find(':') + 1 +
-                                             sBuffer.find(';', sBuffer.find(':') + 1) - 1 - sBuffer.find(':') - 1]
-                sParameterDescription = sBuffer[-len(sBuffer) + sBuffer.find('/') + 2:]
-
-                #--------------------------------------------------------------#
-                # Set the code data type based on the actual data type:        #
-                #--------------------------------------------------------------#
-                sValue = ''
-                if (sParameterDataType.upper() == 'BOOL'):
-                    sValue = 'FALSE'
-
-                elif (sParameterDataType.upper() == 'INT'):
-                    sValue = '0'
-
-                elif (sParameterDataType.upper() == 'REAL'):
-                    sValue = '0.0'
-
-                elif (sParameterDataType.upper() == 'TIME'):
-                    sValue = 'T#0ms'
-
-                #--------------------------------------------------------------#
-                # Check if the parameter is a child device:                    #
-                #--------------------------------------------------------------#
-                try:
-                    query = cgSQL.sql[cgSQL.sqlCode.populateSFCParmsChild]
-                    c1.execute(query, (sClass, sParameter))
-                    data = c1.fetchone()
-                except:
-                    errorHandler(errProc, errorCode.cannotQuery,
-                                 cgSQL.sqlCode.populateSFCParmsChild, query, sClass + ', ' + '_' + sParameter + '%')
-
-                if (data is None):
-                    bIsChild = False
-                else:
-                    bIsChild = True
-
-                #--------------------------------------------------------------#
-                # Add the parameter to the SFC parameter table:                #
-                #--------------------------------------------------------------#
-                try:
-                    query = cgSQL.sql[cgSQL.sqlCode.populateSFCParmsInsert]
-                    c1.execute(query, (sClass, sSFC, sParameterType, sParameter,
-                                      sParameterBlock, sParameterDataType,
-                                      sValue, sParameterDescription, bIsChild))
-                except:
-                    errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.populateSFCParmsInsert, query,
-                                 sClass + ', ' + sSFC + ', ' + sParameterType + ', ' + sParameter + ', ' +
-                                 sParameterBlock + ', ' + sParameterDataType + ', ' +
-                                 sValue + ', ' + sParameterDescription + ', ' + bIsChild)
-
-                #--------------------------------------------------------------#
-                # Commit the changes the database:                             #
-                #--------------------------------------------------------------#
-                try:
-                    conn.commit()
-                except:
-                    errorHandler(errProc, errorCode.cannotCommit, query)
+        elif (sBuffer == 'BEGIN'):
+            sParameterType = 'DONE'
 
         #----------------------------------------------------------------------#
-        # Finished with the data import. Close the file:                       #
+        # Check if not reached the parameter definition section:               #
         #----------------------------------------------------------------------#
-        file.close()
+        if (sParameterType is None):
+            pass
+
+        #----------------------------------------------------------------------#
+        # Check if all parameter data types processed:                         #
+        #----------------------------------------------------------------------#
+        elif (sParameterType.upper() == 'DONE'):
+            #------------------------------------------------------------------#
+            # Don't need the rest of the file. Exit the loop:                  #
+            #------------------------------------------------------------------#
+            break
+
+        #----------------------------------------------------------------------#
+        # Check if a a user defined sequence parameter:                        #
+        #----------------------------------------------------------------------#
+        elif (sBuffer[:1] == '_'):
+            #------------------------------------------------------------------#
+            # Get the parameter data based on the definition code, for example:#
+            # _flowpath_WFI :BOOL ;   //flowpath_WFI/CS_WFI:                   #
+            #------------------------------------------------------------------#
+            sParameter = sBuffer[:sBuffer.find(':') - 1]
+            sParameter = sParameter.strip()
+            sParameterBlock = sParameter.upper()[1:]
+#            sParameterDataType = sBuffer[sBuffer.find(':') + 1:
+#                                         sBuffer.find(':') + 1 +
+#                                         sBuffer.find(';', sBuffer.find(':') + 1) - 1 - sBuffer.find(':') - 1]
+            sParameterDataType = sBuffer[sBuffer.find(':') + 1:sBuffer.find(';')]
+            sParameterDataType = sParameterDataType.strip()
+            sParameterDescription = sBuffer[-len(sBuffer) + sBuffer.find('/') + 2:]
+            sParameterDescription = sParameterDescription.strip()
+
+            #------------------------------------------------------------------#
+            # Set the code data type based on the actual data type:            #
+            #------------------------------------------------------------------#
+            sValue = ''
+            if (sParameterDataType.upper() == 'BOOL'):
+                sValue = 'FALSE'
+
+            elif (sParameterDataType.upper() == 'INT'):
+                sValue = '0'
+
+            elif (sParameterDataType.upper() == 'REAL'):
+                sValue = '0.0'
+
+            elif (sParameterDataType.upper() == 'TIME'):
+                sValue = 'T#0ms'
+
+            #------------------------------------------------------------------#
+            # Check if the parameter is a child device:                        #
+            #------------------------------------------------------------------#
+            try:
+                query = cgSQL.sql[cgSQL.sqlCode.checkIfChildParameter]
+                c1.execute(query, (sClass, sParameter))
+                data = c1.fetchone()
+            except:
+                errorHandler(errProc, errorCode.cannotQuery,
+                             cgSQL.sqlCode.checkIfChildParameter, query, sClass + ', ' + sParameter + '%')
+
+            if (data is None):
+                bIsChild = False
+            else:
+                bIsChild = True
+
+            #------------------------------------------------------------------#
+            # Add the parameter to the descendants parameter table:            #
+            #------------------------------------------------------------------#
+            try:
+                query = cgSQL.sql[cgSQL.sqlCode.insertGlobalParameters]
+                c1.execute(query, (sClass, sSFC, sParameterType, sParameter,
+                                  sParameterBlock, sParameterDataType,
+                                  sValue, sParameterDescription, bIsChild))
+            except:
+                errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.insertGlobalParameters, query,
+                             sClass + ', ' + sSFC + ', ' + sParameterType + ', ' + sParameter + ', ' +
+                             sParameterBlock + ', ' + sParameterDataType + ', ' +
+                             sValue + ', ' + sParameterDescription + ', ' + bIsChild)
+
+            #------------------------------------------------------------------#
+            # Commit the changes the database:                                 #
+            #------------------------------------------------------------------#
+            try:
+                conn.commit()
+            except:
+                errorHandler(errProc, errorCode.cannotCommit, query)
+
+    #--------------------------------------------------------------------------#
+    # Finished with the data import. Close the file:                           #
+    #--------------------------------------------------------------------------#
+    file.close()
 
 #------------------------------------------------------------------------------#
 # Call the main function:                                                      #
