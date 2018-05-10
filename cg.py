@@ -520,13 +520,19 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
     #--------------------------------------------------------------------------#
     # Get the list of instances for the template:                              #
     #--------------------------------------------------------------------------#
-    if (sTemplate == 'fcCall' or sTemplate == 'idb'):
+    if (sLevel == 'PG' or sLevel == 'BLK'):
         try:
-#            query = cgSQL.sql[cgSQL.sqlCode.createClassAll]
-            query = cgSQL.sql[cgSQL.sqlCode.CALL_LEVEL]
+            query = cgSQL.sql[cgSQL.sqlCode.createClassNone]
+            c.execute(query)
+        except:
+            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClassNone, query, 'no parameters')
+
+    elif (sTemplate == 'fcCall' or sTemplate == 'idb'):
+        try:
+            query = cgSQL.sql[cgSQL.sqlCode.createLevel]
             c.execute(query, (sLevel.upper(),))
         except:
-            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.CALL_LEVEL, query, sLevel.upper())
+            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createLevel, query, sLevel.upper())
 
     elif (sClass == 'IL'):
         gILTable = sNameOutput
@@ -544,25 +550,25 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
             except:
                 errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.NCRIL)
 
-    elif (bOne):
+    elif (sPrefix == 'ifb'):
         try:
-            query = cgSQL.sql[cgSQL.sqlCode.createClassOne]
+            query = cgSQL.sql[cgSQL.sqlCode.createInstancesForClass]
             c.execute(query, (sClass, sParent, sParent, sParent, sParent, sParent))
         except:
-            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClassOne, query, sClass + ', ' + sParent + ', ' + sParent + ', ' + sParent + ', ' + sParent)
+            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createInstancesForClass, query, sClass + ', ' + sParent + ', ' + sParent + ', ' + sParent + ', ' + sParent)
 
-    elif (sLevel == 'PG' or sLevel == 'BLK'):
+    elif (sPrefix == 'fb'):
         try:
-            query = cgSQL.sql[cgSQL.sqlCode.createClassNone]
-            c.execute(query)
+            query = cgSQL.sql[cgSQL.sqlCode.createClass]
+            c.execute(query, (sClass, ))
         except:
-            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClassNone, query, 'no parameters')
+            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClass, query, sClass)
     else:
         try:
-            query = cgSQL.sql[cgSQL.sqlCode.createClassAll]
+            query = cgSQL.sql[cgSQL.sqlCode.createClassesForLevel]
             c.execute(query, (sLevel.upper(),))
         except:
-            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClassAll, query, sLevel.upper())
+            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClassesForLevel, query, sLevel.upper())
 
     #--------------------------------------------------------------------------#
     # Check to see if the cursor contains any data:                            #
@@ -841,7 +847,7 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
             # no end tag:                                                      #
             #------------------------------------------------------------------#
             sTemplateAttrName = txtInstance[iTagBegin + 13:iTagEnd]
-            iTagAttrEnd = txtInstance.find('@@ATTR_END|' + sTemplateAttrName)
+            iTagAttrEnd = txtInstance.find('@@ATTR_END|' + sTemplateAttrName + '@@')
             if (iTagAttrEnd == -1):
                 errorHandler(errProc, errorCode.noEndPlaceholder, sTemplateAttrName, txtInstance)
 
@@ -1542,7 +1548,9 @@ def addParameterData(sClass, sSource, sParameterType, iParameterOrder,
     else:
         bIsChild = True
         sChildParameterAlias = data['childAlias']
-        sChildParameterAttribute = sParameter[len(sChildParameterAlias) + 1:]
+        sChildParameterAlias = sChildParameterAlias[1:]
+        sChildParameterAlias = sChildParameterAlias.upper()
+        sChildParameterAttribute = sParameter[len(sChildParameterAlias) + 2:]
         sChildParameterAttribute = sChildParameterAttribute.upper()
 
     #--------------------------------------------------------------------------#
