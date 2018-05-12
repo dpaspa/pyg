@@ -50,6 +50,7 @@ gInstance = ''
 gILTable = ''
 gLevel = ''
 gParent = ''
+gPrompt = ''
 gSelectParameter = ''
 gSelectSelection = ''
 gSFC = ''
@@ -366,10 +367,11 @@ def processLevel(sParent, sLevel, pbwt):
         sleep(0.01)
 
         #----------------------------------------------------------------------#
-        # Update the SFC user parameters in the descendants parameter list:    #
+        # Add the SFC and child parameters to the descendants parameter list:  #
         #----------------------------------------------------------------------#
         if (sLevel == 'EM' or sLevel == 'UN' or sLevel == 'PC'):
             addUserParametersSFC(sClass)
+            addUserParametersChild(sClass)
 
         #----------------------------------------------------------------------#
         # Create the instance FB (ifb) of the class:                           #
@@ -394,14 +396,25 @@ def processLevel(sParent, sLevel, pbwt):
         p.refresh()
 
     #--------------------------------------------------------------------------#
-    # Create the instance DBs for the level:                                   #
+    # Check if an interlock class. The interlocks are called directly from the #
+    # Main routine OB1:                                                        #
     #--------------------------------------------------------------------------#
-    createClass(sLevel, sParent, '', '', '', 'idb', 'idb' + sLevel + 's', False)
+    if (sLevel == 'IL'):
+        #----------------------------------------------------------------------#
+        # Create the critical interlock instance DB:                           #
+        #----------------------------------------------------------------------#
+        createClass(sLevel, sParent, '', '', '', 'idbIL', 'idb' + sLevel + 's', False)
+    else:
+        #----------------------------------------------------------------------#
+        # Must be a functional level and not an interlock class. Create the    #
+        # instance DBs for the functional levels:                              #
+        #----------------------------------------------------------------------#
+        createClass(sLevel, sParent, '', '', '', 'idb', 'idb' + sLevel + 's', False)
 
-    #--------------------------------------------------------------------------#
-    # Create fcCall to be called from OB1 and scan each instance:              #
-    #--------------------------------------------------------------------------#
-    createClass(sLevel, sParent, '', '', '', 'fcCall', 'fcCall' + sLevel + 's', False)
+        #----------------------------------------------------------------------#
+        # Create fcCall to be called from OB1 and scan each instance:          #
+        #----------------------------------------------------------------------#
+        createClass(sLevel, sParent, '', '', '', 'fcCall', 'fcCall' + sLevel + 's', False)
 
     #--------------------------------------------------------------------------#
     # Update the progress message:                                             #
@@ -520,7 +533,7 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
     #--------------------------------------------------------------------------#
     # Get the list of instances for the template:                              #
     #--------------------------------------------------------------------------#
-    if (sLevel == 'PG' or sLevel == 'BLK'):
+    if (sLevel == 'PG' or sLevel == 'BLK' or sTemplate == 'idbIL'):
         try:
             query = cgSQL.sql[cgSQL.sqlCode.createClassNone]
             c.execute(query)
@@ -689,12 +702,6 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
         if (sPrefix == 'fb' and sLevel == 'CM'):
             addUserParametersBlock(sNameOutput, txtData)
 
-        #----------------------------------------------------------------------#
-        # Update the child parameters in the descendants parameter list:       #
-        #----------------------------------------------------------------------#
-        if (sPrefix == 'fb' and (sLevel == 'EM' or sLevel == 'UN' or sLevel == 'PC')):
-            addUserParametersChild(sClass)
-
 #------------------------------------------------------------------------------#
 # Function: processTemplate                                                    #
 #                                                                              #
@@ -819,6 +826,7 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
     global gInstance
     global gLevel
     global gParent
+    global gPrompt
     global gSelectParameter
     global gSelectSelection
     global gSFC
@@ -899,6 +907,8 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
                     qparms[i] = gLevel
                 elif (qparms[i] == 'gParent'):
                     qparms[i] = gParent
+                elif (qparms[i] == 'gPrompt'):
+                    qparms[i] = gPrompt
                 elif (qparms[i] == 'gSelectParameter'):
                     qparms[i] = gSelectParameter
                 elif (qparms[i] == 'gSelectSelection'):
@@ -1012,6 +1022,9 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
 
                             elif (fld.upper() == 'INSTANCE'):
                                 gInstance = sValue
+
+                            elif (fld.upper() == 'CHILDPARAMETER'):
+                                gPrompt = sValue
 
                             elif (fld.upper() == 'SFC'):
                                 gSFC = sValue
@@ -1283,8 +1296,8 @@ def addUserParametersChild(sClass):
             sSource = sChildClass
             sParameterType = rowp['parameterType']
             iParameterOrder = rowp['parameterOrder']
-            sParameter = rowp['childParameter'] + '_' + rowp['parameterClass']
-            sParameterBlock = rowp['blockParameter'] + '_' + rowp['parameterClass']
+            sParameter = rowp['childParameter']
+            sParameterBlock = rowp['blockParameter']
             sParameterDataType = rowp['parameterDataType']
             sValue = rowp['parameterValue']
             sParameterDescription = rowp['parameterDescription']
