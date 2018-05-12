@@ -233,7 +233,12 @@ def main():
         query = cgSQL.sql[cgSQL.sqlCode.tblCreateGlobalParameter]
         c.execute(query)
     except:
-        errorHandler(errProc, errorCode.cannotCreateTable, query)
+        errorHandler(errProc, errorCode.cannotCreateTable, query, 'no parameters')
+
+    #--------------------------------------------------------------------------#
+    # Add the block level parameters from the tblClass_Parameters list:        #
+    #--------------------------------------------------------------------------#
+    addParameterClass()
 
     #--------------------------------------------------------------------------#
     # Get the progress weighting:                                              #
@@ -370,8 +375,8 @@ def processLevel(sParent, sLevel, pbwt):
         # Add the SFC and child parameters to the descendants parameter list:  #
         #----------------------------------------------------------------------#
         if (sLevel == 'EM' or sLevel == 'UN' or sLevel == 'PC'):
-            addUserParametersSFC(sClass)
-            addUserParametersChild(sClass)
+            addParametersSFC(sClass)
+#            addParametersChild(sClass)
 
         #----------------------------------------------------------------------#
         # Create the instance FB (ifb) of the class:                           #
@@ -554,14 +559,14 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
                 query = cgSQL.sql[cgSQL.sqlCode.CRIL]
                 c.execute(query)
             except:
-                errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.CRIL)
+                errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.CRIL, 'no parameters')
 
         elif (gILTable == 'NCRIL'):
             try:
                 query = cgSQL.sql[cgSQL.sqlCode.NCRIL]
                 c.execute(query)
             except:
-                errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.NCRIL)
+                errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.NCRIL, 'no parameters')
 
     elif (sPrefix == 'ifb'):
         try:
@@ -694,13 +699,6 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
         file = open(sFileNameOut, 'w')
         file.write(txtData)
         file.close()
-
-        #----------------------------------------------------------------------#
-        # Update the function block user parameters in the descendants         #
-        # parameter list if the CM class:                                      #
-        #----------------------------------------------------------------------#
-        if (sPrefix == 'fb' and sLevel == 'CM'):
-            addUserParametersBlock(sNameOutput, txtData)
 
 #------------------------------------------------------------------------------#
 # Function: processTemplate                                                    #
@@ -1190,7 +1188,7 @@ def defaultParameters(sParent, txtInstance):
         c.execute(query)
     except:
         errorHandler(errProc, errorCode.cannotQuery,
-                     cgSQL.sqlCode.defaultParameters, query, sParent)
+                     cgSQL.sqlCode.defaultParameters, query, 'no parameters')
 
     #--------------------------------------------------------------------------#
     # Process each row in the list of classes:                                 #
@@ -1217,29 +1215,64 @@ def defaultParameters(sParent, txtInstance):
     return txtInstance
 
 #------------------------------------------------------------------------------#
-# Function: addUserParametersBlock                                             #
+# Function: addParameterClass                                                  #
 #                                                                              #
 # Description:                                                                 #
-# Adds the user parameters from the function block code file.                  #
+# Adds the class parameters from the parameters list tblClass_Parameters.      #
 #------------------------------------------------------------------------------#
-# Calling parameters:                                                          #
-#                                                                              #
-# sClass                The class to process the code files for.               #
-# txtData               The file data to look get the parameters from.         #
-#------------------------------------------------------------------------------#
-def addUserParametersBlock(sClass, txtData):
+def addParameterClass():
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    errProc = addUserParametersBlock.__name__
+    errProc = addParameterClass.__name__
 
     #--------------------------------------------------------------------------#
-    # Get the list of user parameters which are inheritied from the parent:    #
+    # Declare use of the global sqlite cursor object:                          #
     #--------------------------------------------------------------------------#
-    addGlobalParameters(sClass, '', txtData, False)
+    global conn
+
+    #--------------------------------------------------------------------------#
+    # Get the list of parameters:                                              #
+    #--------------------------------------------------------------------------#
+    try:
+        c = conn.cursor()
+        query = cgSQL.sql[cgSQL.sqlCode.addParametersClass]
+        c.execute(query)
+    except:
+        errorHandler(errProc, errorCode.cannotQuery,
+                     cgSQL.sqlCode.addParametersClass, query, 'no parameters')
+
+    #--------------------------------------------------------------------------#
+    # Process each row in the list of parameters:                              #
+    #--------------------------------------------------------------------------#
+    for row in c:
+        #----------------------------------------------------------------------#
+        # Get the parameter data:                                              #
+        #----------------------------------------------------------------------#
+        sLevel = row['Level']
+        sClass = row['parameterClass']
+        sSource = row['parameterState']
+        sParameterType = row['parameterType']
+        iParameterIndex = row['parameterIndex']
+        sParameter = row['parameterName']
+        sParameterBlock = sParameter.upper()
+        sParameterDataType = row['parameterDataType']
+        sValue = ''
+        sParameterDescription = row['parameterDescription']
+        sChildParameterAlias = row['childParameterAlias']
+        sChildParameterAttribute = row['childParameterAttribute']
+#        sSFCParameter = row['sfcParameter']
+
+        #----------------------------------------------------------------------#
+        # Add the parameter to the global list:                                #
+        #----------------------------------------------------------------------#
+        addParameterData(sLevel, sClass, sSource, sParameterType, iParameterIndex,
+                         sParameter, sParameterBlock, sParameterDataType,
+                         sValue, sParameterDescription,
+                         sChildParameterAlias, sChildParameterAttribute, False)
 
 #------------------------------------------------------------------------------#
-# Function: addUserParametersChild                                             #
+# Function: addParametersChild                                                 #
 #                                                                              #
 # Description:                                                                 #
 # Adds the user parameters from the child function blocks code files.          #
@@ -1248,11 +1281,11 @@ def addUserParametersBlock(sClass, txtData):
 #                                                                              #
 # sClass                The parent class to process the code files for.        #
 #------------------------------------------------------------------------------#
-def addUserParametersChild(sClass):
+def addParametersChild(sClass):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    errProc = addUserParametersChild.__name__
+    errProc = addParametersChild.__name__
 
     #--------------------------------------------------------------------------#
     # Declare use of the global sqlite cursor object:                          #
@@ -1264,11 +1297,11 @@ def addUserParametersChild(sClass):
     #--------------------------------------------------------------------------#
     try:
         c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.addUserParametersChild]
+        query = cgSQL.sql[cgSQL.sqlCode.addParametersChild]
         c.execute(query, (sClass,))
     except:
         errorHandler(errProc, errorCode.cannotQuery,
-                     cgSQL.sqlCode.addUserParametersChild, query, sClass)
+                     cgSQL.sqlCode.addParametersChild, query, sClass)
 
     #--------------------------------------------------------------------------#
     # Process each row in the list of child devices:                           #
@@ -1306,12 +1339,12 @@ def addUserParametersChild(sClass):
             #------------------------------------------------------------------#
             # Add the parameter to the global list:                            #
             #------------------------------------------------------------------#
-            addParameterData(sClass, sSource, sParameterType, iParameterOrder,
+            addParameterData(gLevel, sClass, sSource, sParameterType, iParameterOrder,
                              sParameter, sParameterBlock, sParameterDataType,
                              sValue, sParameterDescription, False)
 
 #------------------------------------------------------------------------------#
-# Function: addUserParametersSFC                                               #
+# Function: addParametersSFC                                                   #
 #                                                                              #
 # Description:                                                                 #
 # Adds the user SFC parameters from the SFC function block code files for a    #
@@ -1321,11 +1354,11 @@ def addUserParametersChild(sClass):
 #                                                                              #
 # sClass                The class to process the SFC class code files for.     #
 #------------------------------------------------------------------------------#
-def addUserParametersSFC(sClass):
+def addParametersSFC(sClass):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    errProc = addUserParametersSFC.__name__
+    errProc = addParametersSFC.__name__
 
     #--------------------------------------------------------------------------#
     # Declare use of the global sqlite cursor object:                          #
@@ -1337,11 +1370,11 @@ def addUserParametersSFC(sClass):
     #--------------------------------------------------------------------------#
     try:
         c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.addUserParametersSFC]
+        query = cgSQL.sql[cgSQL.sqlCode.addParametersSFC]
         c.execute(query, (sClass, 'NONE'))
     except:
         errorHandler(errProc, errorCode.cannotQuery,
-                     cgSQL.sqlCode.addUserParametersSFC, query, sClass + ', ' + 'NONE')
+                     cgSQL.sqlCode.addParametersSFC, query, sClass + ', ' + 'NONE')
 
     #--------------------------------------------------------------------------#
     # Process each row in the list of classes:                                 #
@@ -1365,26 +1398,27 @@ def addUserParametersSFC(sClass):
         #----------------------------------------------------------------------#
         with open(sFileNameIn, 'r') as content_file:
             txtData = content_file.read()
-            addGlobalParameters(sClass, sSource, txtData, True)
+            addCodeFileParameters(gLevel, sClass, sSource, txtData, True)
 
 #------------------------------------------------------------------------------#
-# Function: addGlobalParameters                                                #
+# Function: addCodeFileParameters                                              #
 #                                                                              #
 # Description:                                                                 #
 # Updates the internal table pGlobal with parameters from the awl code file.   #
 #------------------------------------------------------------------------------#
 # Calling parameters:                                                          #
 #                                                                              #
+# sLevel                The level of the parameter object.                     #
 # sClass                The class to process the instances for.                #
 # sSource               The source file name of the block class module.        #
 # txtData               The file content to get the parameters from.           #
 # bIsSFC                TRUE if a an SFC parameter.                            #
 #------------------------------------------------------------------------------#
-def addGlobalParameters(sClass, sSource, txtData, bIsSFC):
+def addCodeFileParameters(sLevel, sClass, sSource, txtData, bIsSFC):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    errProc = addGlobalParameters.__name__
+    errProc = addCodeFileParameters.__name__
 
     #--------------------------------------------------------------------------#
     # Declare use of the global sqlite cursor object:                          #
@@ -1498,9 +1532,9 @@ def addGlobalParameters(sClass, sSource, txtData, bIsSFC):
             #------------------------------------------------------------------#
             # Add the parameter to the global list:                            #
             #------------------------------------------------------------------#
-            addParameterData(sClass, sSource, sParameterType, iParameterOrder,
+            addParameterData(sLevel, sClass, sSource, sParameterType, iParameterOrder,
                              sParameter, sParameterBlock, sParameterDataType,
-                             sValue, sParameterDescription, bIsSFC)
+                             sValue, sParameterDescription, '', '', bIsSFC)
 
 #------------------------------------------------------------------------------#
 # Function: addParameterData                                                   #
@@ -1510,6 +1544,7 @@ def addGlobalParameters(sClass, sSource, txtData, bIsSFC):
 #------------------------------------------------------------------------------#
 # Calling parameters:                                                          #
 #                                                                              #
+# sLevel                The level of the parameter object.                     #
 # sClass                The class to process the instances for.                #
 # sSource               The source SFC file name of the block class module.    #
 # sParameterType        The VAR type of the parameter.                         #
@@ -1519,11 +1554,14 @@ def addGlobalParameters(sClass, sSource, txtData, bIsSFC):
 # sParameterDataType    The primitive data type of the parameter.              #
 # sValue                The parameter value.                                   #
 # sParameterDescription The description of the parameter.                      #
+# sChildParameterAlias  Any child device alias.                                #
+# sChildParameterAttribute  Any child device attribute.                        #
 # bIsSFC                TRUE if an SFC parameter.                              #
 #------------------------------------------------------------------------------#
-def addParameterData(sClass, sSource, sParameterType, iParameterOrder,
+def addParameterData(sLevel, sClass, sSource, sParameterType, iParameterOrder,
                      sParameter, sParameterBlock, sParameterDataType,
-                     sValue, sParameterDescription, bIsSFC):
+                     sValue, sParameterDescription, sChildParameterAlias,
+                     sChildParameterAttribute, bIsSFC):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
@@ -1541,30 +1579,60 @@ def addParameterData(sClass, sSource, sParameterType, iParameterOrder,
     c1 = conn.cursor()
 
     #--------------------------------------------------------------------------#
-    # Check if the parameter is a child device:                                #
+    # Check if an alias parameter if from the parameter class list:            #
     #--------------------------------------------------------------------------#
+    if (len(sChildParameterAlias) == 0):
+        s = sParameter
+    else:
+            s = '_' + sChildParameterAlias.lower()
+
+        #--------------------------------------------------------------------------#
+        # Check if the parameter is a child device:                                #
+        #--------------------------------------------------------------------------#
     try:
         query = cgSQL.sql[cgSQL.sqlCode.checkIfChildParameter]
-        c.execute(query, (sClass, sParameter))
+        c.execute(query, (sClass, s))
         data = c.fetchone()
     except:
         errorHandler(errProc, errorCode.cannotQuery,
-                     cgSQL.sqlCode.checkIfChildParameter, query, sClass + ', ' + sParameter + '%')
+                     cgSQL.sqlCode.checkIfChildParameter, query, sClass + ', ' + s + '%')
 
     #--------------------------------------------------------------------------#
     # Child device if exists as a child alias:                                 #
     #--------------------------------------------------------------------------#
     if (data is None):
         bIsChild = False
-        sChildParameterAlias = ''
-        sChildParameterAttribute = ''
     else:
         bIsChild = True
-        sChildParameterAlias = data['childAlias']
-        sChildParameterAlias = sChildParameterAlias[1:]
-        sChildParameterAlias = sChildParameterAlias.upper()
-        sChildParameterAttribute = sParameter[len(sChildParameterAlias) + 2:]
-        sChildParameterAttribute = sChildParameterAttribute.upper()
+        if (len(sChildParameterAlias) == 0):
+            sChildParameterAlias = data['childAlias']
+            sChildParameterAlias = sChildParameterAlias[1:]
+            sChildParameterAlias = sChildParameterAlias.upper()
+            sChildParameterAttribute = sParameter[len(sChildParameterAlias) + 2:]
+            sChildParameterAttribute = sChildParameterAttribute.upper()
+
+    #--------------------------------------------------------------------------#
+    # Check if the child attribute is in the mode and command structure:       #
+    #--------------------------------------------------------------------------#
+    if (sChildParameterAttribute == 'ME'or
+        sChildParameterAttribute == 'OWNER' or
+        sChildParameterAttribute == 'SERIALNUM' or
+        sChildParameterAttribute == 'isBatch' or
+        sChildParameterAttribute == 'MODE' or
+        sChildParameterAttribute == 'CMD' or
+        sChildParameterAttribute == 'STATE' or
+        sChildParameterAttribute == 'CMD_SAFE' or
+        sChildParameterAttribute == 'INTERLOCK' or
+        sChildParameterAttribute == 'CRIL' or
+        sChildParameterAttribute == 'NCRIL' or
+        sChildParameterAttribute == 'MAN_OVERRIDE' or
+        sChildParameterAttribute == 'isAvailable' or
+        sChildParameterAttribute == 'modeAUTO' or
+        sChildParameterAttribute == 'modeMANUAL' or
+        sChildParameterAttribute == 'modeOOS'):
+        bIsMC = True
+    else:
+        bIsMC = False
 
     #--------------------------------------------------------------------------#
     # Check if the parameter is an SFC event parameter of either Prompt,       #
@@ -1603,22 +1671,23 @@ def addParameterData(sClass, sSource, sParameterType, iParameterOrder,
     #--------------------------------------------------------------------------#
     try:
         query = cgSQL.sql[cgSQL.sqlCode.insertGlobalParameters]
-        c1.execute(query, (sClass, sSource, sParameterType, iParameterOrder,
+        c1.execute(query, (sLevel, sClass, sSource, sParameterType, iParameterOrder,
                           sParameter, sParameterBlock,
                           sChildParameterAlias, sChildParameterAttribute,
                           sParameterDataType, sValue, sParameterDescription,
-                          bIsSFC, bIsChild,
+                          bIsSFC, bIsChild, bIsMC,
                           isEventConfirm, isEventPrompt, isEventLogMsg,
                           isEventLogReal, isEventLogTime,
                           isEventDataReal, isEventDataTime))
     except:
         errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.insertGlobalParameters, query,
-                     sClass + ', ' + sSource + ', ' + sParameterType + ', ' +
+                     sLevel + ', ' + sClass + ', ' +
+                     sSource + ', ' + sParameterType + ', ' +
                      str(iParameterOrder) + ', ' + sParameter + ', ' +
                      sParameterBlock + ', ' + sChildParameterAlias + ', ' +
                      sChildParameterAttribute + ', ' + sParameterDataType + ', ' +
                      str(sValue) + ', ' + sParameterDescription + ', ' +
-                     str(bIsSFC) + ', ' + str(bIsChild) + ', ' +
+                     str(bIsSFC) + ', ' + str(bIsChild) + ', ' + str(bIsMC) + ', ' +
                      str(isEventConfirm) + ', ' + str(isEventPrompt) + ', ' +
                      str(isEventLogMsg) + ', ' +
                      str(isEventLogReal) + ', ' + str(isEventLogTime) + ', ' +

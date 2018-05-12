@@ -31,8 +31,10 @@ class sqlCode(Enum):
     documentInfo                       = -199
     checkIfChildParameter              = -8
     insertGlobalParameters             = -9
-    addUserParametersChild             = -1110
-    addUserParametersSFC               = -10
+    addParametersClass                 = -814
+    addParametersChild                 = -1110
+    addParametersSelect                = -815
+    addParametersSFC                   = -10
     getUserParametersChild             = -1111
     processLevel                       = -11
     processLevelCount                  = -12
@@ -62,7 +64,6 @@ class sqlCode(Enum):
     INSTANCE_SFC                       = -622
     LINK                               = -623
     UNIQUEID                           = -23
-    PARAMETER                          = -814
     PARAMETER_ACQUIRE                  = -815
     PARAMETER_INDEX_MAX                = -816
     PARENT                             = -24
@@ -93,11 +94,15 @@ class sqlCode(Enum):
     pChildIN                           = -350
     pChildIN_OUT                       = -351
     pChildOUT                          = -352
+    pClassIN                           = -153
+    pClassIN_OUT                       = -154
+    pClassOUT                          = -155
     pSFC                               = -359
     pSFCChild                          = -965
     pSFCChildIN                        = -365
     pSFCChildIN_OUT                    = -366
     pSFCChildOUT                       = -367
+    pEventExists                       = -243
     pEventConfirm                      = -353
     pEventConfirmExists                = -253
     pEventConfirmNoExists              = -753
@@ -138,7 +143,6 @@ prm = {
     sqlCode.INSTANCE_SFC               : [],
     sqlCode.LINK                       : ['gInstance'],
     sqlCode.UNIQUEID                   : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
-    sqlCode.PARAMETER                  : ['gClass'],
     sqlCode.PARAMETER_ACQUIRE          : ['gClass', 'gState'],
     sqlCode.PARAMETER_INDEX_MAX        : ['gClass'],
     sqlCode.PARENT                     : [],
@@ -156,6 +160,7 @@ prm = {
     sqlCode.STATE_TIMER                : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.TAGS                       : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.TIMER                      : ['gClass'],
+    sqlCode.pEventExists               : ['gClass'],
     sqlCode.pEventConfirm              : ['gClass'],
     sqlCode.pEventConfirmExists        : ['gClass'],
     sqlCode.pEventConfirmNoExists      : ['gClass', 'gPrompt'],
@@ -174,6 +179,9 @@ prm = {
     sqlCode.pChildIN                   : ['gClass'],
     sqlCode.pChildIN_OUT               : ['gClass'],
     sqlCode.pChildOUT                  : ['gClass'],
+    sqlCode.pClassIN                   : ['gClass'],
+    sqlCode.pClassIN_OUT               : ['gClass'],
+    sqlCode.pClassOUT                  : ['gClass'],
 #    sqlCode.pSFCListIN                 : ['gSFC'],
 #    sqlCode.pSFCListIN_OUT             : ['gSFC'],
 #    sqlCode.pSFCListOUT                : ['gSFC'],
@@ -514,10 +522,6 @@ sql = {
                                                  'I.GGGParent = ?) '
                                           'ORDER BY I.[Level], I.Instance'
                                          ),
-    sqlCode.PARAMETER                  : ('SELECT * '
-                                          'FROM tblClass_Parameter '
-                                          'ORDER BY parameterName'
-                                         ), # gClass
     sqlCode.PARAMETER_ACQUIRE          : ('SELECT parameterName, '
                                                  'childClass, '
                                                  'printf("%d", parameterIndex) AS parameterIndex, '
@@ -688,15 +692,31 @@ sql = {
                                           'WHERE [Class] = ? '
                                           'ORDER BY Parameter'
                                          ), # gClass
-    sqlCode.SELVALUE                   : ('SELECT * '
-                                          'FROM tblClass_Selection '
-                                          'WHERE [Class] = ? AND '
-                                                'Parameter = ? AND '
-                                                'Selection = ? '
-                                          'ORDER BY Parameter, '
-                                                'Selection, '
-                                                'SelectionValue'
-                                          ), # gClass, gSelectParameter , gSelectSelection
+    sqlCode.SELVALUE                   : ('SELECT S.Level, '
+                                                 'S.Class, '
+                                                 'S.Parameter, '
+                                                 'S.Selection, '
+                                                 'S.Description, '
+                                                 'V.selectionIndex, '
+                                                 'V.selectionValue '
+                                          'FROM tblClass_Selection AS S '
+                                          'INNER JOIN tblClass_SelectionValues AS V '
+                                          'ON S.Key = V.Key '
+                                          'WHERE S.Class = ? AND '
+                                                'S.Parameter = ? AND '
+                                                'S.Selection = ? '
+                                          'ORDER BY S.Level, S.Class, S.Parameter, '
+                                                   'S.Selection, V.selectionValue'
+                                         ), # gClass, gSelectParameter , gSelectSelection
+#    sqlCode.SELVALUE                   : ('SELECT * '
+#                                          'FROM tblClass_Selection '
+#                                          'WHERE [Class] = ? AND '
+#                                                'Parameter = ? AND '
+#                                                'Selection = ? '
+#                                          'ORDER BY Parameter, '
+#                                                'Selection, '
+#                                                'SelectionValue'
+#                                          ), # gClass, gSelectParameter , gSelectSelection
     sqlCode.SFC                        : ('SELECT * '
                                           'FROM tblClass_State '
                                           'WHERE [Class] = ? AND '
@@ -829,15 +849,28 @@ sql = {
                                                'LIKE substr(?, 1, length(childAlias) + 1) || "%"'
                                          ), # gClass, sParameter
     sqlCode.insertGlobalParameters     : ('INSERT INTO pGlobal '
-                                          'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                                          'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
                                          ),
-    sqlCode.addUserParametersChild     : ('SELECT childAlias, '
+    sqlCode.addParametersClass         : ('SELECT * '
+                                          'FROM tblClass_Parameter '
+                                          'ORDER BY parameterName'
+                                         ),
+    sqlCode.addParametersChild         : ('SELECT childAlias, '
                                                  'childAliasClass '
                                           'FROM tblClass_Child '
                                           'WHERE [Class] = ? '
                                           'ORDER BY childAlias'
                                          ),
-    sqlCode.addUserParametersSFC       : ('SELECT * '
+    sqlCode.addParametersSelect       : ('SELECT [Level] '
+                                                 '[Class], '
+                                                 'Parameter, '
+                                                 'Selection, '
+                                                 'Description '
+                                          'FROM tblClass_Selection '
+                                          'ORDER BY [Level], [Class], Parameter, '
+                                                   'Selection'
+                                         ), # gClass
+    sqlCode.addParametersSFC           : ('SELECT * '
                                           'FROM tblClass_State '
                                           'WHERE [Class] = ? '
                                                  'AND upper(SFC) != ? '
@@ -850,6 +883,7 @@ sql = {
                                          ), # gClass
     sqlCode.tblCreateGlobalParameter   : ('CREATE TABLE IF NOT EXISTS '
                                           'pGlobal ('
+                                                 'Level text NOT NULL, '
                                                  'parameterClass text NOT NULL, '
                                                  'parameterSource text, '
                                                  'parameterType text NOT NULL, '
@@ -863,6 +897,7 @@ sql = {
                                                  'parameterDescription text, '
                                                  'isSFC boolean, '
                                                  'isChild boolean, '
+                                                 'isMC boolean, '
                                                  'isEventConfirm boolean, '
                                                  'isEventPrompt boolean, '
                                                  'isEventLogMsg boolean, '
@@ -871,6 +906,15 @@ sql = {
                                                  'isEventDataReal boolean, '
                                                  'isEventDataTime boolean)'
                                          ),
+    sqlCode.pEventExists               : ('SELECT isSFC '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                 'isSFC = 1 AND '
+                                                 '(isEventPrompt = 1 OR '
+                                                 'isEventLogMsg = 1 OR '
+                                                 'isEventLogReal = 1) '
+                                          'LIMIT 1'
+                                         ), # gClass
     sqlCode.pEventConfirm              : ('SELECT *, '
                                                  'Replace(childParameter,"_confirm",".confirm") AS dbEventParameter '
                                           'FROM pGlobal '
@@ -1215,6 +1259,30 @@ sql = {
                                           'ORDER BY P.parameterOrder, '
                                                  'P.parameterSource, '
                                                  'P.childParameter'
+                                         ), # gClass
+    sqlCode.pClassIN                   : ('SELECT DISTINCT childParameter, '
+                                                 'parameterDataType '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                'parameterType = "VAR_INPUT" AND '
+                                                'isSFC = 0 AND isMC = 0 '
+                                          'ORDER BY childParameter'
+                                         ), # gClass
+    sqlCode.pClassIN_OUT               : ('SELECT DISTINCT childParameter, '
+                                                 'parameterDataType '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                'parameterType = "VAR_IN_OUT" AND '
+                                                'isSFC = 0 AND isMC = 0 '
+                                          'ORDER BY childParameter'
+                                         ), # gClass
+    sqlCode.pClassOUT                  : ('SELECT DISTINCT childParameter, '
+                                                 'parameterDataType '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                'parameterType = "VAR_OUTPUT" AND '
+                                                'isSFC = 0 AND isMC = 0 '
+                                          'ORDER BY childParameter'
                                          ), # gClass
 #    sqlCode.pChildIN_OUT               : ('SELECT DISTINCT S.Class, '
 #                                                 'S.State, '
