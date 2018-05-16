@@ -145,7 +145,7 @@ def main():
     #--------------------------------------------------------------------------#
     wbName = args['config']
     if not os.path.exists(wbName):
-        errorHandler(self.errProc, errorCode.filenotExist, wbName)
+        errorHandler(errProc, errorCode.filenotExist, wbName)
 
     #--------------------------------------------------------------------------#
     # Copy it to a new file so the base spreadsheet cannot be affected:        #
@@ -169,26 +169,27 @@ def main():
     try:
         xls2db(wbNameDB, dbName)
     except:
-        errorHandler(self.errProc, errorCode.cannotConvertWorkbook, wbNameDB, dbName)
+        errorHandler(errProc, errorCode.cannotConvertWorkbook, wbNameDB, dbName)
 
     #--------------------------------------------------------------------------#
     # Connect to the new persistent sqlite database file:                      #
     #--------------------------------------------------------------------------#
+    conn = ''
     try:
         conn = sqlite3.connect(dbName)
         conn.row_factory = sqlite3.Row
     except:
-        errorHandler(self.errProc, errorCode.cannotConnectDB, dbName)
+        errorHandler(errProc, errorCode.cannotConnectDB, dbName)
 
     #--------------------------------------------------------------------------#
-    # Create the SFC Parameters table:                                         #
+    # Create the global parameters table:                                      #
     #--------------------------------------------------------------------------#
     try:
         c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.createParameterSFC]
+        query = cgSQL.sql[cgSQL.sqlCode.tblCreateGlobalParameter]
         c.execute(query)
     except:
-        errorHandler(self.errProc, errorCode.cannotCreateTable, query)
+        errorHandler(errProc, errorCode.cannotCreateTable, query, 'no parameters')
 
     #--------------------------------------------------------------------------#
     # Create the base parent document. Don't know if will have children yet:   #
@@ -214,14 +215,14 @@ def main():
         # is defined for a parent document:                                    #
         #----------------------------------------------------------------------#
         if (args['dataRecord'] is None):
-            errorHandler(self.errProc, errorCode.noRecordDocument)
+            errorHandler(errProc, errorCode.noRecordDocument)
         sFieldRecord = args['dataRecord']
 
         #----------------------------------------------------------------------#
         # Get the child record key:                                            #
         #----------------------------------------------------------------------#
         if (args['key'] is None):
-            errorHandler(self.errProc, errorCode.noChildKey)
+            errorHandler(errProc, errorCode.noChildKey)
         sFieldKey = args['key']
         sFieldKey = sFieldKey.upper()
 
@@ -514,7 +515,6 @@ class gDoc(object):
                     self.remove_row(self.currentTable, self.currentRow)
                     self.currentRow = self.currentTable.rows[0]
                     query = cgSQL.sql[cgSQL.sqlCode.VERHIST]
-                    print(query)
                     self.tableAddRows(query)
                 else:
                     #----------------------------------------------------------#
