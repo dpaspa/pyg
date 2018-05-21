@@ -22,10 +22,11 @@ class sqlCode(Enum):
     createClass                        = -3
     createClassesForLevel              = -4
     createClassNone                    = -5
-    createInstancesForClass            = -6
-    createLevel                        = -7
-    createParameterSFC                 = -8
-    createProgramFiles                 = -9
+    createInstancesGlobal              = -6
+    GLOBAL_INSTANCE                    = -7
+    createLevel                        = -8
+    createParameterSFC                 = -9
+    createProgramFiles                 = -10
     createProgramFilesCount            = -20
     defaultParameters                  = -21
     documentInfo                       = -22
@@ -47,17 +48,21 @@ class sqlCode(Enum):
     ANALOG_EMBED                       = -46
     callList                           = -47
     callListExists                     = -48
-    callListExistsCRIL                 = -49
+    callListExistsGlobal               = -49
+    callListExistsCRIL                 = -50
     callListExistsNCRIL                = -60
     CHILD                              = -61
-    CHILD_ACQUIRE                      = -62
-    CHILD_INDEX_MAX                    = -63
-    CHILD_INIT_COMMAND                 = -64
-    CHILD_INSTANCE                     = -65
-    CRIL                               = -67
-    CRIL_EXISTS                        = -68
-    CRIL_INSTANCE                      = -69
-    NCRIL                              = -70
+    CHILD_ACQUIRED                     = -62
+    CHILD_ACQUIRE_REQ                  = -63
+    CHILD_INDEX_MAX                    = -64
+    CHILD_INIT_COMMAND                 = -65
+    CHILD_INIT_COMMAND_FALSE           = -66
+    CHILD_INSTANCE                     = -67
+    CHILD_INSTANCE_BIND                = -68
+    CRIL                               = -69
+    CRIL_EXISTS                        = -70
+    CRIL_INSTANCE                      = -71
+    NCRIL                              = -72
     NCRIL_EXISTS                       = -80
     NCRIL_INSTANCE                     = -81
     HYGIENE                            = -82
@@ -145,19 +150,24 @@ prm = {
     sqlCode.ANALOG_EMBED               : ['gInstance'],
     sqlCode.callList                   : ['gLevel'],
     sqlCode.callListExists             : ['gClass', 'gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
+    sqlCode.callListExistsGlobal       : ['gClass'],
     sqlCode.callListExistsCRIL         : [],
     sqlCode.callListExistsNCRIL        : [],
-    sqlCode.CHILD                      : ['gClass', 'gClass'],
-    sqlCode.CHILD_ACQUIRE              : ['gClass', 'gState'],
+    sqlCode.CHILD                      : ['gClass', 'gClass', 'gClass'],
+    sqlCode.CHILD_ACQUIRED             : ['gClass', 'gState'],
+    sqlCode.CHILD_ACQUIRE_REQ          : ['gClass', 'gState'],
     sqlCode.CHILD_INDEX_MAX            : ['gClass'],
     sqlCode.CHILD_INIT_COMMAND         : ['gClass', 'gState'],
-    sqlCode.CHILD_INSTANCE             : ['gInstance', 'gClass'],
+    sqlCode.CHILD_INIT_COMMAND_FALSE   : ['gClass', 'gState'],
+    sqlCode.CHILD_INSTANCE             : ['gInstance', 'gParent', 'gParent', 'gParent', 'gClass', 'gClass'],
+    sqlCode.CHILD_INSTANCE_BIND        : ['gInstance', 'gParent', 'gParent', 'gParent', 'gClass', 'gState'],
     sqlCode.CRIL                       : [],
     sqlCode.CRIL_EXISTS                : ['gInstance'],
     sqlCode.CRIL_INSTANCE              : ['gInstance'],
     sqlCode.NCRIL                      : [],
     sqlCode.NCRIL_EXISTS               : ['gInstance'],
     sqlCode.NCRIL_INSTANCE             : ['gInstance'],
+    sqlCode.GLOBAL_INSTANCE            : ['gClass'],
     sqlCode.HYGIENE                    : ['gClass'],
     sqlCode.INSTANCE_ALL               : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.INSTANCE_BLK               : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
@@ -180,7 +190,7 @@ prm = {
     sqlCode.SFC                        : ['gClass'],
     sqlCode.STATE                      : ['gClass'],
     sqlCode.STATE_TIMER                : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
-    sqlCode.TAGS                       : ['gParent'],
+    sqlCode.TAGS                       : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.TIMER                      : ['gClass'],
     sqlCode.pEventExists               : ['gClass'],
     sqlCode.pEventConfirm              : ['gClass'],
@@ -263,7 +273,7 @@ sql = {
                                          ),
     sqlCode.createClassNone            : ('SELECT 1'
                                          ),
-    sqlCode.createInstancesForClass    : ('SELECT printf("%d",I.ID) AS ID, '
+    sqlCode.createInstancesGlobal      : ('SELECT printf("%d",I.ID) AS ID, '
                                                  'I.[Level], '
                                                  'I.Instance, '
                                                  'I.[Class], '
@@ -287,6 +297,25 @@ sql = {
                                                  'substr(I.Level, 1, 1) != "V" '
                                           'ORDER BY I.Instance'
                                          ),
+    sqlCode.GLOBAL_INSTANCE            : ('SELECT printf("%d",I.ID) AS ID, '
+                                                 'I.[Level], '
+                                                 'I.Instance, '
+                                                 'I.[Class], '
+                                                 'I.Description, '
+                                                 'I.Parent, '
+                                                 'I.ParentID, '
+                                                 'I.ParentClass, '
+                                                 'I.GParent, '
+                                                 'I.GGParent, '
+                                                 'I.GGGParent, '
+                                                 'printf("%d", I.NC) AS NC, '
+                                                 'C.Description AS ClassDescription '
+                                          'FROM tblInstance AS I LEFT JOIN '
+                                                  'tblClass AS C ON I.ClassID = C.ID '
+                                          'WHERE I.[Class] = ? AND '
+                                                 'substr(I.Level, 1, 1) != "V" '
+                                          'ORDER BY I.Instance'
+                                         ),
     sqlCode.createLevel                : ('SELECT [Level] '
                                           'FROM tblClass '
                                           'WHERE upper([Level]) = ? '
@@ -306,6 +335,11 @@ sql = {
                                                  'GParent = ? OR '
                                                  'GGParent = ? OR '
                                                  'GGGParent = ?) '
+                                          'LIMIT 1'
+                                         ),
+    sqlCode.callListExistsGlobal       : ('SELECT ID '
+                                          'FROM tblInstance '
+                                          'WHERE [Class] = ? '
                                           'LIMIT 1'
                                          ),
     sqlCode.callListExistsCRIL         : ('SELECT Instance '
@@ -401,17 +435,31 @@ sql = {
                                           'INNER JOIN tblClass_ChildStateValues AS S ON '
                                                  'C.childKey = S.childKey '
                                           'WHERE C.Class = ? AND '
+                                                 'S.Class = ? AND '
                                           'S.State = (SELECT [State] FROM tblClass_State WHERE Class = ? LIMIT 1) '
                                           'ORDER BY cast(childIndex as Int)'
                                          ), # gClass
-    sqlCode.CHILD_ACQUIRE              : ('SELECT childAlias, '
+    sqlCode.CHILD_ACQUIRED             : ('SELECT childAlias, '
                                                  'childClass, '
                                                  'printf("%d", childIndex) AS childIndex, '
                                                  'childAlias as childAliasBlock, '
                                                  'childAcquireStatement '
                                           'FROM tblClass_ChildStateValues '
-                                          'WHERE [Class] = ? AND [State] = ? '
-                                                 'AND childAcquire = "TRUE" '
+                                          'WHERE [Class] = ? AND '
+                                                 '[State] = ? AND '
+                                                 '(childAcquire = "TRUE" OR '
+                                                 'childAcquire = "OWNER") '
+                                          'ORDER BY childAlias'
+                                         ), # gClass, gState
+    sqlCode.CHILD_ACQUIRE_REQ          : ('SELECT childAlias, '
+                                                 'childClass, '
+                                                 'printf("%d", childIndex) AS childIndex, '
+                                                 'childAlias as childAliasBlock, '
+                                                 'childAcquireStatement '
+                                          'FROM tblClass_ChildStateValues '
+                                          'WHERE [Class] = ? AND '
+                                                 '[State] = ? AND '
+                                                 'childAcquire = "TRUE" '
                                           'ORDER BY childAlias'
                                          ), # gClass, gState
     sqlCode.CHILD_INDEX_MAX            : ('SELECT printf("%d", MAX(childIndex)) AS childIndexMax '
@@ -427,8 +475,19 @@ sql = {
                                                  'falseStatement, '
                                                  'falseCommand '
                                           'FROM tblClass_ChildStateValues '
-                                          'WHERE [Class] = ? AND State = ? '
+                                          'WHERE [Class] = ? AND '
+                                                 'State = ? AND '
+                                                 '(childAcquire = "TRUE" OR '
+                                                 'childAcquire = "OWNER") '
                                           'ORDER BY childAlias'
+                                         ), # gClass, gState
+    sqlCode.CHILD_INIT_COMMAND_FALSE   : ('SELECT childAlias '
+                                          'FROM tblClass_ChildStateValues '
+                                          'WHERE [Class] = ? AND '
+                                                 'State = ? AND '
+                                                 '(childAcquire = "TRUE" OR '
+                                                 'childAcquire = "OWNER") AND '
+                                                 'length(falseStatement) > 0'
                                          ), # gClass, gState
     sqlCode.CHILD_INSTANCE             : ('SELECT C.childAlias, '
                                                  'I.Class AS childClass, '
@@ -437,9 +496,33 @@ sql = {
                                                  'I.Description AS childDescription '
                                           'FROM tblClass_ChildStateValues AS C '
                                           'INNER JOIN tblInstance AS I ON '
-                                                 'C.childKey = I.childKey '
-                                          'WHERE I.Parent = ? AND '
-                                          'C.State = (SELECT [State] FROM tblClass_State WHERE Class = ? LIMIT 1) '
+                                                 'C.childKey = I.childKey AND '
+                                                 '(I.Parent = ? OR '
+                                                 '(I.OwnerID = 0 AND '
+                                                 '(I.GParent = ? OR '
+                                                 'I.GGParent = ? OR '
+                                                 'I.GGGParent = ?))) '
+                                          'WHERE C.Class = ? AND '
+                                                 'C.State = (SELECT [State] FROM tblClass_State WHERE Class = ? LIMIT 1) '
+                                          'ORDER BY cast(childIndex as Int)'
+                                         ), # gInstance
+    sqlCode.CHILD_INSTANCE_BIND        : ('SELECT C.childAlias, '
+                                                 'I.Class AS childClass, '
+                                                 'C.conditionStatement, '
+                                                 'printf("%d", C.childIndex) AS childIndex, '
+                                                 'printf("%d", C.childBind) AS childBind, '
+                                                 'I.Instance AS childInstance '
+                                          'FROM tblClass_ChildStateValues AS C '
+                                          'INNER JOIN tblInstance AS I ON '
+                                                 'C.childKey = I.childKey AND '
+                                                 '(I.Parent = ? OR '
+                                                 '(I.OwnerID = 0 AND '
+                                                 '(I.GParent = ? OR '
+                                                 'I.GGParent = ? OR '
+                                                 'I.GGGParent = ?))) '
+                                          'WHERE C.Class = ? AND '
+                                                 'C.State = ? AND '
+                                                 'length(C.childBind) > 0 '
                                           'ORDER BY cast(childIndex as Int)'
                                          ), # gInstance
     sqlCode.CRIL                       : ('SELECT DISTINCT Instance, Description '
@@ -806,14 +889,14 @@ sql = {
                                                  'upper(timerTransition) = "YES" '
                                           'ORDER BY I.[Level], Instance'
                                          ),
-    sqlCode.TAGS                       : ('SELECT CM.Instance || "-" || IO.Mnemonic AS Symbol, '
-                                                 'CM.Instance AS CMTag, '
-                                                 'CM.Description AS CMDescription, '
-                                                 'CM.[Class] AS CMClass, '
-                                                 'CM.Parent, '
-                                                 'CM.GParent, '
-                                                 'CM.GGParent, '
-                                                 'CM.GGGParent, '
+    sqlCode.TAGS                       : ('SELECT I.Instance || "-" || IO.Mnemonic AS Symbol, '
+                                                 'I.Instance AS CMTag, '
+                                                 'I.Description AS CMDescription, '
+                                                 'I.[Class] AS CMClass, '
+                                                 'I.Parent, '
+                                                 'I.GParent, '
+                                                 'I.GGParent, '
+                                                 'I.GGGParent, '
                                                  'IO.Mnemonic, '
                                                  'M.Address,'
                                                  'IO.Description AS IODescription, '
@@ -835,12 +918,16 @@ sql = {
                                                  'IO.dInstruction, '
                                                  'IO.dVerify, '
                                                  'IO.dResult '
-                                          'FROM tblInstance AS CM '
-                                          'LEFT JOIN tblClass_IO AS IO ON CM.[Class] = IO.[Class] '
-                                          'LEFT JOIN tblIOMaster AS M ON CM.Instance || "-" || IO.Mnemonic = M.Symbol '
-                                          'WHERE CM.GGGParent = ? AND '
-                                                 'length(CM.Class) > 0 AND '
-                                                 'length(IO.Mnemonic) > 0 '
+                                          'FROM tblInstance AS I '
+                                          'LEFT JOIN tblClass_IO AS IO ON I.[Class] = IO.[Class] '
+                                          'LEFT JOIN tblIOMaster AS M ON I.Instance || "-" || IO.Mnemonic = M.Symbol '
+                                          'WHERE length(I.Class) > 0 AND '
+                                                 'length(IO.Mnemonic) > 0 AND '
+                                                 '(I.Instance = ? OR '
+                                                 'I.Parent = ? OR '
+                                                 'I.GParent = ? OR '
+                                                 'I.GGParent = ? OR '
+                                                 'I.GGGParent = ?) '
                                           'ORDER BY IO.DI DESC , '
                                                  'IO.DO DESC , '
                                                  'IO.AI DESC , '
@@ -850,8 +937,8 @@ sql = {
                                                  'IO.PAI DESC , '
                                                  'IO.PAO DESC , '
                                                  'IO.Source DESC , '
-                                                 'CM.Instance, '
-                                                 'CM.Instance || "-" || IO.Mnemonic'
+                                                 'I.Instance, '
+                                                 'I.Instance || "-" || IO.Mnemonic'
                                          ),
     sqlCode.TIMER                      : ('SELECT * '
                                           'FROM tblClass '
@@ -1168,7 +1255,8 @@ sql = {
                                                         'S.SFC = P.parameterSource '
                                           'WHERE S.Class = ? AND '
                                                  'P.parameterSource = ? AND '
-                                                 'S.childAcquire = "TRUE" AND '
+                                                 '(S.childAcquire = "TRUE" OR '
+                                                 'S.childAcquire = "OWNER") AND '
                                                  'P.isSFC = 1 AND '
                                                  'P.isMC = 1 AND '
                                                  'P.isChild = 1 '
@@ -1197,7 +1285,8 @@ sql = {
                                           'WHERE S.Class = ? AND '
                                                  'P.parameterSource = ? AND '
                                                  'P.parameterType = "VAR_INPUT" AND '
-                                                 'S.childAcquire = "TRUE" AND '
+                                                 '(S.childAcquire = "TRUE" OR '
+                                                 'S.childAcquire = "OWNER") AND '
                                                  'P.isSFC = 1 AND '
                                                  'P.isMC = 1 AND '
                                                  'P.isChild = 1 '
@@ -1228,7 +1317,8 @@ sql = {
                                           'WHERE S.Class = ? AND '
                                                  'P.parameterSource = ? AND '
                                                  'P.parameterType = "VAR_IN_OUT" AND '
-                                                 'S.childAcquire = "TRUE" AND '
+                                                 '(S.childAcquire = "TRUE" OR '
+                                                 'S.childAcquire = "OWNER") AND '
                                                  'P.isSFC = 1 AND '
                                                  'P.isMC = 1 AND '
                                                  'P.isChild = 1 '
@@ -1662,3 +1752,5 @@ sql = {
 #FROM pGlobal
 #WHERE parameterClass = 'EMC2' AND (parameterType = "VAR_INPUT" OR parameterType = "VAR_OUTPUT" OR parameterType = "VAR_IN_OUT") AND isChild = 0 ORDER BY parameterOrder
 }
+#SELECT parameterSource, childParameter
+#FROM pGlobal WHERE isEventDataTime = 1 AND "_log" || childParameter NOT IN (SELECT childParameter FROM pGlobal WHERE isEventLogTime = 1)

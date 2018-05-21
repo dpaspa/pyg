@@ -675,10 +675,10 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
         # Filter out any virtual instances if Level starts with V:             #
         #----------------------------------------------------------------------#
         try:
-            query = cgSQL.sql[cgSQL.sqlCode.createInstancesForClass]
-            c.execute(query, (sClass, sParent, sParent, sParent, sParent, sParent))
+            query = cgSQL.sql[cgSQL.sqlCode.createInstancesGlobal]
+            c.execute(query, (sClass, ))
         except:
-            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createInstancesForClass, query, sClass + ', ' + sParent + ', ' + sParent + ', ' + sParent + ', ' + sParent)
+            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createInstancesGlobal, query, sClass)
 
     elif (sPrefix == 'fb'):
         try:
@@ -735,9 +735,26 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
                 #--------------------------------------------------------------#
                 # Check if the start of a new instance template:               #
                 #--------------------------------------------------------------#
-                if (sBuffer.find('@@TEMPLATE_BEGIN@@') >= 0):
+                if (sBuffer.find('@@TEMPLATE_BEGIN') >= 0):
                     bTemplateBegin = True
                     bSkipFirstLine = True
+
+                    #----------------------------------------------------------#
+                    # Check if there is a new query:                           #
+                    #----------------------------------------------------------#
+                    if (sBuffer.find('@@TEMPLATE_BEGIN|') >= 0):
+                        #------------------------------------------------------#
+                        # Get the new query data:                              #
+                        #------------------------------------------------------#
+                        iQueryBegin = txtRecord.find('@@TEMPLATE_BEGIN|')
+                        iQueryEnd = txtRecord.find('@@', iQueryBegin + 17)
+                        sQuery = sBuffer[iQueryBegin + 17:iQueryEnd]
+                        try:
+                            query = cgSQL.sql[cgSQL.sqlCode[sQuery]]
+                            c.execute(query, (sClass, ))
+                        except:
+                            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createInstancesGlobal, query, sClass)
+
 
                 #--------------------------------------------------------------#
                 # Check if the end of the current instance template:           #
@@ -885,11 +902,11 @@ def processTemplate(c, txtTemplate, txtData, bOne):
             #------------------------------------------------------------------#
             txtInstance = insertAttributeData(sClass, sInstance, txtInstance, 0)
 
-            #------------------------------------------------------------------#
-            # Replace any counters:                                            #
-            #------------------------------------------------------------------#
-            txtInstance = replaceCounter(iRow, txtInstance)
-            iRow = iRow + 1
+        #------------------------------------------------------------------#
+        # Replace any counters:                                            #
+        #------------------------------------------------------------------#
+        txtInstance = replaceCounter(iRow, txtInstance)
+        iRow = iRow + 1
 
         #----------------------------------------------------------------------#
         # Add the instance data to the output file:                            #
@@ -1230,6 +1247,7 @@ def replaceCounter(iRecordCount, txtRecord):
         # Check if a counter base starting value defined:                      #
         #----------------------------------------------------------------------#
         iCounterBase = 0
+        sCounterBase = ''
         if (txtRecord.find('@@COUNTER|') >= 0):
             #------------------------------------------------------------------#
             # Get the counter base starting value:                             #
@@ -1850,6 +1868,7 @@ def addParameterData(sLevel, sClass, sSource, sParameterType, iParameterOrder,
         sChildParameterAttribute == 'CRIL' or
         sChildParameterAttribute == 'NCRIL' or
         sChildParameterAttribute == 'MAN_OVERRIDE' or
+        sChildParameterAttribute == 'SUBS' or
         sChildParameterAttribute == 'isAvailable' or
         sChildParameterAttribute == 'modeAUTO' or
         sChildParameterAttribute == 'modeMANUAL' or
