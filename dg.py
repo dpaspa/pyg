@@ -12,6 +12,7 @@
 # Import the python libraries:                                                 #
 #------------------------------------------------------------------------------#
 import argparse
+import re
 from enum import Enum
 from docx import Document
 import openpyxl
@@ -26,6 +27,9 @@ from xls2db import xls2db
 import collections
 import datetime
 import PyPDF2
+import reportlab
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
 import subprocess
 from contextlib import contextmanager
 import cgSQL
@@ -38,7 +42,7 @@ logging.basicConfig(level=logging.DEBUG)
 #------------------------------------------------------------------------------#
 appTitle = 'Document Generator'
 appVersion = '1'
-parser = argparse.ArgumentParser(description='Generates PLC code from a configuration spreadsheet and set of code templates')
+parser = argparse.ArgumentParser(description='Generates a document from a configuration spreadsheet and set of document templates')
 parser.add_argument('-c','--config', help='Configuration spreadsheet', required=True)
 parser.add_argument('-d','--input', help='Input base document template file', required=True)
 parser.add_argument('-r','--dataRecord', help='Data field containing the record document template file', required=False)
@@ -46,7 +50,17 @@ parser.add_argument('-k','--key', help='The child document key field name', requ
 parser.add_argument('-o','--output', help='Output for the generated document file', required=True)
 parser.add_argument('-s','--scope', help='The document scope', required=True)
 parser.add_argument('-t','--type', help='The document type', required=True)
+parser.add_argument('-p','--prefix', help='The document reference number prefix', required=False)
 args = vars(parser.parse_args())
+
+#------------------------------------------------------------------------------#
+# Declare global program variables:                                            #
+#------------------------------------------------------------------------------#
+ps = 0
+iNumPages = 1
+iPageNum = 1
+iRefNum = 1
+sRefPrefix = ''
 
 #------------------------------------------------------------------------------#
 # Declare the error handling global variables and procedure:                   #
@@ -129,6 +143,12 @@ def main():
     errProc = main.__name__
 
     #--------------------------------------------------------------------------#
+    # Use the global prefix:                                                   #
+    #--------------------------------------------------------------------------#
+    global ps
+    global sRefPrefix
+
+    #--------------------------------------------------------------------------#
     # Get the document scope and type:                                         #
     #--------------------------------------------------------------------------#
     sDocScope = args['scope'].upper()
@@ -146,6 +166,13 @@ def main():
     wbName = args['config']
     if not os.path.exists(wbName):
         errorHandler(errProc, errorCode.filenotExist, wbName)
+
+    #--------------------------------------------------------------------------#
+    # Get the reference number prefix if any specified:                        #
+    #--------------------------------------------------------------------------#
+    sRefPrefix = ''
+    if (not args['prefix'] is None):
+        sRefPrefix = args['prefix']
 
     #--------------------------------------------------------------------------#
     # Copy it to a new file so the base spreadsheet cannot be affected:        #
@@ -214,6 +241,7 @@ def main():
         # Check if there is a record document. There should be if record data  #
         # is defined for a parent document:                                    #
         #----------------------------------------------------------------------#
+        iChildNum = 1
         if (args['dataRecord'] is None):
             errorHandler(errProc, errorCode.noRecordDocument)
         sFieldRecord = args['dataRecord']
@@ -232,26 +260,32 @@ def main():
         ps = trange(1, desc=sFieldKey, leave=False)
         for row in d.dataBase:
             #------------------------------------------------------------------#
+            # Get the input file name for the child:                           #
+            #------------------------------------------------------------------#
+            sInputChild = os.path.dirname(d.inputFile) + '/' + str(row[sFieldRecord]) + '.docx'
+
+            #------------------------------------------------------------------#
             # Create the child record document. It won't need to be kept so    #
             # set a temporary output file name in the same directory as the    #
             # parent:                                                          #
             #------------------------------------------------------------------#
-            dc = gDocChild(d, sFieldRecord, row, sFieldKey, row[sFieldKey])
-
-            #------------------------------------------------------------------#
-            # Append the child record document PDF to the base document PDF:   #
-            #------------------------------------------------------------------#
-            d.appendPDF(dc)
+            dc = gDocChild(d, sInputChild, row, sFieldKey, row[sFieldKey], iChildNum)
+            iChildNum = iChildNum + 1
 
             #------------------------------------------------------------------#
             # Update the progress bar:                                         #
             #------------------------------------------------------------------#
-            pc = 1.0 / d.rowCount
+            pc = 0.8 / d.rowCount
             ps.update(pc)
             s = dc.fieldKey
             s = s.replace(s, str(row[s]))
             ps.set_description('Child ' + s)
             ps.refresh()
+
+            #------------------------------------------------------------------#
+            # Append the child record document PDF to the base document PDF:   #
+            #------------------------------------------------------------------#
+            d.appendPDF(dc)
 
     #--------------------------------------------------------------------------#
     # Commit the changes to the database and close the connection:             #
@@ -266,12 +300,21 @@ def main():
     dc.docxDelete()
 
     #--------------------------------------------------------------------------#
+    # Add the page numbers to the output file:                                 #
+    #--------------------------------------------------------------------------#
+    pdfPageNumbers(d.outputPDFFileName)
+
+    #--------------------------------------------------------------------------#
     # Report completion regardless of error:                                   #
     #--------------------------------------------------------------------------#
     ps.close()
     pm.set_description('Processing complete')
     pm.refresh()
     pm.close()
+
+    #--------------------------------------------------------------------------#
+    # Get the number of pages:                                                 #
+    #--------------------------------------------------------------------------#
 
     #--------------------------------------------------------------------------#
     # Output a success message:                                                #
@@ -380,6 +423,12 @@ class gDoc(object):
         self.errProc = 'createDocument'
 
         #----------------------------------------------------------------------#
+        # Use global tag number variable:                                      #
+        #----------------------------------------------------------------------#
+        global iRefNum
+        global sRefPrefix
+
+        #----------------------------------------------------------------------#
         # Open the input document:                                             #
         #----------------------------------------------------------------------#
         self.document = Document(self.inputFile)
@@ -405,6 +454,12 @@ class gDoc(object):
         self.processTables()
 
         #----------------------------------------------------------------------#
+        # Renumber any reference numbers:                                      #
+        #----------------------------------------------------------------------#
+        if (len(sRefPrefix) > 0):
+            self.tagRenumber()
+
+        #----------------------------------------------------------------------#
         # Save the output document:                                            #
         #----------------------------------------------------------------------#
         self.document.save(self.outputFile)
@@ -418,8 +473,7 @@ class gDoc(object):
     # Function: processTables                                                  #
     #                                                                          #
     # Description:                                                             #
-    # Processes all of the tables in the document looking for defined header   #
-    # keywords defining the content of the table.                              #
+    # Processes all of the tables in the document looking.                     #
     #--------------------------------------------------------------------------#
     def processTables(self):
         #----------------------------------------------------------------------#
@@ -431,96 +485,122 @@ class gDoc(object):
         # Process each table in the document:                                  #
         #----------------------------------------------------------------------#
         for table in self.document.tables:
-            #------------------------------------------------------------------#
-            # Get the table data source:                                       #
-            #------------------------------------------------------------------#
-            bDelRow = False
-            self.currentTable = table
-            self.currentRow = self.currentTable.rows[0]
-            txtQuery = self.currentRow.cells[0].text
+            self.dataTable(table)
+#        for section in self.document.sections:
+#            header = section.header
+#            footer = section.footer
+#            for table in section.tables:
+#                self.dataTable(table)
 
-            #------------------------------------------------------------------#
-            # Check for non-ascii characters. Can't be a keyword string in     #
-            # that case:                                                       #
-            #------------------------------------------------------------------#
-            try:
-                txtQuery.decode('ascii')
-            except:
-                #--------------------------------------------------------------#
-                # Just ignore this table:                                      #
-                #--------------------------------------------------------------#
-                pass
+#            for table in header.tables:
+#                self.dataTable(table)
+
+#            for table in footer.tables:
+#                self.dataTable(table)
+
+    #--------------------------------------------------------------------------#
+    # Function: dataTable                                                      #
+    #                                                                          #
+    # Description:                                                             #
+    # Processes the current table looking for defined header keywords defining #
+    # the content of the table.                                                #
+    #--------------------------------------------------------------------------#
+    def dataTable(self, table):
+        #----------------------------------------------------------------------#
+        # Define the procedure name:                                           #
+        #----------------------------------------------------------------------#
+        self.errProc = 'dataTable'
+
+        #------------------------------------------------------------------#
+        # Get the table data source:                                       #
+        #------------------------------------------------------------------#
+        bDelRow = False
+        self.currentTable = table
+        self.currentRow = self.currentTable.rows[0]
+        txtQuery = self.currentRow.cells[0].text
+
+        #------------------------------------------------------------------#
+        # Check for non-ascii characters. Can't be a keyword string in     #
+        # that case:                                                       #
+        #------------------------------------------------------------------#
+        try:
+            txtQuery.decode('ascii')
+        except:
+            #--------------------------------------------------------------#
+            # Just ignore this table:                                      #
+            #--------------------------------------------------------------#
+            pass
+        else:
+            #--------------------------------------------------------------#
+            # Check for the content type. Check if an image anchor:        #
+            #--------------------------------------------------------------#
+            if (txtQuery[:5] == 'IMAGE'):
+                #----------------------------------------------------------#
+                # Insert the image:                                        #
+                #----------------------------------------------------------#
+                self.remove_row(self.currentTable, self.currentRow)
+                self.currentRow = self.currentTable.rows[0]
+                self.tableInsertImage(txtQuery[6:])
+
+            #--------------------------------------------------------------#
+            # Check if base query data for the entire document:            #
+            #--------------------------------------------------------------#
+            elif (txtQuery[:7] == 'SQLBASE'):
+                #----------------------------------------------------------#
+                # Get the base data for the document:                      #
+                #----------------------------------------------------------#
+                self.remove_row(self.currentTable, self.currentRow)
+                self.getBaseData(txtQuery[8:])
+
+            #--------------------------------------------------------------#
+            # Check if a base query record table:                          #
+            #--------------------------------------------------------------#
+            elif (txtQuery[:9] == 'SQLRECORD'):
+                #----------------------------------------------------------#
+                # Must be a valid query. Insert the data:                  #
+                #----------------------------------------------------------#
+                self.remove_row(self.currentTable, self.currentRow)
+                self.currentRow = self.currentTable.rows[0]
+                self.tableBaseRecord()
+
+            #--------------------------------------------------------------#
+            # Check if an append table rows query:                         #
+            #--------------------------------------------------------------#
+            elif (txtQuery[:6] == 'SQLROW'):
+                #----------------------------------------------------------#
+                # Must be a valid query. Insert the data:                  #
+                #----------------------------------------------------------#
+                self.remove_row(self.currentTable, self.currentRow)
+                self.currentRow = self.currentTable.rows[0]
+                self.tableAddRows(txtQuery[7:])
+
+            #--------------------------------------------------------------#
+            # Check if a static table query:                               #
+            #--------------------------------------------------------------#
+            elif (txtQuery[:9] == 'SQLSTATIC'):
+                #----------------------------------------------------------#
+                # Must be a valid query. Insert the data:                  #
+                #----------------------------------------------------------#
+                self.remove_row(self.currentTable, self.currentRow)
+                self.currentRow = self.currentTable.rows[0]
+                self.tableStaticFields(txtQuery[10:])
+
+            #--------------------------------------------------------------#
+            # Check if an append table rows query:                         #
+            #--------------------------------------------------------------#
+            elif (txtQuery[:10] == 'SQLVERHIST'):
+                #----------------------------------------------------------#
+                # Must be a valid query. Insert the data:                  #
+                #----------------------------------------------------------#
+                self.remove_row(self.currentTable, self.currentRow)
+                self.currentRow = self.currentTable.rows[0]
+                query = cgSQL.sql[cgSQL.sqlCode.VERHIST]
+                self.tableAddRows(query)
             else:
-                #--------------------------------------------------------------#
-                # Check for the content type. Check if an image anchor:        #
-                #--------------------------------------------------------------#
-                if (txtQuery[:5] == 'IMAGE'):
-                    #----------------------------------------------------------#
-                    # Insert the image:                                        #
-                    #----------------------------------------------------------#
-                    self.remove_row(self.currentTable, self.currentRow)
-                    self.currentRow = self.currentTable.rows[0]
-                    self.tableInsertImage(txtQuery[6:])
-
-                #--------------------------------------------------------------#
-                # Check if base query data for the entire document:            #
-                #--------------------------------------------------------------#
-                elif (txtQuery[:7] == 'SQLBASE'):
-                    #----------------------------------------------------------#
-                    # Get the base data for the document:                      #
-                    #----------------------------------------------------------#
-                    self.remove_row(self.currentTable, self.currentRow)
-                    self.getBaseData(txtQuery[8:])
-
-                #--------------------------------------------------------------#
-                # Check if a base query record table:                          #
-                #--------------------------------------------------------------#
-                elif (txtQuery[:9] == 'SQLRECORD'):
-                    #----------------------------------------------------------#
-                    # Must be a valid query. Insert the data:                  #
-                    #----------------------------------------------------------#
-                    self.remove_row(self.currentTable, self.currentRow)
-                    self.currentRow = self.currentTable.rows[0]
-                    self.tableBaseRecord()
-
-                #--------------------------------------------------------------#
-                # Check if an append table rows query:                         #
-                #--------------------------------------------------------------#
-                elif (txtQuery[:6] == 'SQLROW'):
-                    #----------------------------------------------------------#
-                    # Must be a valid query. Insert the data:                  #
-                    #----------------------------------------------------------#
-                    self.remove_row(self.currentTable, self.currentRow)
-                    self.currentRow = self.currentTable.rows[0]
-                    self.tableAddRows(txtQuery[7:])
-
-                #--------------------------------------------------------------#
-                # Check if a static table query:                               #
-                #--------------------------------------------------------------#
-                elif (txtQuery[:9] == 'SQLSTATIC'):
-                    #----------------------------------------------------------#
-                    # Must be a valid query. Insert the data:                  #
-                    #----------------------------------------------------------#
-                    self.remove_row(self.currentTable, self.currentRow)
-                    self.currentRow = self.currentTable.rows[0]
-                    self.tableStaticFields(txtQuery[10:])
-
-                #--------------------------------------------------------------#
-                # Check if an append table rows query:                         #
-                #--------------------------------------------------------------#
-                elif (txtQuery[:10] == 'SQLVERHIST'):
-                    #----------------------------------------------------------#
-                    # Must be a valid query. Insert the data:                  #
-                    #----------------------------------------------------------#
-                    self.remove_row(self.currentTable, self.currentRow)
-                    self.currentRow = self.currentTable.rows[0]
-                    query = cgSQL.sql[cgSQL.sqlCode.VERHIST]
-                    self.tableAddRows(query)
-                else:
-                    #----------------------------------------------------------#
-                    # Ignore other content:                                    #
-                    #----------------------------------------------------------#
-                    pass
+                #----------------------------------------------------------#
+                # Ignore other content:                                    #
+                #----------------------------------------------------------#
+                pass
 
     #--------------------------------------------------------------------------#
     # Function: getBaseData                                                    #
@@ -662,41 +742,59 @@ class gDoc(object):
         #----------------------------------------------------------------------#
         # Execute the query and get the data:                                  #
         #----------------------------------------------------------------------#
+        bHasData = False
         c = self.getQueryData(query)
-        if (not c is None):
-            #------------------------------------------------------------------#
-            # Get the column attribute row:                                    #
-            #------------------------------------------------------------------#
-            rowAttr = self.currentTable.rows[1]
-            cellsAttr = rowAttr.cells
-            para = cellsAttr[0].paragraphs[0]
-            styleAttr = para.style
 
-            #------------------------------------------------------------------#
-            # Process each row of returned data:                               #
-            #------------------------------------------------------------------#
-            for data in c:
-                #--------------------------------------------------------------#
-                # Add a new row to the table and enter a loop to process each  #
-                # cell:                                                        #
-                #--------------------------------------------------------------#
-                cellsNew = self.currentTable.add_row().cells
-                for i in range(0, len(cellsAttr)):
-                    #----------------------------------------------------------#
-                    # Replace the field placeholders in the cell text:         #
-                    #----------------------------------------------------------#
-                    s = cellsAttr[i].text
-                    for fld in data.keys():
-                        s = s.replace('@@' + fld.upper() + '@@', str(data[fld]))
-                    para = cellsNew[i].paragraphs[0]
-                    para.text = ''
-                    run = para.add_run(s)
-                    para.style = styleAttr
+        #----------------------------------------------------------------------#
+        # Get the column attribute row:                                        #
+        #----------------------------------------------------------------------#
+        rowAttr = self.currentTable.rows[1]
+        cellsAttr = rowAttr.cells
+        para = cellsAttr[0].paragraphs[0]
+        styleAttr = para.style
 
+        #----------------------------------------------------------------------#
+        # Process each row of returned data:                                   #
+        #----------------------------------------------------------------------#
+        for data in c:
             #------------------------------------------------------------------#
-            # Clean up the table by deleting the query and attribute rows:     #
+            # Add a new row to the table and enter a loop to process each      #
+            # cell:                                                            #
             #------------------------------------------------------------------#
-            self.remove_row(self.currentTable, rowAttr)
+            bHasData = True
+            cellsNew = self.currentTable.add_row().cells
+            for i in range(0, len(cellsAttr)):
+                #--------------------------------------------------------------#
+                # Replace the field placeholders in the cell text:             #
+                #--------------------------------------------------------------#
+                s = cellsAttr[i].text
+                for fld in data.keys():
+                    s = s.replace('@@' + fld.upper() + '@@', str(data[fld]))
+                para = cellsNew[i].paragraphs[0]
+                para.text = ''
+                run = para.add_run(s)
+                para.style = styleAttr
+
+        #----------------------------------------------------------------------#
+        # Clean up the table by deleting the query and attribute rows:         #
+        #----------------------------------------------------------------------#
+        self.remove_row(self.currentTable, rowAttr)
+
+        #----------------------------------------------------------------------#
+        # There is no data so write a message:                                 #
+        #----------------------------------------------------------------------#
+        if (not bHasData):
+            cellsNew = self.currentTable.add_row().cells
+            a = cellsNew[0]
+            for i in range(0, len(cellsNew)):
+                b = cellsNew[i]
+                a.merge(b)
+
+#            tStyle = self.currentTable.style
+            para = cellsNew[0].paragraphs[0]
+            para.style = styleAttr
+            run = para.add_run('No data to display')
+#            self.currentTable.style = tStyle
 
     #--------------------------------------------------------------------------#
     # Function: tableBaseRecord                                                #
@@ -944,6 +1042,17 @@ class gDoc(object):
         for paragraph in self.document.paragraphs:
             self.srParagraph(paragraph, txtSearch, txtReplace)
 
+    def srHeader(self, document, txtSearch, txtReplace):
+        #----------------------------------------------------------------------#
+        # Define the procedure name and trap any programming errors:           #
+        #----------------------------------------------------------------------#
+        errProc = 'srHeader'
+
+        for section in self.document.sections:
+            header = section.header
+            for paragraph in header.paragraphs:
+                self.srParagraph(paragraph, txtSearch, txtReplace)
+
     def srTable(self, table, txtSearch, txtReplace):
         #----------------------------------------------------------------------#
         # Define the procedure name and trap any programming errors:           #
@@ -992,6 +1101,48 @@ class gDoc(object):
     def docxDelete(self):
         os.remove(self.outputFile)
 
+    #--------------------------------------------------------------------------#
+    # Function: tagRenumber                                                    #
+    #                                                                          #
+    # Description:                                                             #
+    # Renumbers the tag list.                                                  #
+    #--------------------------------------------------------------------------#
+    def tagRenumber(self):
+        #----------------------------------------------------------------------#
+        # Define the procedure name and trap any programming errors:           #
+        #----------------------------------------------------------------------#
+        errProc = 'tagRenumber'
+
+        #----------------------------------------------------------------------#
+        # Use global tag number variable:                                      #
+        #----------------------------------------------------------------------#
+        global iRefNum
+        global sRefPrefix
+
+        #----------------------------------------------------------------------#
+        # Loop through all the tables in the document table collection:        #
+        #----------------------------------------------------------------------#
+        for table in self.document.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        #------------------------------------------------------#
+                        # Check if a valid tag number:                         #
+                        #------------------------------------------------------#
+                        s = paragraph.text
+                        if (len(s) >= 1 + len(sRefPrefix) and s[:len(sRefPrefix)] == sRefPrefix):
+#                            pa = re.compile('[a-zA-Z]')
+                            pn = re.compile('[0-9]')
+#                            ma = pa.match(s[:len(sRefPrefix)])
+                            mn = pn.match(s[len(sRefPrefix):])
+                            if (not mn is None):
+                                style = paragraph.style
+                                paragraph.text = ''
+                                sn = sRefPrefix + str(iRefNum)
+                                run = paragraph.add_run(sn)
+                                paragraph.style = style
+                                iRefNum = iRefNum + 1
+
 #------------------------------------------------------------------------------#
 # Class: gDocParent                                                            #
 #                                                                              #
@@ -1011,6 +1162,11 @@ class gDocParent(gDoc):
         # Define the procedure name:                                           #
         #----------------------------------------------------------------------#
         self.errProc = 'getParentData'
+
+        #----------------------------------------------------------------------#
+        # Initialise the tag number at 1:                                      #
+        #----------------------------------------------------------------------#
+        iRefNum = 1
 
         #----------------------------------------------------------------------#
         # Process each table in the document:                                  #
@@ -1098,7 +1254,7 @@ class gDocChild(gDoc):
     #--------------------------------------------------------------------------#
     # Constructor:                                                             #
     #--------------------------------------------------------------------------#
-    def __init__(self, p, sFieldRecord, data, sFieldKey, sFieldKeyValue):
+    def __init__(self, p, sInputChild, data, sFieldKey, sFieldKeyValue, iChildNum):
         #----------------------------------------------------------------------#
         # Define the procedure name:                                           #
         #----------------------------------------------------------------------#
@@ -1107,11 +1263,12 @@ class gDocChild(gDoc):
         #----------------------------------------------------------------------#
         # Set the instance attributes:                                         #
         #----------------------------------------------------------------------#
+        self.inputFile = sInputChild
+        self.childNum = iChildNum
         self.dataBase = None
         self.dataRow = data
         self.key = sFieldKeyValue
         self.fieldKey = sFieldKey.upper()
-        self.fieldRecord = sFieldRecord.upper()
         self.conn = p.conn
         self.docType = p.docType
         self.docScope = p.docScope
@@ -1127,8 +1284,7 @@ class gDocChild(gDoc):
         #----------------------------------------------------------------------#
         # Make sure the input document file exists:                            #
         #----------------------------------------------------------------------#
-        self.inputDir = os.path.dirname(p.inputFile)
-        self.inputFile = self.inputDir + '/' + str(self.dataRow[self.fieldRecord]) + '.docx'
+        self.inputDir = os.path.dirname(self.inputFile)
         if not os.path.exists(self.inputFile):
             errorHandler(self.errProc, errorCode.fileChildNotExist, self.inputFile)
 
@@ -1147,6 +1303,52 @@ def silence_stdout():
         yield new_target
     finally:
         sys.stdout = old_target
+
+def pdfPageNumbers(fileName):
+    global ps
+
+    f = 't.pdf'
+    os.rename(fileName, f)
+    pdfFile = open(f, 'rb')
+    pdfReader = PyPDF2.PdfFileReader(pdfFile)
+    pdfWriter = PyPDF2.PdfFileWriter()
+
+    tmp = '_tmp.pdf'
+    n = pdfReader.numPages
+
+    for i in range(n):
+        c = canvas.Canvas(tmp)
+        c.setFont('Helvetica', 7)
+#        c.drawString((210//2)*mm, (4)*mm, 'Page ' + str(i + 1) + ' of ' + str(n))
+        c.drawString((180)*mm, (276)*mm, 'Page ' + str(i + 1) + ' of ' + str(n))
+        c.drawString((273)*mm, (197.5)*mm, 'Page ' + str(i + 1) + ' of ' + str(n))
+        c.showPage()
+        c.save()
+        pageObj = pdfReader.getPage(i)
+#        cObj = canvas.Canvas(pageObj)
+#        print(cObj._pagesize)
+#        page_width, page_height = cObj._pagesize
+#        print('width ' + str(page_width))
+#        print('height ' + str(page_height))
+        pdfTmp = open(tmp, 'rb')
+        pdfTmpReader = PyPDF2.PdfFileReader(pdfTmp)
+        pageObj.mergePage(pdfTmpReader.getPage(0))
+        os.remove(tmp)
+        pdfWriter.addPage(pageObj)
+
+        #----------------------------------------------------------------------#
+        # Update the progress bar:                                             #
+        #----------------------------------------------------------------------#
+        pc = 0.2 / n
+        ps.update(pc)
+        ps.set_description('Numbering page ' + str(i))
+        ps.refresh()
+
+    pdfOutputFile = open(fileName, 'wb')
+    pdfWriter.write(pdfOutputFile)
+    pdfOutputFile.close()
+    pdfFile.close()
+    os.remove(f)
 
 #------------------------------------------------------------------------------#
 # Call the main function:                                                      #

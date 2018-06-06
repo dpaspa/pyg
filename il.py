@@ -37,6 +37,11 @@ parser.add_argument('-p','--parent', help='Parent object to generate code files 
 args = vars(parser.parse_args())
 
 #------------------------------------------------------------------------------#
+# Declare global variables:                                                    #
+#------------------------------------------------------------------------------#
+wb = ''
+
+#------------------------------------------------------------------------------#
 # Declare the error handling global variables and procedure:                   #
 #------------------------------------------------------------------------------#
 def errorHandler(errProc, eCode, *args):
@@ -71,14 +76,16 @@ class errorCode(Enum):
     cannotOpenWorkbook                 = -2
     cannotReplace                      = -3
     fileNotExist                       = -4
-    noMatrixWorksheet                  = -5
-    noNamedRange                       = -6
+    instanceNotFound                   = -5
+    noMatrixWorksheet                  = -6
+    noNamedRange                       = -7
 
 errorMessage = {
     errorCode.cannotCreateOutputSheet  : 'Cannot create output worksheet @1',
     errorCode.cannotOpenWorkbook       : 'Cannot open workbook @1',
     errorCode.cannotReplace            : 'Cannot replace field @1 with value @2.',
     errorCode.fileNotExist             : 'Workbook file @1 does not exist.',
+    errorCode.instanceNotFound         : 'Instance @1 does not exist in sheet tblInstance.',
     errorCode.noMatrixWorksheet        : 'Safety matrix worksheet @1 does not exist.',
     errorCode.noNamedRange             : 'Named range @1 does not exist.'
 }
@@ -101,11 +108,16 @@ def main():
     errProc = main.__name__
 
     #--------------------------------------------------------------------------#
+    # Define global variables used in this procedure:                          #
+    #--------------------------------------------------------------------------#
+    global wb
+
+    #--------------------------------------------------------------------------#
     # Get the interlock configuration workbook name and check it exists:       #
     #--------------------------------------------------------------------------#
     wbName = args['config']
     if not os.path.exists(wbName):
-        errorHandler(errorCode.fileNotExist, wbName)
+        errorHandler(errProc, errorCode.fileNotExist, wbName)
 
     #--------------------------------------------------------------------------#
     # Open the workbook:                                                       #
@@ -113,7 +125,7 @@ def main():
     try:
         wb = openpyxl.load_workbook(wbName, data_only=True)
     except:
-        errorHandler(errorCode.cannotOpenWorkbook, wbName)
+        errorHandler(errProc, errorCode.cannotOpenWorkbook, wbName)
 
     #--------------------------------------------------------------------------#
     # Check if the existing output worksheets are to be deleted:               #
@@ -137,15 +149,17 @@ def main():
             wb.create_sheet(wsoName)
             wso = wb[wsoName]
         except:
-            errorHandler(errorCode.cannotCreateOutputSheet, wsoName)
+            errorHandler(errProc, errorCode.cannotCreateOutputSheet, wsoName)
 
         #----------------------------------------------------------------------#
         # Set the new Critical Interlock worksheet titles:                     #
         #----------------------------------------------------------------------#
         wso.cell(row=1, column=1).value = 'Instance'
-        wso.cell(row=1, column=2).value = 'Description'
-        wso.cell(row=1, column=3).value = 'DescriptionIL'
-        wso.cell(row=1, column=4).value = 'Interlock'
+        wso.cell(row=1, column=2).value = 'Class'
+        wso.cell(row=1, column=3).value = 'IDX'
+        wso.cell(row=1, column=4).value = 'Description'
+        wso.cell(row=1, column=5).value = 'DescriptionIL'
+        wso.cell(row=1, column=6).value = 'Interlock'
 
         #----------------------------------------------------------------------#
         # Delete the Non-Critical Interlock output worksheet if exists:        #
@@ -164,15 +178,17 @@ def main():
             wb.create_sheet(wsoName)
             wso = wb[wsoName]
         except:
-            errorHandler(errorCode.cannotCreateOutputSheet, wsoName)
+            errorHandler(errProc, errorCode.cannotCreateOutputSheet, wsoName)
 
         #----------------------------------------------------------------------#
         # Set the new Non-Critical Interlock worksheet titles:                 #
         #----------------------------------------------------------------------#
         wso.cell(row=1, column=1).value = 'Instance'
-        wso.cell(row=1, column=2).value = 'Description'
-        wso.cell(row=1, column=3).value = 'DescriptionIL'
-        wso.cell(row=1, column=4).value = 'Interlock'
+        wso.cell(row=1, column=2).value = 'Class'
+        wso.cell(row=1, column=3).value = 'IDX'
+        wso.cell(row=1, column=4).value = 'Description'
+        wso.cell(row=1, column=5).value = 'DescriptionIL'
+        wso.cell(row=1, column=6).value = 'Interlock'
 
     #--------------------------------------------------------------------------#
     # Get the new output worksheet object references:                          #
@@ -187,7 +203,7 @@ def main():
     try:
         wsi = wb[wsiName]
     except:
-        errorHandler(errorCode.noMatrixWorksheet, wsiName)
+        errorHandler(errProc, errorCode.noMatrixWorksheet, wsiName)
 
     #--------------------------------------------------------------------------#
     # Get the parent object in the hierarchy:                                  #
@@ -290,10 +306,12 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, sParent, pbwt, at, doll
         colILFunctionEnd = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].col_idx
         sNamedRange = wsiName + 'Description'
         colILDescription = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].col_idx
+        sNamedRange = wsiName + 'TargetClass'
+        rowILClassTarget = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].row
         sNamedRange = wsiName + 'TargetDescription'
         rowILDescriptionTarget = wsi[list(wb.defined_names[sNamedRange].destinations)[0][1]].row
     except:
-        errorHandler(errorCode.noNamedRange, sNamedRange)
+        errorHandler(errProc, errorCode.noNamedRange, sNamedRange)
 
     #--------------------------------------------------------------------------#
     # Enter a loop to process all of the safety interlocks:                    #
@@ -339,12 +357,12 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, sParent, pbwt, at, doll
                 #--------------------------------------------------------------#
                 logging.info('Source: ' + sSource)
                 sSource = sSource.replace('@', at)
-                sCode = sCode.replace('@@INSTANCE@@', sSource)
+                sCode = sCode.replace('@@IDX@@', str(getInstanceIDX(sSource)))
                 sCode = sCode.replace('@@STATE@@', sState)
                 sDescriptionIL = sDescriptionIL.replace('@', at)
                 sDescriptionIL = sDescriptionIL.replace('%', percent)
                 sDescriptionIL = sDescriptionIL.replace('$', dollar)
-                sDescriptionIL = sDescriptionIL + ' ' + sState
+                sDescriptionIL = sSource + ' ' + sDescriptionIL + ' ' + sState
 
                 #--------------------------------------------------------------#
                 # Build the interlock code:                                    #
@@ -390,6 +408,7 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, sParent, pbwt, at, doll
                     #----------------------------------------------------------#
                     sTarget = wsi.cell(row=rowILTarget, column=iXCol).value
                     sTarget = sTarget.replace('@', at)
+                    sClassTarget = wsi.cell(row=rowILClassTarget, column=iXCol).value
                     sDescriptionTarget = wsi.cell(row=rowILDescriptionTarget, column=iXCol).value
                     logging.info('Target: ' + sTarget)
 
@@ -397,9 +416,11 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, sParent, pbwt, at, doll
                     # Add the interlock to the output list:                    #
                     #----------------------------------------------------------#
                     wso.cell(row=iRowOut, column=1).value = sTarget
-                    wso.cell(row=iRowOut, column=2).value = sDescriptionTarget
-                    wso.cell(row=iRowOut, column=3).value = sExplanation
-                    wso.cell(row=iRowOut, column=4).value = sExpression
+                    wso.cell(row=iRowOut, column=2).value = sClassTarget
+                    wso.cell(row=iRowOut, column=3).value = str(getInstanceIDX(sTarget))
+                    wso.cell(row=iRowOut, column=4).value = sDescriptionTarget
+                    wso.cell(row=iRowOut, column=5).value = sExplanation
+                    wso.cell(row=iRowOut, column=6).value = sExpression
                     iRowOut = iRowOut + 1
 
                 #--------------------------------------------------------------#
@@ -417,6 +438,48 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, sParent, pbwt, at, doll
     #--------------------------------------------------------------------------#
     p.set_description('Processing complete')
     p.refresh()
+
+#------------------------------------------------------------------------------#
+# Function getInstanceIDX                                                      #
+#                                                                              #
+# Description:                                                                 #
+# Gets the instance IDX index value from the Instance sheet.                   #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# sInstance             The instance name.                                     #
+#------------------------------------------------------------------------------#
+def getInstanceIDX(sInstance):
+    #--------------------------------------------------------------------------#
+    # Define the procedure name:                                               #
+    #--------------------------------------------------------------------------#
+    errProc = getInstanceIDX.__name__
+
+    #--------------------------------------------------------------------------#
+    # Define global variables used in this procedure:                          #
+    #--------------------------------------------------------------------------#
+    global wb
+
+    #--------------------------------------------------------------------------#
+    # Get the instance worksheet:                                              #
+    #--------------------------------------------------------------------------#
+    ws = wb['tblInstance']
+
+    #--------------------------------------------------------------------------#
+    # Find the instance name in the list:                                      #
+    #--------------------------------------------------------------------------#
+    iRow = 2
+    while (not ws.cell(row=iRow, column=3).value is None):
+        if (ws.cell(row=iRow, column=3).value == sInstance):
+            return ws.cell(row=iRow, column=7).value
+            break;
+        else:
+            iRow = iRow + 1
+
+    #--------------------------------------------------------------------------#
+    # Error if tag not found. Should never get to here:                        #
+    #--------------------------------------------------------------------------#
+    errorHandler(errProc, errorCode.instanceNotFound, sInstance)
 
 #------------------------------------------------------------------------------#
 # Call the main function:                                                      #

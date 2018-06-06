@@ -58,6 +58,7 @@ gILTable = ''
 gLevel = ''
 gParent = ''
 gPrompt = ''
+gRecipeClass = ''
 gSelectParameter = ''
 gSelectSelection = ''
 gSFC = ''
@@ -413,11 +414,17 @@ def processLevel(sParent, sLevel, pbwt):
         #----------------------------------------------------------------------#
         # Create the function block class file:                                #
         #----------------------------------------------------------------------#
-        sPrefix = 'fb'
+        if (sLevel == 'EM' or sLevel == 'UN' or sLevel == 'PC' or
+            (sLevel == 'CM' and (sClass == 'MOT1' or sClass == 'POS1' or
+                                 sClass == 'POS2' or sClass == 'POS3' or
+                                 sClass == 'POS4' or sClass == 'SIC1' or
+                                 sClass == 'TC1'))):
+            sPrefix = 'fb'
+        else:
+            sPrefix = 'fc'
         gClass = sClass
         createClass(sLevel, sParent, sClass, row['Description'],
                     sPrefix, row['inheritsClass'], row['nameClass'], True)
-
 
         #----------------------------------------------------------------------#
         # Update the progress message:                                         #
@@ -680,7 +687,7 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
         except:
             errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createInstancesGlobal, query, sClass)
 
-    elif (sPrefix == 'fb'):
+    elif (sPrefix == 'fc' or sPrefix == 'fb'):
         try:
             query = cgSQL.sql[cgSQL.sqlCode.createClass]
             c.execute(query, (sClass, ))
@@ -746,14 +753,10 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
                         #------------------------------------------------------#
                         # Get the new query data:                              #
                         #------------------------------------------------------#
-                        iQueryBegin = txtRecord.find('@@TEMPLATE_BEGIN|')
-                        iQueryEnd = txtRecord.find('@@', iQueryBegin + 17)
+                        iQueryBegin = sBuffer.find('@@TEMPLATE_BEGIN|')
+                        iQueryEnd = sBuffer.find('@@', iQueryBegin + 17)
                         sQuery = sBuffer[iQueryBegin + 17:iQueryEnd]
-                        try:
-                            query = cgSQL.sql[cgSQL.sqlCode[sQuery]]
-                            c.execute(query, (sClass, ))
-                        except:
-                            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createInstancesGlobal, query, sClass)
+                        data = getNamedQueryData(sQuery)
 
 
                 #--------------------------------------------------------------#
@@ -875,7 +878,7 @@ def processTemplate(c, txtTemplate, txtData, bOne):
             #------------------------------------------------------------------#
             # Replace the field placeholders:                                  #
             #------------------------------------------------------------------#
-            if row[fld]:
+            if not row[fld] is None:
                 sValue = str(row[fld])
                 txtInstance = txtInstance.replace('@@' + fld.upper() + '@@', sValue)
 
@@ -902,9 +905,9 @@ def processTemplate(c, txtTemplate, txtData, bOne):
             #------------------------------------------------------------------#
             txtInstance = insertAttributeData(sClass, sInstance, txtInstance, 0)
 
-        #------------------------------------------------------------------#
-        # Replace any counters:                                            #
-        #------------------------------------------------------------------#
+        #----------------------------------------------------------------------#
+        # Replace any counters:                                                #
+        #----------------------------------------------------------------------#
         txtInstance = replaceCounter(iRow, txtInstance)
         iRow = iRow + 1
 
@@ -942,14 +945,14 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
     errProc = insertAttributeData.__name__
 
     #--------------------------------------------------------------------------#
-    # Declare use of the global sqlite cursor object:                          #
+    # Declare use of the global sqlite cursor object and other variables:      #
     #--------------------------------------------------------------------------#
-    global conn
     global gClass
     global gInstance
     global gLevel
     global gParent
     global gPrompt
+    global gRecipeClass
     global gSelectParameter
     global gSelectSelection
     global gSFC
@@ -958,8 +961,6 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
     #--------------------------------------------------------------------------#
     # Process all of the attributes in the template:                           #
     #--------------------------------------------------------------------------#
-    iRow = 0
-    iCounterBase = 0
     while (txtInstance.find('@@ATTR_BEGIN|') >= 0):
         #----------------------------------------------------------------------#
         # Get the attribute name from the template. It must be enclosed in     #
@@ -967,6 +968,8 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
         #   @@ATTR_BEGIN|<attr>@@                                              #
         #   @@ATTR_END|<attr>@@                                                #
         #----------------------------------------------------------------------#
+        iRow = 0
+        iCounterBase = 0
         txtRecordData = ''
         iTagBegin = txtInstance.find('@@ATTR_BEGIN|')
         iTagEnd = txtInstance.find('@@', iTagBegin + 13)
@@ -1004,65 +1007,9 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
             iDefaultEnd = txtTemplate.find('@@ATTR_DEFAULT_END@@')
 
             #------------------------------------------------------------------#
-            # Set the query based on the attribute name:                       #
-            #------------------------------------------------------------------#
-            parms = []
-            qparms = []
-            try:
-                query = cgSQL.sql[cgSQL.sqlCode[sTemplateAttrName]]
-                parms = cgSQL.prm[cgSQL.sqlCode[sTemplateAttrName]]
-            except:
-                errorHandler(errProc, errorCode.cannotGetSQL, sTemplateAttrName)
-
-            #------------------------------------------------------------------#
-            # Copy the list locally and replace the parameters with their      #
-            # current global values:                                           #
-            #------------------------------------------------------------------#
-            qparms = list(parms)
-            for i in range(len(qparms)):
-                if (qparms[i] == 'gClass'):
-                    qparms[i] = gClass
-                elif (qparms[i] == 'gILTable'):
-                    qparms[i] = gILTable
-                elif (qparms[i] == 'gInstance'):
-                    qparms[i] = gInstance
-                elif (qparms[i] == 'gLevel'):
-                    qparms[i] = gLevel
-                elif (qparms[i] == 'gParent'):
-                    qparms[i] = gParent
-                elif (qparms[i] == 'gPrompt'):
-                    qparms[i] = gPrompt
-                elif (qparms[i] == 'gSelectParameter'):
-                    qparms[i] = gSelectParameter
-                elif (qparms[i] == 'gSelectSelection'):
-                    qparms[i] = gSelectSelection
-                elif (qparms[i] == 'gSFC'):
-                    qparms[i] = gSFC
-                elif (qparms[i] == 'gState'):
-                    qparms[i] = gState
-
-#            for i in range(len(qparms)):
-#                print(qparms[i])
-
-            #------------------------------------------------------------------#
-            # Query the sqlite database:                                       #
-            #------------------------------------------------------------------#
-            try:
-                c = conn.cursor()
-                c.execute(query, qparms)
-            except:
-                s = ''
-                for i in range(len(qparms)):
-                    if (len(s) > 0):
-                        s = s + ', '
-                    s = s + qparms[i]
-                errorHandler(errProc, errorCode.cannotQuery,
-                             cgSQL.sqlCode[sTemplateAttrName], query, s)
-
-            #------------------------------------------------------------------#
             # Check to see if the cursor contains any data:                    #
             #------------------------------------------------------------------#
-            data = c.fetchall()
+            data = getNamedQueryData(sTemplateAttrName)
             if (len(data) == 0):
                 #--------------------------------------------------------------#
                 # No data so leave any default value:                          #
@@ -1149,6 +1096,9 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
                             elif (fld.upper() == 'CHILDPARAMETER'):
                                 gPrompt = sValue
 
+                            if (fld.upper() == 'RECIPECLASS'):
+                                gRecipeClass = sValue
+
                             elif (fld.upper() == 'SFC'):
                                 gSFC = sValue
 
@@ -1218,6 +1168,105 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
         if (len(txtInstance) > 1 and ord(txtInstance[-1:]) == 13):
             txtInstance = txtInstance[:-1]
     return txtInstance
+
+#------------------------------------------------------------------------------#
+# Function: getNamedQueryData                                                  #
+#                                                                              #
+# Description:                                                                 #
+# Returns the data for the named query.                                        #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# nameQuery             The name of the query to execute.                      #
+#------------------------------------------------------------------------------#
+# Returned parameters:                                                         #
+#                                                                              #
+# data                  The cursor with the query data.                        #
+#------------------------------------------------------------------------------#
+def getNamedQueryData(namedQuery):
+    #--------------------------------------------------------------------------#
+    # Define the procedure name and trap any programming errors:               #
+    #--------------------------------------------------------------------------#
+    errProc = getNamedQueryData.__name__
+
+    #--------------------------------------------------------------------------#
+    # Declare use of the global sqlite cursor object and other variables:      #
+    #--------------------------------------------------------------------------#
+    global conn
+    global gClass
+    global gInstance
+    global gLevel
+    global gParent
+    global gPrompt
+    global gRecipeClass
+    global gSelectParameter
+    global gSelectSelection
+    global gSFC
+    global gState
+
+    #--------------------------------------------------------------------------#
+    # Set the query based on the attribute name:                               #
+    #--------------------------------------------------------------------------#
+    parms = []
+    qparms = []
+    try:
+        query = cgSQL.sql[cgSQL.sqlCode[namedQuery]]
+        parms = cgSQL.prm[cgSQL.sqlCode[namedQuery]]
+    except:
+        errorHandler(errProc, errorCode.cannotGetSQL, namedQuery)
+
+    #--------------------------------------------------------------------------#
+    # Copy the list locally and replace the parameters with their current      #
+    # global values:                                                           #
+    #--------------------------------------------------------------------------#
+    qparms = list(parms)
+    for i in range(len(qparms)):
+        if (qparms[i] == 'gClass'):
+            qparms[i] = gClass
+        elif (qparms[i] == 'gILTable'):
+            qparms[i] = gILTable
+        elif (qparms[i] == 'gInstance'):
+            qparms[i] = gInstance
+        elif (qparms[i] == 'gLevel'):
+            qparms[i] = gLevel
+        elif (qparms[i] == 'gParent'):
+            qparms[i] = gParent
+        elif (qparms[i] == 'gPrompt'):
+            qparms[i] = gPrompt
+        elif (qparms[i] == 'gRecipeClass'):
+            qparms[i] = gRecipeClass
+        elif (qparms[i] == 'gSelectParameter'):
+            qparms[i] = gSelectParameter
+        elif (qparms[i] == 'gSelectSelection'):
+            qparms[i] = gSelectSelection
+        elif (qparms[i] == 'gSFC'):
+            qparms[i] = gSFC
+        elif (qparms[i] == 'gState'):
+            qparms[i] = gState
+
+#            for i in range(len(qparms)):
+#                print(qparms[i])
+
+    #--------------------------------------------------------------------------#
+    # Query the sqlite database:                                               #
+    #--------------------------------------------------------------------------#
+    try:
+        c = conn.cursor()
+        c.execute(query, qparms)
+    except:
+        s = ''
+        for i in range(len(qparms)):
+            if (len(s) > 0):
+                s = s + ', '
+            s = s + qparms[i]
+        errorHandler(errProc, errorCode.cannotQuery,
+                     cgSQL.sqlCode[namedQuery], query, s)
+
+    #--------------------------------------------------------------------------#
+    # Return the cursor:                                                       #
+    #--------------------------------------------------------------------------#
+    data = c.fetchall()
+    return data
 
 #------------------------------------------------------------------------------#
 # Function: replaceCounter                                                     #
@@ -1925,6 +1974,16 @@ def addParameterData(sLevel, sClass, sSource, sParameterType, iParameterOrder,
             iEventDataTime = iEventDataTime + 1
 
     #--------------------------------------------------------------------------#
+    # Check if a recipe parameter:                                             #
+    #--------------------------------------------------------------------------#
+    if (sParameterBlock[:2] == 'R_'):
+        bIsRecipe = True
+        sRecipeClass = ''
+    else:
+        bIsRecipe= False
+        sRecipeClass = ''
+
+    #--------------------------------------------------------------------------#
     # Add the parameter to the descendants parameter table:                    #
     #--------------------------------------------------------------------------#
     try:
@@ -1933,7 +1992,8 @@ def addParameterData(sLevel, sClass, sSource, sParameterType, iParameterOrder,
                            sParameter, sParameterBlock,
                            sChildParameterAlias, sChildParameterClass, sChildParameterAttribute,
                            sParameterDataType, sValue, sParameterDescription,
-                           bIsSFC, bIsChild, bIsLink, bIsMC, iChildIndex, idx,
+                           bIsSFC, bIsChild, bIsLink, bIsMC, iChildIndex,
+                           bIsRecipe, sRecipeClass, idx,
                            isEventConfirm, isEventPrompt, isEventLogMsg,
                            isEventLogReal, isEventLogTime,
                            isEventDataReal, isEventDataTime))
@@ -1947,10 +2007,10 @@ def addParameterData(sLevel, sClass, sSource, sParameterType, iParameterOrder,
                      sChildParameterAttribute + ', ' + sParameterDataType + ', ' +
                      str(sValue) + ', ' + sParameterDescription + ', ' +
                      str(bIsSFC) + ', ' + str(bIsChild) + ', ' +
-                     str(bIsLink) + ', ' + str(bIsMC) + ', ' +
-                     str(iChildIndex) + ', ' + str(idx) + ', ' +
-                     str(isEventConfirm) + ', ' + str(isEventPrompt) + ', ' +
-                     str(isEventLogMsg) + ', ' +
+                     str(bIsLink) + ', ' + str(bIsMC) + ', ' + str(iChildIndex) + ', ' +
+                     str(bIsRecipe) + ', ' + sRecipeClass + ', ' +
+                     str(idx) + ', ' + str(isEventConfirm) + ', ' +
+                     str(isEventPrompt) + ', ' + str(isEventLogMsg) + ', ' +
                      str(isEventLogReal) + ', ' + str(isEventLogTime) + ', ' +
                      str(isEventDataReal) + ', ' + str(isEventDataTime))
 
