@@ -1,0 +1,1 @@
+python dg.py -c /home/dpaspa/Dropbox/Business/Synertec/MPI.SMS/automation/code/config/config.xlsx -d /home/dpaspa/Dropbox/Business/Synertec/MPI.SMS/automation/code/docs/tstClassPhysicalInstall.docx -o /home/dpaspa/Dropbox/Business/Synertec/MPI.SMS/automation/code/docs/output/tstPhysicalInstall.docx -s M1 -t tstClassPhysicalInstall -p T -n True

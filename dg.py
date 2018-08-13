@@ -15,6 +15,9 @@ import argparse
 import re
 from enum import Enum
 from docx import Document
+from docx import shared
+from docx.oxml.shared import OxmlElement, qn # Necessary Import
+#from docx.enum.table import WD_ROW_HEIGHT
 import openpyxl
 import os.path
 from shutil import copyfile
@@ -45,8 +48,11 @@ appVersion = '1'
 parser = argparse.ArgumentParser(description='Generates a document from a configuration spreadsheet and set of document templates')
 parser.add_argument('-c','--config', help='Configuration spreadsheet', required=True)
 parser.add_argument('-d','--input', help='Input base document template file', required=True)
-parser.add_argument('-r','--dataRecord', help='Data field containing the record document template file', required=False)
-parser.add_argument('-k','--key', help='The child document key field name', required=True)
+parser.add_argument('-e','--existingDB', help='Use existing database file', required=False)
+parser.add_argument('-f','--dataField', help='Field name containing the record document template file', required=False)
+parser.add_argument('-r','--dataRecord', help='Sheet field containing the record document template file', required=False)
+parser.add_argument('-k','--key', help='The child document key field name', required=False)
+parser.add_argument('-n','--addPageNumbers', help='Add page numbers to the output PDF file', required=False)
 parser.add_argument('-o','--output', help='Output for the generated document file', required=True)
 parser.add_argument('-s','--scope', help='The document scope', required=True)
 parser.add_argument('-t','--type', help='The document type', required=True)
@@ -103,6 +109,7 @@ class errorCode(Enum):
     fileNotExist                       = -7
     pathNotExist                       = -8
     noChildKey                         = -9
+    noDocProperties                    = -10
     noEndPlaceholder                   = -37
     noRecordDocument                   = -40
     nonASCIICharacter                  = -41
@@ -120,6 +127,7 @@ errorMessage = {
     errorCode.pathNotExist             : 'Path @1 does not exist.',
     errorCode.noEndPlaceholder         : 'No valid END placholder in query string @1.',
     errorCode.noChildKey               : 'No child record key defined. Used for document number.',
+    errorCode.noDocProperties          : 'Document has no properties in tblDocuments and tblRevisionHistory',
     errorCode.noRecordDocument         : 'No record document specified with record data.',
     errorCode.nonASCIICharacter        : 'Query expression returned a non ascii-encoded unicode string',
     errorCode.unknownAttribute         : 'Attribute @1 is unknown.',
@@ -147,6 +155,7 @@ def main():
     #--------------------------------------------------------------------------#
     global ps
     global sRefPrefix
+    ps = trange(1, desc='Initialise', leave=False)
 
     #--------------------------------------------------------------------------#
     # Get the document scope and type:                                         #
@@ -161,13 +170,6 @@ def main():
     sOutput = args['output']
 
     #--------------------------------------------------------------------------#
-    # Get the code configuration workbook name and check it exists:            #
-    #--------------------------------------------------------------------------#
-    wbName = args['config']
-    if not os.path.exists(wbName):
-        errorHandler(errProc, errorCode.filenotExist, wbName)
-
-    #--------------------------------------------------------------------------#
     # Get the reference number prefix if any specified:                        #
     #--------------------------------------------------------------------------#
     sRefPrefix = ''
@@ -175,28 +177,47 @@ def main():
         sRefPrefix = args['prefix']
 
     #--------------------------------------------------------------------------#
-    # Copy it to a new file so the base spreadsheet cannot be affected:        #
+    # Get the code configuration workbook name and check it exists:            #
     #--------------------------------------------------------------------------#
-    wbNameDB = os.path.dirname(wbName) + '/configdb.xlsx'
-    copyfile(wbName, wbNameDB)
+    wbName = args['config']
+    if not os.path.exists(wbName):
+        errorHandler(errProc, errorCode.filenotExist, wbName)
 
     #--------------------------------------------------------------------------#
-    # Delete the sqlite database file if it already exists so it can be        #
-    # created anew with refreshed data:                                        #
+    # Get the flag for using the existing DB if it exists:                     #
     #--------------------------------------------------------------------------#
-    dbName = os.path.dirname(wbName) + '/dg.db'
-    try:
-        os.remove(dbName)
-    except OSError:
-        pass
+    bUseExistingDB = False
+    bUseExistingDB = args['existingDB']
+    if (bUseExistingDB == 'True'):
+        #----------------------------------------------------------------------#
+        # Get the database name:                                               #
+        #----------------------------------------------------------------------#
+        dbName = os.path.dirname(wbName) + '/config.db'
+    else:
+        #--------------------------------------------------------------------------#
+        # Copy the configuration worksbook to a new file so the base spreadsheet   #
+        # cannot be affected:                                                      #
+        #--------------------------------------------------------------------------#
+        wbNameDB = os.path.dirname(wbName) + '/configdb.xlsx'
+        copyfile(wbName, wbNameDB)
 
-    #--------------------------------------------------------------------------#
-    # Convert the configuration workbook from xlsx to sqlite database format:  #
-    #--------------------------------------------------------------------------#
-    try:
-        xls2db(wbNameDB, dbName)
-    except:
-        errorHandler(errProc, errorCode.cannotConvertWorkbook, wbNameDB, dbName)
+        #--------------------------------------------------------------------------#
+        # Delete the sqlite database file if it already exists so it can be        #
+        # created anew with refreshed data:                                        #
+        #--------------------------------------------------------------------------#
+        dbName = os.path.dirname(wbName) + '/dg.db'
+        try:
+            os.remove(dbName)
+        except OSError:
+            pass
+
+        #--------------------------------------------------------------------------#
+        # Convert the configuration workbook from xlsx to sqlite database format:  #
+        #--------------------------------------------------------------------------#
+        try:
+            xls2db(wbNameDB, dbName)
+        except:
+            errorHandler(errProc, errorCode.cannotConvertWorkbook, wbNameDB, dbName)
 
     #--------------------------------------------------------------------------#
     # Connect to the new persistent sqlite database file:                      #
@@ -222,6 +243,7 @@ def main():
     # Create the base parent document. Don't know if will have children yet:   #
     #--------------------------------------------------------------------------#
     d = gDocParent(conn, sDocType, sDocScope, sInput, sOutput)
+    dc = None
 
     #--------------------------------------------------------------------------#
     # Get the progress weighting:                                              #
@@ -242,9 +264,15 @@ def main():
         # is defined for a parent document:                                    #
         #----------------------------------------------------------------------#
         iChildNum = 1
-        if (args['dataRecord'] is None):
+        if (args['dataRecord'] is None and args['dataField'] is None):
             errorHandler(errProc, errorCode.noRecordDocument)
-        sFieldRecord = args['dataRecord']
+
+        if (args['dataRecord'] is None):
+            bLookupChildName = False
+            sFieldRecord = args['dataField']
+        else:
+            bLookupChildName = True
+            sFieldRecord = args['dataRecord']
 
         #----------------------------------------------------------------------#
         # Get the child record key:                                            #
@@ -257,12 +285,14 @@ def main():
         #----------------------------------------------------------------------#
         # Process each row in the cursor to append the new record document:    #
         #----------------------------------------------------------------------#
-        ps = trange(1, desc=sFieldKey, leave=False)
         for row in d.dataBase:
             #------------------------------------------------------------------#
             # Get the input file name for the child:                           #
             #------------------------------------------------------------------#
-            sInputChild = os.path.dirname(d.inputFile) + '/' + str(row[sFieldRecord]) + '.docx'
+            if (bLookupChildName):
+                sInputChild = os.path.dirname(d.inputFile) + '/' + str(row[sFieldRecord]) + '.docx'
+            else:
+                sInputChild = os.path.dirname(d.inputFile) + '/' + sFieldRecord + '.docx'
 
             #------------------------------------------------------------------#
             # Create the child record document. It won't need to be kept so    #
@@ -296,13 +326,16 @@ def main():
     #--------------------------------------------------------------------------#
     # Delete the output docx documents which are not needed:                   #
     #--------------------------------------------------------------------------#
-    d.docxDelete()
-    dc.docxDelete()
+#    d.docxDelete()
+
+    if (not dc is None):
+        dc.docxDelete()
 
     #--------------------------------------------------------------------------#
-    # Add the page numbers to the output file:                                 #
+    # Add the page numbers to the output file if required:                     #
     #--------------------------------------------------------------------------#
-    pdfPageNumbers(d.outputPDFFileName)
+    if (args['addPageNumbers'] == 'True'):
+        pdfPageNumbers(d.outputPDFFileName)
 
     #--------------------------------------------------------------------------#
     # Report completion regardless of error:                                   #
@@ -319,7 +352,7 @@ def main():
     #--------------------------------------------------------------------------#
     # Output a success message:                                                #
     #--------------------------------------------------------------------------#
-    print('Congratulations! Operation successful.')
+    print('Congratulations! Document ' + d.docNumber + ' generated successfully.')
 
 #------------------------------------------------------------------------------#
 # Class: gDoc                                                                  #
@@ -449,6 +482,11 @@ class gDoc(object):
         self.parent = False
 
         #----------------------------------------------------------------------#
+        # Prevent rows from breaking across pages:                             #
+        #----------------------------------------------------------------------#
+        self.preventDocumentBreak()
+
+        #----------------------------------------------------------------------#
         # Proess all of the tables in the document:                            #
         #----------------------------------------------------------------------#
         self.processTables()
@@ -497,6 +535,17 @@ class gDoc(object):
 
 #            for table in footer.tables:
 #                self.dataTable(table)
+
+    #--------------------------------------------------------------------------#
+    # Function: preventDocumentBreak                                           #
+    #--------------------------------------------------------------------------#
+    def preventDocumentBreak(self):
+        tags = self.document.element.xpath('//w:tr')
+        rows = len(tags)
+        for row in range(0,rows):
+            tag = tags[row]                     # Specify which <w:r> tag you want
+            child = OxmlElement('w:cantSplit')  # Create arbitrary tag
+            tag.append(child)                   # Append in the new tag
 
     #--------------------------------------------------------------------------#
     # Function: dataTable                                                      #
@@ -623,7 +672,8 @@ class gDoc(object):
         #----------------------------------------------------------------------#
         # Execute the base data query and get the data:                        #
         #----------------------------------------------------------------------#
-        self.dataBase = self.getQueryData(query)
+        c = self.getQueryData(query)
+        self.dataBase = c.fetchall()
 
         #----------------------------------------------------------------------#
         # Iterate the data to get the row count:                               #
@@ -635,7 +685,8 @@ class gDoc(object):
         #----------------------------------------------------------------------#
         # The cursor is one way so refresh it after iteration:                 #
         #----------------------------------------------------------------------#
-        self.dataBase = self.getQueryData(query)
+        c = self.getQueryData(query)
+        self.dataBase = c.fetchall()
 
     #--------------------------------------------------------------------------#
     # Function: setDocumentProperties                                          #
@@ -670,7 +721,7 @@ class gDoc(object):
         #----------------------------------------------------------------------#
         data = c.fetchone()
         if (data is None):
-            pass
+            errorHandler(self.errProc, errorCode.noDocProperties)
         else:
             #------------------------------------------------------------------#
             # Set the document identity information into the core properties:  #
@@ -735,6 +786,11 @@ class gDoc(object):
     #--------------------------------------------------------------------------#
     def tableAddRows(self, query):
         #----------------------------------------------------------------------#
+        # Define global variables:                                             #
+        #----------------------------------------------------------------------#
+        global ps
+
+        #----------------------------------------------------------------------#
         # Define the procedure name and trap any programming errors:           #
         #----------------------------------------------------------------------#
         self.errProc = 'tableAddRows'
@@ -744,10 +800,26 @@ class gDoc(object):
         #----------------------------------------------------------------------#
         bHasData = False
         c = self.getQueryData(query)
+        data = c.fetchall()
+
+        #----------------------------------------------------------------------#
+        # Iterate the data to get the row count:                               #
+        #----------------------------------------------------------------------#
+        self.rowCount = 0
+        for row in data:
+            bHasData = True
+            self.rowCount = self.rowCount + 1
+
+        #----------------------------------------------------------------------#
+        # Re-query to refresh the cursor:                                      #
+        #----------------------------------------------------------------------#
+        c = self.getQueryData(query)
+        data = c.fetchall()
 
         #----------------------------------------------------------------------#
         # Get the column attribute row:                                        #
         #----------------------------------------------------------------------#
+        iRow = 0
         rowAttr = self.currentTable.rows[1]
         cellsAttr = rowAttr.cells
         para = cellsAttr[0].paragraphs[0]
@@ -756,20 +828,37 @@ class gDoc(object):
         #----------------------------------------------------------------------#
         # Process each row of returned data:                                   #
         #----------------------------------------------------------------------#
-        for data in c:
+        for row in data:
+            #------------------------------------------------------------------#
+            # Update the progress bar is not a parent document:
+            #------------------------------------------------------------------#
+            iRow = iRow + 1
+            if (not self.parent):
+                #--------------------------------------------------------------#
+                # Update the progress bar:                                     #
+                #--------------------------------------------------------------#
+                pc = 0.8 / self.rowCount
+                ps.update(pc)
+                ps.set_description('Row ' + str(iRow))
+                ps.refresh()
+
             #------------------------------------------------------------------#
             # Add a new row to the table and enter a loop to process each      #
             # cell:                                                            #
             #------------------------------------------------------------------#
-            bHasData = True
-            cellsNew = self.currentTable.add_row().cells
+            rowNew = self.currentTable.add_row()
+#            rowNew.height_rule = WD_ROW_HEIGHT.EXACTLY
+            rowNew.height_rule = 2
+            rowNew.height = shared.Cm(1.2)
+#            cellsNew = self.currentTable.add_row().cells
+            cellsNew = rowNew.cells
             for i in range(0, len(cellsAttr)):
                 #--------------------------------------------------------------#
                 # Replace the field placeholders in the cell text:             #
                 #--------------------------------------------------------------#
                 s = cellsAttr[i].text
-                for fld in data.keys():
-                    s = s.replace('@@' + fld.upper() + '@@', str(data[fld]))
+                for fld in row.keys():
+                    s = s.replace('@@' + fld.upper() + '@@', str(row[fld]))
                 para = cellsNew[i].paragraphs[0]
                 para.text = ''
                 run = para.add_run(s)
@@ -779,6 +868,7 @@ class gDoc(object):
         # Clean up the table by deleting the query and attribute rows:         #
         #----------------------------------------------------------------------#
         self.remove_row(self.currentTable, rowAttr)
+#        self.currentTable.style = 'testTable'
 
         #----------------------------------------------------------------------#
         # There is no data so write a message:                                 #
@@ -793,7 +883,7 @@ class gDoc(object):
 #            tStyle = self.currentTable.style
             para = cellsNew[0].paragraphs[0]
             para.style = styleAttr
-            run = para.add_run('No data to display')
+            run = para.add_run('No data to display. Refer to the Functional Specification.')
 #            self.currentTable.style = tStyle
 
     #--------------------------------------------------------------------------#
@@ -998,17 +1088,17 @@ class gDoc(object):
         # Replace the parameters with the field values in the base if there is #
         # any data:                                                            #
         #----------------------------------------------------------------------#
-#        c = self.dataBase
-#        data = None
-#        try:
-#            data = c.fetchone()
-#        except:
-#            pass
-#        if (data is not None):
-#            for i in range(len(parms)):
-#                for fld in data.keys():
-#                    if (parms[i].upper() == fld.upper()):
-#                        parms[i] = data[fld]
+        c = self.dataBase
+        data = None
+        try:
+            data = c.fetchone()
+        except:
+            pass
+        if (data is not None):
+            for i in range(len(parms)):
+                for fld in data.keys():
+                    if (parms[i].upper() == fld.upper()):
+                        parms[i] = data[fld]
 
         #----------------------------------------------------------------------#
         # Return the parameter value list:                                     #
@@ -1089,7 +1179,7 @@ class gDoc(object):
 #        f = open(os.devnull, 'w')
 #        sys.stdout = f
         with silence_stdout():
-            print output
+            print(output)
         self.outputPDFFileName = self.outputDir + '/' + self.outputBaseName + '.pdf'
 
     #--------------------------------------------------------------------------#
@@ -1265,7 +1355,7 @@ class gDocChild(gDoc):
         #----------------------------------------------------------------------#
         self.inputFile = sInputChild
         self.childNum = iChildNum
-        self.dataBase = None
+        self.dataBase = p.dataBase
         self.dataRow = data
         self.key = sFieldKeyValue
         self.fieldKey = sFieldKey.upper()

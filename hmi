@@ -1,0 +1,1 @@
+python ilHMI.py -d /home/dpaspa/Dropbox/Business/Synertec/MPI.SMS/automation/code/config/config.db -o /home/dpaspa/Dropbox/Business/Synertec/MPI.SMS/automation/code/docs/hmi -t /home/dpaspa/Dropbox/Business/Synertec/MPI.SMS/automation/code/docs/templateInterlockHMI.pdf

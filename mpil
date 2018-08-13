@@ -1,0 +1,1 @@
+python dg.py -e True -c /home/dpaspa/Dropbox/Business/Synertec/MPI.SMS/automation/code/config/config.xlsx -d /home/dpaspa/Dropbox/Business/Synertec/MPI.SMS/automation/code/docs/templateInterlockHMIParent.docx -f templateInterlockHMIChild -k Instance -o /home/dpaspa/Dropbox/Business/Synertec/MPI.SMS/automation/code/docs/output/IL.docx -s IL -t templateInterlock -n False

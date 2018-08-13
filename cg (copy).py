@@ -44,31 +44,20 @@ args = vars(parser.parse_args())
 # Declare global variables:                                                    #
 #------------------------------------------------------------------------------#
 c = 1
-iAdd = 0
-iAddMax = 0
-iCountAttr = 0
-iCountAttrMax = 0
-iCountFile = 0
-iCountFileMax = 0
-iCountTemplate = 0
-iCountTemplateMax = 0
-iEventConfirm = 1
-iEventPrompt = 1
-iEventLogMsg = 1
-iEventLogReal = 1
-iEventLogTime = 1
-iEventDataReal = 1
-iEventDataTime = 1
-iSync = 1
-gAlias = ''
-gChildClass = ''
+iEventConfirm = 0
+iEventPrompt = 0
+iEventLogMsg = 0
+iEventLogReal = 0
+iEventLogTime = 0
+iEventDataReal = 0
+iEventDataTime = 0
 gClass = ''
 gClassDescription = ''
 gInstance = ''
-#gILTable = ''
+gILTable = ''
 gLevel = ''
 gParent = ''
-gChildParameter = ''
+gPrompt = ''
 gRecipeClass = ''
 gSelectParameter = ''
 gSelectSelection = ''
@@ -95,11 +84,6 @@ def errorHandler(errProc, eCode, *args):
         i = i + 1
 
     #--------------------------------------------------------------------------#
-    # Close the progress bar:                                                  #
-    #--------------------------------------------------------------------------#
-    p.close()
-
-    #--------------------------------------------------------------------------#
     # Output the error message and end:                                        #
     #--------------------------------------------------------------------------#
     print('\r\n')
@@ -117,12 +101,9 @@ class errorCode(Enum):
     cannotConvertWorkbook              = -2
     cannotConnectDB                    = -3
     cannotCreateTable                  = -4
-    cannotInsertTable                  = -5
-    cannotUpdateTable                  = -6
-    cannotGetSQL                       = -7
-    cannotQuery                        = -8
-    filenotExist                       = -9
-    invalidAdder                       = -10
+    cannotGetSQL                       = -5
+    cannotQuery                        = -6
+    filenotExist                       = -7
     invalidChildData                   = -14
     invalidChildField                  = -15
     invalidChildTag                    = -16
@@ -144,12 +125,9 @@ errorMessage = {
     errorCode.cannotCommit             : 'Cannot commit changes to sqlite database',
     errorCode.cannotConvertWorkbook    : 'Cannot convert workbook @1 from xlsx to sqlite db @2',
     errorCode.cannotConnectDB          : 'Cannot connect to sqlite database @1',
-    errorCode.cannotCreateTable        : 'Cannot create table @1 in sqlite database',
-    errorCode.cannotInsertTable        : 'Cannot insert data into table @1',
-    errorCode.cannotUpdateTable        : 'Cannot update data in table @1',
+    errorCode.cannotCreateTable        : 'Cannot insert table @1 into sqlite database',
     errorCode.cannotGetSQL             : 'Cannot retrieve SQL query expression for attribute @1',
     errorCode.cannotQuery              : 'Query element @1 cannot execute using SQL expression @2 using parameters @3',
-    errorCode.invalidAdder             : 'Adder template @1 is not numeric!',
     errorCode.filenotExist             : 'File @1 does not exist.',
     errorCode.invalidChildData         : 'Class @1 has no children defined!',
     errorCode.invalidChildField        : 'Class @1 child field @2 is null!',
@@ -266,49 +244,14 @@ def main():
         errorHandler(errProc, errorCode.cannotCreateTable, query, 'no parameters')
 
     #--------------------------------------------------------------------------#
-    # Create the eventPrompt table:                                            #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.tblCreateEventPrompt]
-        c.execute(query)
-    except:
-        errorHandler(errProc, errorCode.cannotCreateTable, query, 'no parameters')
-
-    #--------------------------------------------------------------------------#
-    # Create the eventLogMsg table:                                            #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.tblCreateEventLogMsg]
-        c.execute(query)
-    except:
-        errorHandler(errProc, errorCode.cannotCreateTable, query, 'no parameters')
-
-    #--------------------------------------------------------------------------#
-    # Create the eventLogReal table:                                           #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.tblCreateEventLogReal]
-        c.execute(query)
-    except:
-        errorHandler(errProc, errorCode.cannotCreateTable, query, 'no parameters')
-
-    #--------------------------------------------------------------------------#
-    # Create the eventLogTime table:                                           #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.tblCreateEventLogTime]
-        c.execute(query)
-    except:
-        errorHandler(errProc, errorCode.cannotCreateTable, query, 'no parameters')
-
-    #--------------------------------------------------------------------------#
     # Get the progress weighting:                                              #
     #--------------------------------------------------------------------------#
     pbChunks = 39.0
+
+    #--------------------------------------------------------------------------#
+    # Add the block level parameters from the tblClass_Parameters list:        #
+    #--------------------------------------------------------------------------#
+#    addParameterClass()
 
     #--------------------------------------------------------------------------#
     # Process the EM SFC parameters for the selected parent:                   #
@@ -327,92 +270,6 @@ def main():
     #--------------------------------------------------------------------------#
     gLevel = 'PC'
     processSFC(sParent, gLevel, 100 * 4 / pbChunks)
-
-    #--------------------------------------------------------------------------#
-    # Add the block level parameters from the tblClass_Parameters list. Only   #
-    # add those parameters not already added in the SFCs:                      #
-    #--------------------------------------------------------------------------#
-    addParameterClass()
-
-    #--------------------------------------------------------------------------#
-    # Populate the eventPrompt table:                                          #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.insertEventPrompt]
-        c.execute(query)
-    except:
-        errorHandler(errProc, errorCode.cannotInsertTable, query, 'no parameters')
-
-    #--------------------------------------------------------------------------#
-    # Update the index in the eventPrompt table:                               #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.updateEventPrompt]
-        c.execute(query)
-    except:
-        errorHandler(errProc, errorCode.cannotUpdateTable, query, 'no parameters')
-
-    #--------------------------------------------------------------------------#
-    # Populate the eventLogMsg table:                                          #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.insertEventLogMsg]
-        c.execute(query)
-    except:
-        errorHandler(errProc, errorCode.cannotInsertTable, query, 'no parameters')
-
-    #--------------------------------------------------------------------------#
-    # Update the index in the eventLogMsg table:                               #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.updateEventLogMsg]
-        c.execute(query)
-    except:
-        errorHandler(errProc, errorCode.cannotUpdateTable, query, 'no parameters')
-
-    #--------------------------------------------------------------------------#
-    # Populate the eventLogReal table:                                         #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.insertEventLogReal]
-        c.execute(query)
-    except:
-        errorHandler(errProc, errorCode.cannotInsertTable, query, 'no parameters')
-
-    #--------------------------------------------------------------------------#
-    # Update the index in the eventLogReal table:                              #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.updateEventLogReal]
-        c.execute(query)
-    except:
-        errorHandler(errProc, errorCode.cannotUpdateTable, query, 'no parameters')
-
-    #--------------------------------------------------------------------------#
-    # Populate the eventLogTime table:                                         #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.insertEventLogTime]
-        c.execute(query)
-    except:
-        errorHandler(errProc, errorCode.cannotInsertTable, query, 'no parameters')
-
-    #--------------------------------------------------------------------------#
-    # Update the index in the eventLogTime table:                              #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.updateEventLogTime]
-        c.execute(query)
-    except:
-        errorHandler(errProc, errorCode.cannotUpdateTable, query, 'no parameters')
 
     #--------------------------------------------------------------------------#
     # Create the overall program files:                                        #
@@ -543,38 +400,31 @@ def processLevel(sParent, sLevel, pbwt):
         #----------------------------------------------------------------------#
         # Add the child parameters if a block level module:                    #
         #----------------------------------------------------------------------#
-        gClass = sClass
         if (sLevel == 'EM' or sLevel == 'UN' or sLevel == 'PC'):
             addParametersChild(sClass)
-#            addParametersDefer(sClass)
 
         #----------------------------------------------------------------------#
         # Create the instance FB (ifb) of the class:                           #
         #----------------------------------------------------------------------#
         sPrefix = 'ifb'
+        gClass = sClass
         createClass(sLevel, sParent, sClass, row['Description'],
                     sPrefix, row['inheritsInstance'], row['nameInstance'], True)
 
         #----------------------------------------------------------------------#
-        # Create PLC communications transfer function for each class:          #
-        #----------------------------------------------------------------------#
-        sPrefix = 'fbx'
-        if (sLevel == 'CM' or sLevel == 'EM' or sLevel == 'UN'):
-            createClass(sLevel, sParent, sClass, row['Description'],
-                        sPrefix, '', sClass, True)
-
-#        elif (sLevel == 'IL'):
-#            createClass(sLevel, sParent, sClass, row['Description'],
-#                        sPrefix, row['inheritsInstance'], row['nameInstance'], True)
-
-        #----------------------------------------------------------------------#
         # Create the function block class file:                                #
         #----------------------------------------------------------------------#
-        sPrefix = row['functionClass']
-        if (sPrefix != 'DEL'):
-            gClass = sClass
-            createClass(sLevel, sParent, sClass, row['Description'],
-                        sPrefix, row['inheritsClass'], row['nameClass'], True)
+        if (sLevel == 'EM' or sLevel == 'UN' or sLevel == 'PC' or
+            (sLevel == 'CM' and (sClass == 'MOT1' or sClass == 'POS1' or
+                                 sClass == 'POS2' or sClass == 'POS3' or
+                                 sClass == 'POS4' or sClass == 'SIC1' or
+                                 sClass == 'TC1'))):
+            sPrefix = 'fb'
+        else:
+            sPrefix = 'fc'
+        gClass = sClass
+        createClass(sLevel, sParent, sClass, row['Description'],
+                    sPrefix, row['inheritsClass'], row['nameClass'], True)
 
         #----------------------------------------------------------------------#
         # Update the progress message:                                         #
@@ -591,25 +441,17 @@ def processLevel(sParent, sLevel, pbwt):
         # Create the critical interlock instance DB:                           #
         #----------------------------------------------------------------------#
         createClass(sLevel, sParent, '', '', '', 'idbIL', 'idb' + sLevel + 's', False)
-#        createClass(sLevel, sParent, '', '', '', 'dbxIL', 'dbx' + sLevel + 's', False)
     else:
         #----------------------------------------------------------------------#
         # Must be a functional level and not an interlock class. Create the    #
         # instance DBs for the functional levels:                              #
         #----------------------------------------------------------------------#
-        createClass(sLevel, sParent, '', '', '', 'dbi', 'idb' + sLevel + 's', False)
+        createClass(sLevel, sParent, '', '', '', 'idb', 'idb' + sLevel + 's', False)
 
         #----------------------------------------------------------------------#
         # Create fcCall to be called from OB1 and scan each instance:          #
         #----------------------------------------------------------------------#
         createClass(sLevel, sParent, '', '', '', 'fcCall', 'fcCall' + sLevel + 's', False)
-
-        #----------------------------------------------------------------------#
-        # Create the transfer call instance DBs and calls:                     #
-        #----------------------------------------------------------------------#
-        if (sLevel == 'CM' or sLevel == 'EM' or sLevel == 'UN'):
-            createClass(sLevel, sParent, '', '', '', 'dbx', 'dbx' + sLevel + 's', False)
-            createClass(sLevel, sParent, '', '', '', 'fcCallx', 'fcCallx' + sLevel + 's', False)
 
     #--------------------------------------------------------------------------#
     # Update the progress message:                                             #
@@ -677,9 +519,10 @@ def processSFC(sParent, sLevel, pbwt):
         sleep(0.01)
 
         #----------------------------------------------------------------------#
-        # Add the SFC and child parameters to the parameter list:              #
+        # Add the SFC and child parameters to the descendants parameter list:  #
         #----------------------------------------------------------------------#
         addParametersSFC(sClass)
+#        addParametersSFCBlock(sClass)
 
         #----------------------------------------------------------------------#
         # Update the progress message:                                         #
@@ -791,11 +634,8 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
     #--------------------------------------------------------------------------#
     # Declare use of the global sqlite cursor object:                          #
     #--------------------------------------------------------------------------#
-    global iCountFile
-    global iCountTemplateMax
     global conn
-    global gClass
-#    global gILTable
+    global gILTable
     global pathOutput
     global pathTemplates
 
@@ -803,35 +643,62 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
     # Get a connection to the database:                                        #
     #--------------------------------------------------------------------------#
     c = conn.cursor()
-    try:
-        query = cgSQL.sql[cgSQL.sqlCode.createClassNone]
-        c.execute(query)
-    except:
-        errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClassNone, query, 'no parameters')
 
     #--------------------------------------------------------------------------#
-    # Get the list of instances for the template if there are any:             #
+    # Get the list of instances for the template:                              #
     #--------------------------------------------------------------------------#
-    gClass = sClass
-    if (sPrefix == 'fbx'):
-        try:
-            query = cgSQL.sql[cgSQL.sqlCode.xferInstancesGlobal]
-            c.execute(query, (sClass, ))
-        except:
-            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.xferInstancesGlobal, query, sClass)
-
-    elif (len(sClass) > 0 and sLevel != 'IL'):
-        try:
-            query = cgSQL.sql[cgSQL.sqlCode.createInstancesGlobal]
-            c.execute(query, (sClass, ))
-        except:
-            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createInstancesGlobal, query, sClass)
-    else:
+    if (sLevel == 'PG' or sLevel == 'BLK' or sTemplate == 'idbIL'):
         try:
             query = cgSQL.sql[cgSQL.sqlCode.createClassNone]
             c.execute(query)
         except:
             errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClassNone, query, 'no parameters')
+
+    elif (sTemplate == 'fcCall' or sTemplate == 'idb'):
+        try:
+            query = cgSQL.sql[cgSQL.sqlCode.createLevel]
+            c.execute(query, (sLevel.upper(),))
+        except:
+            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createLevel, query, sLevel.upper())
+
+    elif (sClass == 'IL'):
+        gILTable = sNameOutput
+        if (gILTable == 'CRIL'): # or gILTable == 'IL'):
+            try:
+                query = cgSQL.sql[cgSQL.sqlCode.CRIL]
+                c.execute(query)
+            except:
+                errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.CRIL, 'no parameters')
+
+        elif (gILTable == 'NCRIL'):
+            try:
+                query = cgSQL.sql[cgSQL.sqlCode.NCRIL]
+                c.execute(query)
+            except:
+                errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.NCRIL, 'no parameters')
+
+    elif (sPrefix == 'ifb'):
+        #----------------------------------------------------------------------#
+        # Filter out any virtual instances if Level starts with V:             #
+        #----------------------------------------------------------------------#
+        try:
+            query = cgSQL.sql[cgSQL.sqlCode.createInstancesGlobal]
+            c.execute(query, (sClass, ))
+        except:
+            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createInstancesGlobal, query, sClass)
+
+    elif (sPrefix == 'fc' or sPrefix == 'fb'):
+        try:
+            query = cgSQL.sql[cgSQL.sqlCode.createClass]
+            c.execute(query, (sClass, ))
+        except:
+            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClass, query, sClass)
+    else:
+        try:
+            query = cgSQL.sql[cgSQL.sqlCode.createClassesForLevel]
+            c.execute(query, (sLevel.upper(),))
+        except:
+            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.createClassesForLevel, query, sLevel.upper())
 
     #--------------------------------------------------------------------------#
     # Check to see if the cursor contains any data:                            #
@@ -849,9 +716,8 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
         #----------------------------------------------------------------------#
         # Open the template file for reading and parse each line:              #
         #----------------------------------------------------------------------#
-        iCountFile = 0
         file = open(sFileNameIn, 'r')
-        bSkipLine = False
+        bSkipFirstLine = False
         bTemplateBegin = False
         bTemplateEnd = False
         txtData = ''
@@ -878,7 +744,7 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
                 #--------------------------------------------------------------#
                 if (sBuffer.find('@@TEMPLATE_BEGIN') >= 0):
                     bTemplateBegin = True
-                    bSkipLine = True
+                    bSkipFirstLine = True
 
                     #----------------------------------------------------------#
                     # Check if there is a new query:                           #
@@ -892,6 +758,7 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
                         sQuery = sBuffer[iQueryBegin + 17:iQueryEnd]
                         data = getNamedQueryData(sQuery)
 
+
                 #--------------------------------------------------------------#
                 # Check if the end of the current instance template:           #
                 #--------------------------------------------------------------#
@@ -903,8 +770,8 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
                 # template:                                                    #
                 #--------------------------------------------------------------#
                 if (bTemplateBegin and not bTemplateEnd):
-                    if (bSkipLine):
-                        bSkipLine = False
+                    if (bSkipFirstLine):
+                        bSkipFirstLine = False
                     else:
                         txtTemplate = txtTemplate + sBuffer
 
@@ -948,15 +815,9 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
             txtData = txtData.replace('@@CLASSDESCRIPTION@@', gClassDescription)
 
         #----------------------------------------------------------------------#
-        # Replace any maximum counter value:                                   #
-        #----------------------------------------------------------------------#
-        txtData = txtData.replace('@@COUNTERTEMPLATEMAX@@', str(iCountTemplateMax))
-        txtData = txtData.replace('@@COUNTERTEMPLATENEXT@@', str(iCountTemplateMax + 1))
-
-        #----------------------------------------------------------------------#
         # Write the output instance file:                                      #
         #----------------------------------------------------------------------#
-        if (bOne or sClass == 'IL' or sTemplate == 'fcCall' or sTemplate == 'fcCallx' or sTemplate == 'dbi' or sTemplate == 'dbx'):
+        if (bOne or sClass == 'IL' or sTemplate == 'fcCall' or sTemplate == 'idb'):
             sFileNameOut = pathOutput + '/' + sPrefix + sNameOutput + '.awl'
         else:
             sFileNameOut = pathOutput + '/' + sTemplate + '.awl'
@@ -964,8 +825,8 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
         file.write(txtData)
         file.close()
 
-#        if (sLevel == 'CM'):
-#            addCodeFileParameters(sLevel, sClass, sClass, sClass, txtData, False)
+        if (sLevel == 'CM'):
+            addCodeFileParameters(sLevel, sClass, sClass, txtData, False)
 
 #------------------------------------------------------------------------------#
 # Function: processTemplate                                                    #
@@ -993,7 +854,6 @@ def processTemplate(c, txtTemplate, txtData, bOne):
     #--------------------------------------------------------------------------#
     # Declare use of the global sqlite cursor object:                          #
     #--------------------------------------------------------------------------#
-    global iCountTemplate
     global gClass
     global gClassDescription
     global gInstance
@@ -1003,7 +863,7 @@ def processTemplate(c, txtTemplate, txtData, bOne):
     #--------------------------------------------------------------------------#
     # Enter a loop to process each instance:                                   #
     #--------------------------------------------------------------------------#
-    iCountTemplate = 0
+    iRow = 0
     iCounterBase = 0
     txtInstance = ''
     for row in c:
@@ -1036,9 +896,6 @@ def processTemplate(c, txtTemplate, txtData, bOne):
                     sInstance = row[fld]
                     gInstance = sInstance
 
-                elif (fld.upper() == 'LEVEL'):
-                    gLevel = row[fld]
-
         #----------------------------------------------------------------------#
         # Check if there are child attribute aliases in the template:          #
         #----------------------------------------------------------------------#
@@ -1049,11 +906,10 @@ def processTemplate(c, txtTemplate, txtData, bOne):
             txtInstance = insertAttributeData(sClass, sInstance, txtInstance, 0)
 
         #----------------------------------------------------------------------#
-        # Replace any counters and adders:                                     #
+        # Replace any counters:                                                #
         #----------------------------------------------------------------------#
-        txtInstance = replaceCounterFile(txtInstance)
-        txtInstance = replaceCounterTemplate(txtInstance)
-        txtInstance = replaceAdderAttr(txtInstance)
+        txtInstance = replaceCounter(iRow, txtInstance)
+        iRow = iRow + 1
 
         #----------------------------------------------------------------------#
         # Add the instance data to the output file:                            #
@@ -1091,15 +947,11 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
     #--------------------------------------------------------------------------#
     # Declare use of the global sqlite cursor object and other variables:      #
     #--------------------------------------------------------------------------#
-    global iCountAttr
-    global iCountAttrMax
-    global gAlias
-    global gChildClass
     global gClass
     global gInstance
     global gLevel
     global gParent
-    global gChildParameter
+    global gPrompt
     global gRecipeClass
     global gSelectParameter
     global gSelectSelection
@@ -1116,7 +968,7 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
         #   @@ATTR_BEGIN|<attr>@@                                              #
         #   @@ATTR_END|<attr>@@                                                #
         #----------------------------------------------------------------------#
-        iCountAttr = 0
+        iRow = 0
         iCounterBase = 0
         txtRecordData = ''
         iTagBegin = txtInstance.find('@@ATTR_BEGIN|')
@@ -1235,20 +1087,14 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
 
                             txtRecord = txtRecord.replace('@@' + sLink + fld.upper() + '@@', sValue)
 
-                            if (fld.upper() == 'CHILDPARAMETERALIAS'):
-                                gAlias = sValue
-
-                            if (fld.upper() == 'CHILDALIASCLASS'):
-                                gChildClass = sValue
-
-                            elif (fld.upper() == 'CLASS'):
+                            if (fld.upper() == 'CLASS'):
                                 gClass = sValue
 
                             elif (fld.upper() == 'INSTANCE'):
                                 gInstance = sValue
 
                             elif (fld.upper() == 'CHILDPARAMETER'):
-                                gChildParameter = sValue
+                                gPrompt = sValue
 
                             if (fld.upper() == 'RECIPECLASS'):
                                 gRecipeClass = sValue
@@ -1275,9 +1121,8 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
                     #----------------------------------------------------------#
                     # Replace any counters:                                    #
                     #----------------------------------------------------------#
-                    txtRecord = replaceCounterAttr(txtRecord)
-                    txtRecord = replaceCounterFile(txtRecord)
-                    txtRecord = replaceAdderAttr(txtRecord)
+                    txtRecord = replaceCounter(iRow, txtRecord)
+                    iRow = iRow + 1
 
                     #----------------------------------------------------------#
                     # Build the attribute record string if not a LINK:         #
@@ -1311,10 +1156,9 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
             txtInstance = txtInstanceBegin + txtRecordData + txtInstanceEnd
 
             #------------------------------------------------------------------#
-            # Replace any maximum or next counter values:                      #
+            # Replace any maximum counter value:                               #
             #------------------------------------------------------------------#
-            txtInstance = txtInstance.replace('@@COUNTERATTRMAX@@', str(iCountAttrMax))
-            txtInstance = txtInstance.replace('@@COUNTERATTRNEXT@@', str(iCountAttrMax + 1))
+            txtInstance = txtInstance.replace('@@COUNTERMAX@@', str(iRow + iCounterBase))
 
     #--------------------------------------------------------------------------#
     # Return the template now it is filled with instance data:                 #
@@ -1353,7 +1197,7 @@ def getNamedQueryData(namedQuery):
     global gInstance
     global gLevel
     global gParent
-    global gChildParameter
+    global gPrompt
     global gRecipeClass
     global gSelectParameter
     global gSelectSelection
@@ -1377,22 +1221,18 @@ def getNamedQueryData(namedQuery):
     #--------------------------------------------------------------------------#
     qparms = list(parms)
     for i in range(len(qparms)):
-        if (qparms[i] == 'gAlias'):
-            qparms[i] = gAlias
-        elif (qparms[i] == 'gChildClass'):
-            qparms[i] = gChildClass
-        elif (qparms[i] == 'gClass'):
+        if (qparms[i] == 'gClass'):
             qparms[i] = gClass
-#        elif (qparms[i] == 'gILTable'):
-#            qparms[i] = gILTable
+        elif (qparms[i] == 'gILTable'):
+            qparms[i] = gILTable
         elif (qparms[i] == 'gInstance'):
             qparms[i] = gInstance
         elif (qparms[i] == 'gLevel'):
             qparms[i] = gLevel
         elif (qparms[i] == 'gParent'):
             qparms[i] = gParent
-        elif (qparms[i] == 'gChildParameter'):
-            qparms[i] = gChildParameter
+        elif (qparms[i] == 'gPrompt'):
+            qparms[i] = gPrompt
         elif (qparms[i] == 'gRecipeClass'):
             qparms[i] = gRecipeClass
         elif (qparms[i] == 'gSelectParameter'):
@@ -1429,171 +1269,48 @@ def getNamedQueryData(namedQuery):
     return data
 
 #------------------------------------------------------------------------------#
-# Function: replaceAdderAttr                                                   #
+# Function: replaceCounter                                                     #
 #                                                                              #
 # Description:                                                                 #
-# Sets attribute adder values to count up by multiples.                        #
+# Sets any default parameter values.                                           #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# iRecordCount          The record count number.                               #
 #------------------------------------------------------------------------------#
 # Returned parameters:                                                         #
 #                                                                              #
 # txtRecord             The template text.                                     #
 #------------------------------------------------------------------------------#
-def replaceAdderAttr(txtRecord):
+def replaceCounter(iRecordCount, txtRecord):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    errProc = replaceAdderAttr.__name__
-
-    #--------------------------------------------------------------------------#
-    # Define global variables:                                                 #
-    #--------------------------------------------------------------------------#
-    global iAdd
-    global iAddMax
-
-    #--------------------------------------------------------------------------#
-    # Check if any adder placeholders:                                         #
-    #--------------------------------------------------------------------------#
-    iAdderIncr = 0
-    if (txtRecord.find('@@ADDER') >= 0):
-        #----------------------------------------------------------------------#
-        # Check if a adder base starting value defined:                        #
-        #----------------------------------------------------------------------#
-        iAdderBase = 0
-        sAdderBase = ''
-        sAdderIncr = ''
-        if (txtRecord.find('@@ADDER|') >= 0):
-            #------------------------------------------------------------------#
-            # Reset the adder first if requested:                              #
-            #------------------------------------------------------------------#
-            if (txtRecord.find('@@ADDERRESET@@') >= 0 and
-                txtRecord.find('@@ADDERRESET@@') < txtRecord.find('@@ADDER|')):
-                iAdd = 0
-                txtRecord = txtRecord.replace('@@ADDERRESET@@\r\n', '', 1)
-
-            #------------------------------------------------------------------#
-            # Get the adder base starting value:                               #
-            #------------------------------------------------------------------#
-            iAdderBegin = txtRecord.find('@@ADDER|')
-            iAdderEnd = txtRecord.find('|', iAdderBegin + 8)
-            sAdderBase = txtRecord[iAdderBegin + 8:iAdderEnd]
-
-            #------------------------------------------------------------------#
-            # Get the adder increment value:                                   #
-            #------------------------------------------------------------------#
-            iAdderBegin = iAdderEnd + 1
-            iAdderEnd = txtRecord.find('@@', iAdderBegin)
-            sAdderIncr = txtRecord[iAdderBegin:iAdderEnd]
-
-            #------------------------------------------------------------------#
-            # Check if a numeric starting value:                               #
-            #------------------------------------------------------------------#
-            if (isnumeric(sAdderBase)):
-                iAdderBase = int(sAdderBase)
-                txtRecord = txtRecord.replace('@@ADDER|' + sAdderBase + '@@', str(iAdd + iAdderBase))
-            else:
-                #--------------------------------------------------------------#
-                # Invalid default parameter value:                             #
-                #--------------------------------------------------------------#
-                errorHandler(errProc, errorCode.invalidAdder, sAdderBase)
-
-            #------------------------------------------------------------------#
-            # Check if a numeric increment value:                              #
-            #------------------------------------------------------------------#
-            if (isnumeric(sAdderIncr)):
-                iAdderIncr = int(sAdderIncr)
-                txtRecord = txtRecord.replace('@@ADDER|' + sAdderBase + '@@', str(iAdd + iAdderBase))
-            else:
-                #--------------------------------------------------------------#
-                # Invalid default parameter value:                             #
-                #--------------------------------------------------------------#
-                errorHandler(errProc, errorCode.invalidAdder, sAdderIncr)
-
-        #----------------------------------------------------------------------#
-        # Replace the base adder placeholder to kick things off:               #
-        #----------------------------------------------------------------------#
-        txtRecord = txtRecord.replace('@@ADDER|' + sAdderBase + '|' + sAdderIncr + '@@', str(iAdd + iAdderBase))
-        iAddMax = iAdd + iAdderBase
-
-        #----------------------------------------------------------------------#
-        # Replace any additional adder placeholders:                           #
-        #----------------------------------------------------------------------#
-        while (txtRecord.find('@@ADDER') >= 0):
-            if (txtRecord.find('@@ADDERRESET@@') >= 0 and
-                txtRecord.find('@@ADDERRESET@@') < txtRecord.find('@@ADDER@@')):
-                iAdd = 0
-                txtRecord = txtRecord.replace('@@ADDERRESET@@\r\n', '', 1)
-
-            if (txtRecord.find('@@ADDERINCR@@') >= 0 and
-                txtRecord.find('@@ADDERINCR@@') < txtRecord.find('@@ADDER@@')):
-                iAdd = iAdd + iAdderIncr
-                txtRecord = txtRecord.replace('@@ADDERINCR@@\r\n', '', 1)
-
-            txtRecord = txtRecord.replace('@@ADDER@@', str(iAdd + iAdderBase), 1)
-            iAddMax = iAdd + iAdderBase
-
-    #--------------------------------------------------------------------------#
-    # Increment the adder for next occurrence:                                 #
-    #--------------------------------------------------------------------------#
-    iAdd = iAdd + iAdderIncr
-
-    #--------------------------------------------------------------------------#
-    # Return the record now it is filled with adder data:                      #
-    #--------------------------------------------------------------------------#
-    return txtRecord
-
-#------------------------------------------------------------------------------#
-# Function: replaceCounterAttr                                                 #
-#                                                                              #
-# Description:                                                                 #
-# Sets attribute counter values.                                               #
-#------------------------------------------------------------------------------#
-# Returned parameters:                                                         #
-#                                                                              #
-# txtRecord             The template text.                                     #
-#------------------------------------------------------------------------------#
-def replaceCounterAttr(txtRecord):
-    #--------------------------------------------------------------------------#
-    # Define the procedure name and trap any programming errors:               #
-    #--------------------------------------------------------------------------#
-    errProc = replaceCounterAttr.__name__
-
-    #--------------------------------------------------------------------------#
-    # Define global variables:                                                 #
-    #--------------------------------------------------------------------------#
-    global iCountAttr
-    global iCountAttrMax
+    errProc = replaceCounter.__name__
 
     #--------------------------------------------------------------------------#
     # Check if any counter placeholders:                                       #
     #--------------------------------------------------------------------------#
-    if (txtRecord.find('@@COUNTERATTR') >= 0):
+    if (txtRecord.find('@@COUNTER') >= 0):
         #----------------------------------------------------------------------#
         # Check if a counter base starting value defined:                      #
         #----------------------------------------------------------------------#
         iCounterBase = 0
         sCounterBase = ''
-        if (txtRecord.find('@@COUNTERATTR|') >= 0):
-            #------------------------------------------------------------------#
-            # Reset the counter first if requested:                            #
-            #------------------------------------------------------------------#
-            if (txtRecord.find('@@COUNTERATTRRESET@@') >= 0 and
-                txtRecord.find('@@COUNTERATTRRESET@@') < txtRecord.find('@@COUNTERATTR|')):
-                iCountAttr = 0
-                txtRecord = txtRecord.replace('@@COUNTERATTRRESET@@\r\n', '', 1)
-
+        if (txtRecord.find('@@COUNTER|') >= 0):
             #------------------------------------------------------------------#
             # Get the counter base starting value:                             #
             #------------------------------------------------------------------#
-            iCounterBegin = txtRecord.find('@@COUNTERATTR|')
-            iCounterEnd = txtRecord.find('@@', iCounterBegin + 14)
-            sCounterBase = txtRecord[iCounterBegin + 14:iCounterEnd]
+            iCounterBegin = txtRecord.find('@@COUNTER|')
+            iCounterEnd = txtRecord.find('@@', iCounterBegin + 10)
+            sCounterBase = txtRecord[iCounterBegin + 10:iCounterEnd]
 
             #------------------------------------------------------------------#
             # Check if a numeric starting value:                               #
             #------------------------------------------------------------------#
             if (isnumeric(sCounterBase)):
                 iCounterBase = int(sCounterBase)
-                txtRecord = txtRecord.replace('@@COUNTERATTR|' + sCounterBase + '@@', str(iCountAttr + iCounterBase))
+                txtRecord = txtRecord.replace('@@COUNTER|' + sCounterBase + '@@', str(iRecordCount + iCounterBase))
             else:
                 #--------------------------------------------------------------#
                 # Invalid default parameter value:                             #
@@ -1601,220 +1318,11 @@ def replaceCounterAttr(txtRecord):
                 errorHandler(errProc, errorCode.invalidCounter, sCounterBase)
 
         #----------------------------------------------------------------------#
-        # Replace the base counter placeholder to kick things off:             #
-        #----------------------------------------------------------------------#
-        txtRecord = txtRecord.replace('@@COUNTERATTR|' + sCounterBase + '@@', str(iCountAttr + iCounterBase))
-        iCountAttrMax = iCountAttr + iCounterBase
-
-        #----------------------------------------------------------------------#
         # Replace any additional counter placeholders:                         #
         #----------------------------------------------------------------------#
-        while (txtRecord.find('@@COUNTERATTR') >= 0):
-            if (txtRecord.find('@@COUNTERATTRRESET@@') >= 0 and
-                txtRecord.find('@@COUNTERATTRRESET@@') < txtRecord.find('@@COUNTERATTR@@')):
-                iCountAttr = 0
-                txtRecord = txtRecord.replace('@@COUNTERATTRRESET@@\r\n', '', 1)
-
-            if (txtRecord.find('@@COUNTERATTRINCR@@') >= 0 and
-                txtRecord.find('@@COUNTERATTRINCR@@') < txtRecord.find('@@COUNTERATTR@@')):
-                iCountAttr = iCountAttr + 1
-                txtRecord = txtRecord.replace('@@COUNTERATTRINCR@@\r\n', '', 1)
-
-            txtRecord = txtRecord.replace('@@COUNTERATTR@@', str(iCountAttr + iCounterBase), 1)
-            iCountAttrMax = iCountAttr + iCounterBase
-
-    #--------------------------------------------------------------------------#
-    # Increment the counter for next occurrence:                               #
-    #--------------------------------------------------------------------------#
-    iCountAttr = iCountAttr + 1
-
-    #--------------------------------------------------------------------------#
-    # Return the record now it is filled with counter data:                    #
-    #--------------------------------------------------------------------------#
-    return txtRecord
-
-#------------------------------------------------------------------------------#
-# Function: replaceCounterFile                                                 #
-#                                                                              #
-# Description:                                                                 #
-# Sets attribute counter values.                                               #
-#------------------------------------------------------------------------------#
-# Returned parameters:                                                         #
-#                                                                              #
-# txtRecord             The template text.                                     #
-#------------------------------------------------------------------------------#
-def replaceCounterFile(txtRecord):
-    #--------------------------------------------------------------------------#
-    # Define the procedure name and trap any programming errors:               #
-    #--------------------------------------------------------------------------#
-    errProc = replaceCounterFile.__name__
-
-    #--------------------------------------------------------------------------#
-    # Define global variables:                                                 #
-    #--------------------------------------------------------------------------#
-    global iCountFile
-    global iCountFileMax
-
-    #--------------------------------------------------------------------------#
-    # Check if any counter placeholders:                                       #
-    #--------------------------------------------------------------------------#
-    if (txtRecord.find('@@COUNTERFILE') >= 0):
-        #----------------------------------------------------------------------#
-        # Check if a counter base starting value defined:                      #
-        #----------------------------------------------------------------------#
-        iCounterBase = 0
-        sCounterBase = ''
-        if (txtRecord.find('@@COUNTERFILE|') >= 0):
-            #------------------------------------------------------------------#
-            # Reset the counter first if requested:                            #
-            #------------------------------------------------------------------#
-            if (txtRecord.find('@@COUNTERFILERESET@@') >= 0 and
-                txtRecord.find('@@COUNTERFILERESET@@') < txtRecord.find('@@COUNTERFILE|')):
-                iCountFile = 0
-                txtRecord = txtRecord.replace('@@COUNTERFILERESET@@\r\n', '', 1)
-
-            #------------------------------------------------------------------#
-            # Get the counter base starting value:                             #
-            #------------------------------------------------------------------#
-            iCounterBegin = txtRecord.find('@@COUNTERFILE|')
-            iCounterEnd = txtRecord.find('@@', iCounterBegin + 14)
-            sCounterBase = txtRecord[iCounterBegin + 14:iCounterEnd]
-
-            #------------------------------------------------------------------#
-            # Check if a numeric starting value:                               #
-            #------------------------------------------------------------------#
-            if (isnumeric(sCounterBase)):
-                iCounterBase = int(sCounterBase)
-                txtRecord = txtRecord.replace('@@COUNTERFILE|' + sCounterBase + '@@', str(iCountFile + iCounterBase))
-            else:
-                #--------------------------------------------------------------#
-                # Invalid default parameter value:                             #
-                #--------------------------------------------------------------#
-                errorHandler(errProc, errorCode.invalidCounter, sCounterBase)
-
-        #----------------------------------------------------------------------#
-        # Replace the base counter placeholder to kick things off:             #
-        #----------------------------------------------------------------------#
-        txtRecord = txtRecord.replace('@@COUNTERFILE|' + sCounterBase + '@@', str(iCountFile + iCounterBase))
-        iCountFileMax = iCountFile + iCounterBase
-
-        #----------------------------------------------------------------------#
-        # Replace any additional counter placeholders:                         #
-        #----------------------------------------------------------------------#
-        while (txtRecord.find('@@COUNTERFILE') >= 0):
-            if (txtRecord.find('@@COUNTERFILERESET@@') >= 0 and
-                txtRecord.find('@@COUNTERFILERESET@@') < txtRecord.find('@@COUNTERFILE@@')):
-                iCountFile = 0
-                txtRecord = txtRecord.replace('@@COUNTERFILERESET@@\r\n', '', 1)
-
-            if (txtRecord.find('@@COUNTERFILEINCR@@') >= 0 and
-                txtRecord.find('@@COUNTERFILEINCR@@') < txtRecord.find('@@COUNTERFILE@@')):
-                iCountFile = iCountFile + 1
-                txtRecord = txtRecord.replace('@@COUNTERFILEINCR@@\r\n', '', 1)
-
-            elif (txtRecord.find('@@COUNTERFILEINCR@@') >= 0):
-                iCountFile = iCountFile + 1
-                txtRecord = txtRecord.replace('@@COUNTERFILEINCR@@\r\n', '', 1)
-
-            txtRecord = txtRecord.replace('@@COUNTERFILE@@', str(iCountFile + iCounterBase), 1)
-            iCountFileMax = iCountFile + iCounterBase
-
-    #--------------------------------------------------------------------------#
-    # Increment the counter for next occurrence:                               #
-    #--------------------------------------------------------------------------#
-    iCountFile = iCountFile + 1
-
-    #--------------------------------------------------------------------------#
-    # Return the record now it is filled with counter data:                    #
-    #--------------------------------------------------------------------------#
-    return txtRecord
-
-#------------------------------------------------------------------------------#
-# Function: replaceCounterTemplate                                             #
-#                                                                              #
-# Description:                                                                 #
-# Sets attribute counter values.                                               #
-#------------------------------------------------------------------------------#
-# Returned parameters:                                                         #
-#                                                                              #
-# txtRecord             The template text.                                     #
-#------------------------------------------------------------------------------#
-def replaceCounterTemplate(txtRecord):
-    #--------------------------------------------------------------------------#
-    # Define the procedure name and trap any programming errors:               #
-    #--------------------------------------------------------------------------#
-    errProc = replaceCounterTemplate.__name__
-
-    #--------------------------------------------------------------------------#
-    # Define global variables:                                                 #
-    #--------------------------------------------------------------------------#
-    global iCountTemplate
-    global iCountTemplateMax
-
-    #--------------------------------------------------------------------------#
-    # Check if any counter placeholders:                                       #
-    #--------------------------------------------------------------------------#
-    if (txtRecord.find('@@COUNTERTEMPLATE') >= 0):
-        #----------------------------------------------------------------------#
-        # Check if a counter base starting value defined:                      #
-        #----------------------------------------------------------------------#
-        iCounterBase = 0
-        sCounterBase = ''
-        if (txtRecord.find('@@COUNTERTEMPLATE|') >= 0):
-            #------------------------------------------------------------------#
-            # Reset the counter first if requested:                            #
-            #------------------------------------------------------------------#
-            if (txtRecord.find('@@COUNTERTEMPLATERESET@@') >= 0 and
-                txtRecord.find('@@COUNTERTEMPLATERESET@@') < txtRecord.find('@@COUNTERTEMPLATE|')):
-                iCountTemplate = 0
-                txtRecord = txtRecord.replace('@@COUNTERTEMPLATERESET@@\r\n', '', 1)
-
-            #------------------------------------------------------------------#
-            # Get the counter base starting value:                             #
-            #------------------------------------------------------------------#
-            iCounterBegin = txtRecord.find('@@COUNTERTEMPLATE|')
-            iCounterEnd = txtRecord.find('@@', iCounterBegin + 18)
-            sCounterBase = txtRecord[iCounterBegin + 18:iCounterEnd]
-
-            #------------------------------------------------------------------#
-            # Check if a numeric starting value:                               #
-            #------------------------------------------------------------------#
-            if (isnumeric(sCounterBase)):
-                iCounterBase = int(sCounterBase)
-                txtRecord = txtRecord.replace('@@COUNTERTEMPLATE|' + sCounterBase + '@@', str(iCountTemplate + iCounterBase))
-            else:
-                #--------------------------------------------------------------#
-                # Invalid default parameter value:                             #
-                #--------------------------------------------------------------#
-                errorHandler(errProc, errorCode.invalidCounter, sCounterBase)
-
-        #----------------------------------------------------------------------#
-        # Replace the base counter placeholder to kick things off:             #
-        #----------------------------------------------------------------------#
-        txtRecord = txtRecord.replace('@@COUNTERTEMPLATE|' + sCounterBase + '@@', str(iCountTemplate + iCounterBase))
-        iCountTemplateMax = iCountTemplate + iCounterBase
-
-        #----------------------------------------------------------------------#
-        # Replace any additional counter placeholders:                         #
-        #----------------------------------------------------------------------#
-        while (txtRecord.find('@@COUNTERTEMPLATE') >= 0):
-            if (txtRecord.find('@@COUNTERTEMPLATERESET@@') >= 0 and
-                txtRecord.find('@@COUNTERTEMPLATERESET@@') < txtRecord.find('@@COUNTERTEMPLATE@@')):
-                iCountTemplate = 0
-                txtRecord = txtRecord.replace('@@COUNTERTEMPLATERESET@@\r\n', '', 1)
-
-            if (txtRecord.find('@@COUNTERTEMPLATEINCR@@') >= 0 and
-                txtRecord.find('@@COUNTERTEMPLATEINCR@@') < txtRecord.find('@@COUNTERTEMPLATE@@')):
-                iCountTemplate = iCountTemplate + 1
-                txtRecord = txtRecord.replace('@@COUNTERTEMPLATEINCR@@\r\n', '', 1)
-
-            txtRecord = txtRecord.replace('@@COUNTERTEMPLATE@@', str(iCountTemplate + iCounterBase), 1)
-            iCountTemplateMax = iCountTemplate + iCounterBase
-
-    #--------------------------------------------------------------------------#
-    # Increment the counter for next occurrence:                               #
-    #--------------------------------------------------------------------------#
-    iCountTemplate = iCountTemplate + 1
+        txtRecord = txtRecord.replace('@@COUNTER|' + sCounterBase + '@@', str(iRecordCount + iCounterBase))
+        txtRecord = txtRecord.replace('@@COUNTER@@', str(iRecordCount + iCounterBase))
+        txtRecord = txtRecord.replace('@@COUNTERNEXT@@', str(iRecordCount + iCounterBase + 1))
 
     #--------------------------------------------------------------------------#
     # Return the record now it is filled with counter data:                    #
@@ -1867,14 +1375,13 @@ def defaultParameters(sParent, txtInstance):
         if (row['Parameter'] is None):
             errorHandler(errProc, errorCode.invalidDefaultData, sParent)
 
-        elif (row['defaultValue'] is None):
+        elif (row['Default'] is None):
             errorHandler(errProc, errorCode.invalidDefaultData, sParent)
         else:
             p = row['Parameter']
-#            r = row['defaultValue']
+            r = row['Default']
             old = '@@' + p.upper() + '@@'
-            new = row['defaultValue']
-#            new = '{:10.1f}'.format(r)
+            new = '{:10.1f}'.format(r)
             txtInstance = txtInstance.replace(old, new)
 
     #--------------------------------------------------------------------------#
@@ -1900,7 +1407,7 @@ def addParameterClass():
     global conn
 
     #--------------------------------------------------------------------------#
-    # Get the list of parameters from tblClass_Parameter:                      #
+    # Get the list of parameters:                                              #
     #--------------------------------------------------------------------------#
     try:
         c = conn.cursor()
@@ -1919,28 +1426,25 @@ def addParameterClass():
         #----------------------------------------------------------------------#
         sLevel = row['Level']
         sClass = row['parameterClass']
-        sSource = 'CLASS'
-        sState = ''
-        sParameterType = 'VAR_IN_OUT'
-        iParameterIndex = 0
-        sParameter = row['childParameter']
-        sParameterBlock = row['blockParameter']
+        sSource = row['parameterState']
+        sParameterType = row['parameterType']
+        iParameterIndex = row['parameterIndex']
+        sParameter = row['parameterName']
+        sParameterBlock = sParameter.upper()
         sParameterDataType = row['parameterDataType']
-        sParameterDataType = sParameterDataType.upper()
-        sValue = row['parameterValue']
+        sValue = ''
         sParameterDescription = row['parameterDescription']
-        sChildParameterAlias = ''
-        sChildParameterClass = ''
-        sChildParameterAttribute = ''
-        sOperation = row['parameterOperation']
+        sChildParameterAlias = row['childParameterAlias']
+        sChildParameterAttribute = row['childParameterAttribute']
+#        sSFCParameter = row['sfcParameter']
 
         #----------------------------------------------------------------------#
         # Add the parameter to the global list:                                #
         #----------------------------------------------------------------------#
-        addParameterData(sLevel, sClass, sSource, sState, sParameterType, iParameterIndex,
-                         sParameter, sChildParameterClass, sParameterBlock, sParameterDataType,
+        addParameterData(sLevel, sClass, sSource, sParameterType, iParameterIndex,
+                         sParameter, sParameterBlock, sParameterDataType,
                          sValue, sParameterDescription,
-                         sChildParameterAlias, sChildParameterAttribute, False, sOperation)
+                         sChildParameterAlias, sChildParameterAttribute, False)
 
 #------------------------------------------------------------------------------#
 # Function: addParametersChild                                                 #
@@ -1968,102 +1472,11 @@ def addParametersChild(sClass):
     #--------------------------------------------------------------------------#
     try:
         c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.getClassChildren]
+        query = cgSQL.sql[cgSQL.sqlCode.addParametersChild]
         c.execute(query, (sClass,))
     except:
         errorHandler(errProc, errorCode.cannotQuery,
-                     cgSQL.sqlCode.getClassChildren, query, sClass)
-
-    #--------------------------------------------------------------------------#
-    # Process each row in the list of child devices:                           #
-    #--------------------------------------------------------------------------#
-    for row in c:
-        #----------------------------------------------------------------------#
-        # Get the list of child parameters for the child class from the table  #
-        # tblClass_Parameter:                                                  #
-        #----------------------------------------------------------------------#
-        sChildParameterClass = row['childAliasClass']
-        sChildParameterAlias = row['childParameterAlias']
-        try:
-            cp = conn.cursor()
-            query = cgSQL.sql[cgSQL.sqlCode.getChildParameters]
-            cp.execute(query, (sChildParameterClass,))
-        except:
-            errorHandler(errProc, errorCode.cannotQuery,
-                         cgSQL.sqlCode.getChildParameters, query, sChildParameterClass)
-
-        #----------------------------------------------------------------------#
-        # Process each child device parameter row:                             #
-        #----------------------------------------------------------------------#
-        for rowp in cp:
-            #------------------------------------------------------------------#
-            # Get the child parameter data:                                    #
-            #------------------------------------------------------------------#
-            sLevel = rowp['Level']
-            sSource = 'CHILD'
-            sState = ''
-            sParameterType = 'VAR_IN_OUT'
-            iParameterIndex = 0
-            sParameter = ''
-            sParameterBlock = sChildParameterAlias + '_' + rowp['blockParameter']
-            sParameterDataType = rowp['parameterDataType']
-            sParameterDataType = sParameterDataType.upper()
-            sValue = rowp['parameterValue']
-            sParameterDescription = rowp['parameterDescription']
-            sChildParameterAttribute = rowp['blockParameter']
-            sOperation = rowp['parameterOperation']
-
-            #------------------------------------------------------------------#
-            # Add the parameter to the global list:                            #
-            #------------------------------------------------------------------#
-            addParameterData(gLevel, sClass, sSource, '', sParameterType, iParameterIndex,
-                             sParameter, sChildParameterClass,
-                             sParameterBlock, sParameterDataType,
-                             sValue, sParameterDescription, sChildParameterAlias,
-                             sChildParameterAttribute, False, sOperation)
-
-            #------------------------------------------------------------------#
-            # Add the parent parameter to the global list:                     #
-            #------------------------------------------------------------------#
-#            sSource = 'PARENT'
-#            sParameterBlock = rowp['blockParameter']
-#            addParameterData(gLevel, sClass, sSource, '', sParameterType, iParameterIndex,
-#                             sParameter, '',
-#                             sParameterBlock, sParameterDataType,
-#                             sValue, sParameterDescription, '',
-#                             '', False, sOperation)
-
-#------------------------------------------------------------------------------#
-# Function: addParametersDefer                                                 #
-#                                                                              #
-# Description:                                                                 #
-# Adds the child calling parameters.                                           #
-#------------------------------------------------------------------------------#
-# Calling parameters:                                                          #
-#                                                                              #
-# sClass                The parent class to process the code files for.        #
-#------------------------------------------------------------------------------#
-def addParametersDefer(sClass):
-    #--------------------------------------------------------------------------#
-    # Define the procedure name and trap any programming errors:               #
-    #--------------------------------------------------------------------------#
-    errProc = addParametersDefer.__name__
-
-    #--------------------------------------------------------------------------#
-    # Declare use of the global sqlite cursor object:                          #
-    #--------------------------------------------------------------------------#
-    global conn
-
-    #--------------------------------------------------------------------------#
-    # Get the list of child devices for the class:                             #
-    #--------------------------------------------------------------------------#
-    try:
-        c = conn.cursor()
-        query = cgSQL.sql[cgSQL.sqlCode.getClassChildren]
-        c.execute(query, (sClass,))
-    except:
-        errorHandler(errProc, errorCode.cannotQuery,
-                     cgSQL.sqlCode.getClassChildren, query, sClass)
+                     cgSQL.sqlCode.addParametersChild, query, sClass)
 
     #--------------------------------------------------------------------------#
     # Process each row in the list of child devices:                           #
@@ -2072,15 +1485,14 @@ def addParametersDefer(sClass):
         #----------------------------------------------------------------------#
         # Get the list of child parameters for the child class:                #
         #----------------------------------------------------------------------#
-        sChildParameterClass = row['childAliasClass']
-        sChildParameterAlias = row['childParameterAlias']
+        sChildClass = row['childAliasClass']
         try:
             cp = conn.cursor()
-            query = cgSQL.sql[cgSQL.sqlCode.getDeferredParameters]
-            cp.execute(query, (sChildParameterClass,))
+            query = cgSQL.sql[cgSQL.sqlCode.getUserParametersChild]
+            cp.execute(query, (sChildClass,))
         except:
             errorHandler(errProc, errorCode.cannotQuery,
-                         cgSQL.sqlCode.getDeferredParameters, query, sChildParameterClass)
+                         cgSQL.sqlCode.getUserParametersChild, query, sChildClass)
 
         #----------------------------------------------------------------------#
         # Process each child device parameter row:                             #
@@ -2089,27 +1501,24 @@ def addParametersDefer(sClass):
             #------------------------------------------------------------------#
             # Get the child parameter data:                                    #
             #------------------------------------------------------------------#
-            sSource = 'DEFER'
+            sSource = 'CHILD'
+            sChildParameterClass = sChildClass
             sParameterType = rowp['parameterType']
             iParameterOrder = rowp['parameterOrder']
             sParameter = rowp['childParameter']
             sParameterBlock = rowp['blockParameter']
             sParameterDataType = rowp['parameterDataType']
-            sParameterDataType = sParameterDataType.upper()
             sValue = rowp['parameterValue']
             sParameterDescription = rowp['parameterDescription']
-            sChildParameterAttribute = rowp['blockParameter']
-            sOperation = rowp['operation']
             bIsChild = rowp['isChild']
 
             #------------------------------------------------------------------#
             # Add the parameter to the global list:                            #
             #------------------------------------------------------------------#
-            addParameterData(gLevel, sClass, sSource, '', sParameterType, iParameterOrder,
+            addParameterData(gLevel, sClass, sSource, sParameterType, iParameterOrder,
                              sParameter, sChildParameterClass,
                              sParameterBlock, sParameterDataType,
-                             sValue, sParameterDescription, sChildParameterAlias,
-                             sChildParameterAttribute, False, sOperation)
+                             sValue, sParameterDescription, '', '', False)
 
 #------------------------------------------------------------------------------#
 # Function: addParametersSFC                                                   #
@@ -2152,7 +1561,6 @@ def addParametersSFC(sClass):
         # Get the SFC file name and extract the user parameters:               #
         #----------------------------------------------------------------------#
         sSource = row['SFC']
-        sState = row['State']
         sFileNameIn = pathTemplates + '/sfc/fb' + sSource + '.AWL'
 
         #----------------------------------------------------------------------#
@@ -2167,7 +1575,65 @@ def addParametersSFC(sClass):
         #----------------------------------------------------------------------#
         with open(sFileNameIn, 'r') as content_file:
             txtData = content_file.read()
-            addCodeFileParameters(gLevel, sClass, sSource, sState, txtData, True)
+            addCodeFileParameters(gLevel, sClass, sSource, txtData, True)
+
+#------------------------------------------------------------------------------#
+# Function: addParametersSFCBlock                                              #
+#                                                                              #
+# Description:                                                                 #
+# Adds the SFC parameters elevated to be called from the block.                #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# sClass                The parent class to process the parameters for.        #
+#------------------------------------------------------------------------------#
+def addParametersSFCBlock(sClass):
+    #--------------------------------------------------------------------------#
+    # Define the procedure name and trap any programming errors:               #
+    #--------------------------------------------------------------------------#
+    errProc = addParametersSFCBlock.__name__
+
+    #--------------------------------------------------------------------------#
+    # Declare use of the global sqlite cursor object:                          #
+    #--------------------------------------------------------------------------#
+    global conn
+
+    #--------------------------------------------------------------------------#
+    # Get the list of child devices for the class:                             #
+    #--------------------------------------------------------------------------#
+    try:
+        c = conn.cursor()
+        query = cgSQL.sql[cgSQL.sqlCode.getSFCBlockParameters]
+        c.execute(query, (sClass,))
+    except:
+        errorHandler(errProc, errorCode.cannotQuery,
+                     cgSQL.sqlCode.getSFCBlockParameters, query, sClass)
+
+    #--------------------------------------------------------------------------#
+    # Process each row in the list of SFC parameters:                          #
+    #--------------------------------------------------------------------------#
+    for row in c:
+        #----------------------------------------------------------------------#
+        # Get the child parameter data:                                        #
+        #----------------------------------------------------------------------#
+        sLevel = row['Level']
+        sClass = row['parameterClass']
+        sSource = 'BLOCK'
+        sParameterType = row['parameterType']
+        iParameterOrder = row['parameterOrder']
+        s = row['childParameter']
+        sParameter = s.upper()
+        sParameterBlock = row['blockParameter']
+        sParameterDataType = row['parameterDataType']
+        sValue = ''
+        sParameterDescription = ''
+
+        #----------------------------------------------------------------------#
+        # Add the parameter to the global list:                                #
+        #----------------------------------------------------------------------#
+        addParameterData(sLevel, sClass, sSource, sParameterType, iParameterOrder,
+                         sParameter, '', sParameterBlock, sParameterDataType,
+                         sValue, sParameterDescription, '', '', False)
 
 #------------------------------------------------------------------------------#
 # Function: addCodeFileParameters                                              #
@@ -2180,11 +1646,10 @@ def addParametersSFC(sClass):
 # sLevel                The level of the parameter object.                     #
 # sClass                The class to process the instances for.                #
 # sSource               The source file name of the block class module.        #
-# sState                The state for the parameters.                          #
 # txtData               The file content to get the parameters from.           #
 # bIsSFC                TRUE if a an SFC parameter.                            #
 #------------------------------------------------------------------------------#
-def addCodeFileParameters(sLevel, sClass, sSource, sState, txtData, bIsSFC):
+def addCodeFileParameters(sLevel, sClass, sSource, txtData, bIsSFC):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
@@ -2218,22 +1683,18 @@ def addCodeFileParameters(sLevel, sClass, sSource, sState, txtData, bIsSFC):
         if (sBuffer == 'VAR_INPUT'):
             sParameterType = 'VAR_INPUT'
             iParameterOrder = 1
-            sOperation = 'write'
 
         elif (sBuffer == 'VAR_OUTPUT'):
             sParameterType = 'VAR_OUTPUT'
             iParameterOrder = 2
-            sOperation = 'read'
 
         elif (sBuffer == 'VAR_IN_OUT'):
             sParameterType = 'VAR_IN_OUT'
             iParameterOrder = 3
-            sOperation = 'write'
 
         elif (sBuffer == 'VAR'):
             sParameterType = 'VAR'
             iParameterOrder = 4
-            sOperation = 'read'
 
         elif (sBuffer == 'BEGIN'):
             sParameterType = 'DONE'
@@ -2306,9 +1767,9 @@ def addCodeFileParameters(sLevel, sClass, sSource, sState, txtData, bIsSFC):
             #------------------------------------------------------------------#
             # Add the parameter to the global list:                            #
             #------------------------------------------------------------------#
-            addParameterData(sLevel, sClass, sSource, sState, sParameterType, iParameterOrder,
+            addParameterData(sLevel, sClass, sSource, sParameterType, iParameterOrder,
                              sParameter, '', sParameterBlock, sParameterDataType,
-                             sValue, sParameterDescription, '', '', bIsSFC, sOperation)
+                             sValue, sParameterDescription, '', '', bIsSFC)
 
 #------------------------------------------------------------------------------#
 # Function: addParameterData                                                   #
@@ -2321,7 +1782,6 @@ def addCodeFileParameters(sLevel, sClass, sSource, sState, txtData, bIsSFC):
 # sLevel                The level of the parameter object.                     #
 # sClass                The class to process the instances for.                #
 # sSource               The source SFC file name of the block class module.    #
-# sState                The parent block state name.                           #
 # sParameterType        The VAR type of the parameter.                         #
 # iParameterOrder       The order of the parameter in the output code file.    #
 # sParameter            The parameter name.                                    #
@@ -2333,14 +1793,12 @@ def addCodeFileParameters(sLevel, sClass, sSource, sState, txtData, bIsSFC):
 # sChildParameterAlias  Any child device alias.                                #
 # sChildParameterAttribute  Any child device attribute.                        #
 # bIsSFC                TRUE if an SFC parameter.                              #
-# sOperation            The read or write operation.                           #
 #------------------------------------------------------------------------------#
-def addParameterData(sLevel, sClass, sSource, sState,
-                     sParameterType, iParameterOrder,
+def addParameterData(sLevel, sClass, sSource, sParameterType, iParameterOrder,
                      sParameter, sChildParameterClass,
                      sParameterBlock, sParameterDataType,
                      sValue, sParameterDescription, sChildParameterAlias,
-                     sChildParameterAttribute, bIsSFC, sOperation):
+                     sChildParameterAttribute, bIsSFC):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
@@ -2357,7 +1815,6 @@ def addParameterData(sLevel, sClass, sSource, sState,
     global iEventLogTime
     global iEventDataReal
     global iEventDataTime
-    global iSync
 
     #--------------------------------------------------------------------------#
     # Create a new cursor object for the parameters:                           #
@@ -2366,40 +1823,23 @@ def addParameterData(sLevel, sClass, sSource, sState,
     c1 = conn.cursor()
 
     #--------------------------------------------------------------------------#
-    # Initialise granchild parameters:                                         #
+    # Check if an alias parameter if from the parameter class list:            #
     #--------------------------------------------------------------------------#
-    bIsGrandchild = False
-    sGrandchildParameterClass = ''
-    sGrandchildParameterAlias = ''
-    sGrandchildParameterAttribute = ''
-
-    #--------------------------------------------------------------------------#
-    # Check if the parameter is a writeable calling parameter:                 #
-    #--------------------------------------------------------------------------#
-    try:
-        query = cgSQL.sql[cgSQL.sqlCode.checkIfClassParameter]
-        c.execute(query, (sClass, sParameterBlock))
-        data = c.fetchone()
-    except:
-        errorHandler(errProc, errorCode.cannotQuery,
-                     cgSQL.sqlCode.checkIfClassParameter, query, sClass + ', ' + sParameterBlock)
-
-    #--------------------------------------------------------------------------#
-    # Calling parameter if exists:                                             #
-    #--------------------------------------------------------------------------#
-    if (data is not None):
-        sOperation = data['parameterOperation']
+    if (len(sChildParameterAlias) == 0):
+        s = sParameter
+    else:
+        s = '_' + sChildParameterAlias.lower()
 
     #--------------------------------------------------------------------------#
     # Check if the parameter is a child device:                                #
     #--------------------------------------------------------------------------#
     try:
         query = cgSQL.sql[cgSQL.sqlCode.checkIfChildParameter]
-        c.execute(query, (sClass, sParameterBlock))
+        c.execute(query, (sClass, s))
         data = c.fetchone()
     except:
         errorHandler(errProc, errorCode.cannotQuery,
-                     cgSQL.sqlCode.checkIfChildParameter, query, sClass + ', ' + sParameterBlock + '%')
+                     cgSQL.sqlCode.checkIfChildParameter, query, sClass + ', ' + s + '%')
 
     #--------------------------------------------------------------------------#
     # Child device if exists as a child alias:                                 #
@@ -2414,8 +1854,8 @@ def addParameterData(sLevel, sClass, sSource, sState,
         bIsChild = True
         sChildParameterClass = data['childAliasClass']
         if (len(sChildParameterAlias) == 0):
-            sChildParameterAlias = data['childParameterAlias']
-#            sChildParameterAlias = sChildParameterAlias[1:]
+            sChildParameterAlias = data['childAlias']
+            sChildParameterAlias = sChildParameterAlias[1:]
             sChildParameterAlias = sChildParameterAlias.upper()
             sChildParameterAttribute = sParameter[len(sChildParameterAlias) + 2:]
             sChildParameterAttribute = sChildParameterAttribute.upper()
@@ -2435,126 +1875,62 @@ def addParameterData(sLevel, sClass, sSource, sState,
             errorHandler(errProc, errorCode.cannotQuery,
                          cgSQL.sqlCode.getChildIndex, query, sSource + ', ' + sChildParameterAlias + '%')
 
-        #----------------------------------------------------------------------#
-        # Check if the child parameter itself is a grandchild device:          #
-        #----------------------------------------------------------------------#
-        try:
-            query = cgSQL.sql[cgSQL.sqlCode.checkIfChildParameter]
-            c.execute(query, (sChildParameterClass, sChildParameterAttribute))
-            data = c.fetchone()
-        except:
-            errorHandler(errProc, errorCode.cannotQuery,
-                         cgSQL.sqlCode.checkIfChildParameter, query, sChildParameterClass + ', ' + sChildParameterAttribute)
-
-        #----------------------------------------------------------------------#
-        # Check if a grandchild was found:                                     #
-        #----------------------------------------------------------------------#
-        if (data is None):
-            bIsGrandchild = False
-        else:
-            bIsGrandchild = True
-            sGrandchildParameterClass = data['childAliasClass']
-            sGrandchildParameterAlias = data['childParameterAlias']
-            sGrandchildParameterAlias = sGrandchildParameterAlias.upper()
-            sGrandchildParameterAttribute = sChildParameterAttribute[len(sGrandchildParameterAlias) + 1:]
-            sGrandchildParameterAttribute = sGrandchildParameterAttribute.upper()
-
-    #--------------------------------------------------------------------------#
-    # Check if the parameter is a child selection:                             #
-    #--------------------------------------------------------------------------#
-    try:
-        query = cgSQL.sql[cgSQL.sqlCode.checkIfSelectionParameter]
-        c.execute(query, (sClass, sParameterBlock))
-        data = c.fetchone()
-    except:
-        errorHandler(errProc, errorCode.cannotQuery,
-                     cgSQL.sqlCode.checkIfSelectionParameter, query, sClass + ', ' + sParameterBlock + '%')
-
-    #--------------------------------------------------------------------------#
-    # Selection device if exists:                                              #
-    #--------------------------------------------------------------------------#
-    if (data is None):
-        bIsSelection = False
-    else:
-        bIsSelection = True
-        sChildParameterClass = data['childClass']
-        if (len(sChildParameterAlias) == 0):
-            sChildParameterAlias = data['linkParameterAlias']
-#            sChildParameterAlias = sChildParameterAlias[1:]
-            sChildParameterAlias = sChildParameterAlias.upper()
-            sChildParameterAttribute = sParameter[len(sChildParameterAlias) + 2:]
-            sChildParameterAttribute = sChildParameterAttribute.upper()
-
     #--------------------------------------------------------------------------#
     # Check if the parameter is a linked device, i.e. another device           #
     # parameter attribute other than a child device:                           #
     #--------------------------------------------------------------------------#
     try:
         query = cgSQL.sql[cgSQL.sqlCode.checkIfLinkParameter]
-        c.execute(query, (sClass, sParameterBlock))
+        c.execute(query, (sClass, s))
         data = c.fetchone()
     except:
         errorHandler(errProc, errorCode.cannotQuery,
-                     cgSQL.sqlCode.checkIfLinkParameter, query, sClass + ', ' + sParameterBlock + '%')
+                     cgSQL.sqlCode.checkIfLinkParameter, query, sClass + ', ' + s + '%')
 
     #--------------------------------------------------------------------------#
     # Link device if exists as a child alias for another class:                #
     #--------------------------------------------------------------------------#
-    if (data is None or bIsChild or bIsSelection):
+    if (data is None or bIsChild):
         bIsLink = False
     else:
         bIsLink = True
         sChildParameterClass = data['childAliasClass']
         if (len(sChildParameterAlias) == 0):
-            sChildParameterAlias = data['childParameterAlias']
-#            sChildParameterAlias = sChildParameterAlias[1:]
+            sChildParameterAlias = data['childAlias']
+            sChildParameterAlias = sChildParameterAlias[1:]
             sChildParameterAlias = sChildParameterAlias.upper()
             sChildParameterAttribute = sParameter[len(sChildParameterAlias) + 2:]
             sChildParameterAttribute = sChildParameterAttribute.upper()
 
     #--------------------------------------------------------------------------#
-    # Check if the child attribute is in the mode and command structure,       #
-    # regardless of whether in the read or write block:                        #
+    # Check if the child attribute is in the mode and command structure:       #
     #--------------------------------------------------------------------------#
-    bIsMC = False
     if (sChildParameterAttribute == 'ME'or
-        sChildParameterAttribute == 'CMD_SAFE' or
+        sChildParameterAttribute == 'OWNER' or
+        sChildParameterAttribute == 'SERIALNUM' or
+        sChildParameterAttribute == 'isBatch' or
+        sChildParameterAttribute == 'MODE' or
+        sChildParameterAttribute == 'CMD' or
         sChildParameterAttribute == 'STATE' or
+        sChildParameterAttribute == 'CMD_SAFE' or
         sChildParameterAttribute == 'INTERLOCK' or
         sChildParameterAttribute == 'CRIL' or
         sChildParameterAttribute == 'NCRIL' or
-        sChildParameterAttribute == 'HYGIENE' or
-        sChildParameterAttribute == 'isRead' or
+        sChildParameterAttribute == 'MAN_OVERRIDE' or
+        sChildParameterAttribute == 'SUBS' or
+        sChildParameterAttribute == 'isAvailable' or
         sChildParameterAttribute == 'modeAUTO' or
         sChildParameterAttribute == 'modeMANUAL' or
-        sChildParameterAttribute == 'modeOOS' or
-        sChildParameterAttribute == 'isAvailable' or
-        sChildParameterAttribute == 'isBatch'):
+        sChildParameterAttribute == 'modeOOS'):
         bIsMC = True
-        sOperation = 'read'
-
-    elif (sChildParameterAttribute == 'CMD' or
-        sChildParameterAttribute == 'MODE' or
-        sChildParameterAttribute == 'OWNER' or
-        sChildParameterAttribute == 'RECIPE' or
-        sChildParameterAttribute == 'SERIALNUM' or
-        sChildParameterAttribute == 'SUBS' or
-        sChildParameterAttribute == 'MAN_OVERRIDE'):
-        bIsMC = True
-        sOperation = 'write'
-
-    #--------------------------------------------------------------------------#
-    # Change the other known attribute types:                                  #
-    #--------------------------------------------------------------------------#
-    if (sChildParameterAttribute == 'PV' or
-        sChildParameterAttribute == 'STATE_PEER'):
-        sOperation = 'read'
+    else:
+        bIsMC = False
 
     #--------------------------------------------------------------------------#
     # Check if the parameter is an SFC event parameter of either Prompt,       #
     # Confirm or Log:                                                          #
     #--------------------------------------------------------------------------#
-    idx = 1
+    idx = 0
     isEventConfirm = False
     isEventPrompt = False
     isEventLogMsg = False
@@ -2562,7 +1938,6 @@ def addParameterData(sLevel, sClass, sSource, sState,
     isEventLogTime = False
     isEventDataReal = False
     isEventDataTime = False
-    isSync = False
     if (sParameterBlock[:7] == 'PROMPT_'):
         if (sParameterBlock.find('CONFIRM') >= 0):
             isEventConfirm = True
@@ -2574,38 +1949,29 @@ def addParameterData(sLevel, sClass, sSource, sState,
             iEventPrompt = iEventPrompt + 1
 
     elif (sParameterBlock[:7] == 'LOG_MSG'):
-        isEventLogMsg = True
-        idx = iEventLogMsg
-        iEventLogMsg = iEventLogMsg + 1
+            isEventLogMsg = True
+            idx = iEventLogMsg
+            iEventLogMsg = iEventLogMsg + 1
 
     elif (sParameterBlock[:8] == 'LOG_REAL'):
-        isEventLogReal = True
-        idx = iEventLogReal
-        iEventLogReal = iEventLogReal + 1
+            isEventLogReal = True
+            idx = iEventLogReal
+            iEventLogReal = iEventLogReal + 1
 
     elif (sParameterBlock[:5] == 'REAL_'):
-        isEventDataReal = True
-        idx = iEventDataReal
-        iEventDataReal = iEventDataReal + 1
+            isEventDataReal = True
+            idx = iEventDataReal
+            iEventDataReal = iEventDataReal + 1
 
     elif (sParameterBlock[:8] == 'LOG_TIME'):
-        isEventLogTime = True
-        idx = iEventLogTime
-        iEventLogTime = iEventLogTime + 1
+            isEventLogTime = True
+            idx = iEventLogTime
+            iEventLogTime = iEventLogTime + 1
 
     elif (sParameterBlock[:5] == 'TIME_'):
-        isEventDataTime = True
-        idx = iEventDataTime
-        iEventDataTime = iEventDataTime + 1
-
-    elif (sParameterBlock[:5] == 'SYNC_'):
-        isSync = True
-        idx = iSync
-        iSync = iSync + 1
-        if (sParameterBlock[5:10] == 'WRITE'):
-            sOperation = 'write'
-        else:
-            sOperation = 'read'
+            isEventDataTime = True
+            idx = iEventDataTime
+            iEventDataTime = iEventDataTime + 1
 
     #--------------------------------------------------------------------------#
     # Check if a recipe parameter:                                             #
@@ -2618,73 +1984,35 @@ def addParameterData(sLevel, sClass, sSource, sState,
         sRecipeClass = ''
 
     #--------------------------------------------------------------------------#
-    # Deferred parameter cannot be linked parameters:                          #
-    #--------------------------------------------------------------------------#
-    if (sSource == 'DEFER'):
-        bIsLink = False
-
-    #--------------------------------------------------------------------------#
-    # Check if the parameter already exists:                                   #
+    # Add the parameter to the descendants parameter table:                    #
     #--------------------------------------------------------------------------#
     try:
-        query = cgSQL.sql[cgSQL.sqlCode.checkGlobalParameterExists]
-        c.execute(query, (sClass, sParameterBlock))
-        data = c.fetchone()
+        query = cgSQL.sql[cgSQL.sqlCode.insertGlobalParameters]
+        c1.execute(query, (sLevel, sClass, sSource, sParameterType, iParameterOrder,
+                           sParameter, sParameterBlock,
+                           sChildParameterAlias, sChildParameterClass, sChildParameterAttribute,
+                           sParameterDataType, sValue, sParameterDescription,
+                           bIsSFC, bIsChild, bIsLink, bIsMC, iChildIndex,
+                           bIsRecipe, sRecipeClass, idx,
+                           isEventConfirm, isEventPrompt, isEventLogMsg,
+                           isEventLogReal, isEventLogTime,
+                           isEventDataReal, isEventDataTime))
     except:
-        errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.checkGlobalParameterExists,
-                     query, sClass + ', ' + sParameterBlock)
-
-    #--------------------------------------------------------------------------#
-    # Add the parameter to the descendants parameter table if it does not      #
-    # already exist. If an SFC parameter just add it:                          #
-    #--------------------------------------------------------------------------#
-    if (bIsSFC or data is None):
-        try:
-            query = cgSQL.sql[cgSQL.sqlCode.insertGlobalParameters]
-            c.execute(query, (sLevel, sClass, sSource, sState, sParameterType, iParameterOrder,
-                               sParameter, sParameterBlock,
-                               sChildParameterAlias, sChildParameterClass, sChildParameterAttribute,
-                               sGrandchildParameterAlias, sGrandchildParameterClass, sGrandchildParameterAttribute,
-                               sParameterDataType, sValue, sParameterDescription, sOperation,
-                               bIsSFC, bIsChild, bIsGrandchild, bIsLink, bIsSelection,
-                               bIsMC, iChildIndex,
-                               bIsRecipe, sRecipeClass, idx,
-                               isEventConfirm, isEventPrompt, isEventLogMsg,
-                               isEventLogReal, isEventLogTime,
-                               isEventDataReal, isEventDataTime, isSync))
-        except:
-            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.insertGlobalParameters, query,
-                         sLevel + ', ' + sClass + ', ' +
-                         sSource + ', ' + sState + ', ' + sParameterType + ', ' +
-                         str(iParameterOrder) + ', ' + sParameter + ', ' +
-                         sParameterBlock + ', ' +
-                         sChildParameterAlias + ', ' + sChildParameterClass + ', ' +
-                         sChildParameterAttribute + ', ' + sParameterDataType + ', ' +
-                         sGrandchildParameterAlias + ', ' + sGrandchildParameterClass + ', ' +
-                         sGrandchildParameterAttribute + ', ' + str(sValue) + ', ' +
-                         sParameterDescription + ', ' + sOperation + ', ' +
-                         str(bIsSFC) + ', ' +
-                         str(bIsChild) + ', ' + str(bIsGrandchild) + ', ' +
-                         str(bIsLink) + ', ' + str(bIsSelection) + ', ' +
-                         str(bIsMC) + ', ' + str(iChildIndex) + ', ' +
-                         str(bIsRecipe) + ', ' + sRecipeClass + ', ' +
-                         str(idx) + ', ' + str(isEventConfirm) + ', ' +
-                         str(isEventPrompt) + ', ' + str(isEventLogMsg) + ', ' +
-                         str(isEventLogReal) + ', ' + str(isEventLogTime) + ', ' +
-                         str(isEventDataReal) + ', ' + str(isEventDataTime) + ', ' +
-                         str(isSync))
-
-    else:
-        #----------------------------------------------------------------------#
-        # The parameter exists. Update the read write status with the new      #
-        # value to override any SFC value which may be wrong if VAR_IN_OUT:    #
-        #----------------------------------------------------------------------#
-        try:
-            query = cgSQL.sql[cgSQL.sqlCode.updateParameterOperation]
-            c.execute(query, (sOperation, sClass, sParameterBlock))
-        except:
-            errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.updateParameterOperation, query,
-                         sOperation + ', ' + sClass + ', ' + sParameterBlock)
+        errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.insertGlobalParameters, query,
+                     sLevel + ', ' + sClass + ', ' +
+                     sSource + ', ' + sParameterType + ', ' +
+                     str(iParameterOrder) + ', ' + sParameter + ', ' +
+                     sParameterBlock + ', ' + sChildParameterAlias + ', ' +
+                     sChildParameterClass + ', ' +
+                     sChildParameterAttribute + ', ' + sParameterDataType + ', ' +
+                     str(sValue) + ', ' + sParameterDescription + ', ' +
+                     str(bIsSFC) + ', ' + str(bIsChild) + ', ' +
+                     str(bIsLink) + ', ' + str(bIsMC) + ', ' + str(iChildIndex) + ', ' +
+                     str(bIsRecipe) + ', ' + sRecipeClass + ', ' +
+                     str(idx) + ', ' + str(isEventConfirm) + ', ' +
+                     str(isEventPrompt) + ', ' + str(isEventLogMsg) + ', ' +
+                     str(isEventLogReal) + ', ' + str(isEventLogTime) + ', ' +
+                     str(isEventDataReal) + ', ' + str(isEventDataTime))
 
     #--------------------------------------------------------------------------#
     # Commit the changes the database:                                         #
