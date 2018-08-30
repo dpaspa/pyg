@@ -392,18 +392,20 @@ def generateInterlocksPDF(data, ilName, template, output, num):
         # Open the PDf canvas of the output PDF file:                          #
         #----------------------------------------------------------------------#
         c = canvas.Canvas(tmp)
-        c.setPageSize((612, 792))
+#        c.setPageSize((725, 508))
+#        c.setPageSize((2061, 1442))
+        c.setPageSize((824, 576))
         c.setFont('Helvetica', 12)
         c.setLineWidth(0.2)
-        y = 274
+        y = 194
 
         #----------------------------------------------------------------------#
         # Write in the instance interlock descriptions:                        #
         #----------------------------------------------------------------------#
         for r in iData:
-            c.drawString((10)*mm, (y)*mm, r['DescriptionIL'])
-            c.line((10)*mm, (y-9)*mm, (206)*mm, (y-9)*mm)
-            y = y - 17
+            c.drawString((5)*mm, (y)*mm, r['DescriptionIL'])
+            c.line((5)*mm, (y-4)*mm, (285)*mm, (y-4)*mm)
+            y = y - 13.3
 
         #----------------------------------------------------------------------#
         # Save and close the file:                                             #

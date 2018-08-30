@@ -52,7 +52,8 @@ iCountFile = 0
 iCountFileMax = 0
 iCountTemplate = 0
 iCountTemplateMax = 0
-iEventConfirm = 1
+iEventConfirmNo = 1
+iEventConfirmYes = 1
 iEventPrompt = 1
 iEventLogMsg = 1
 iEventLogReal = 1
@@ -64,6 +65,7 @@ gAlias = ''
 gChildClass = ''
 gClass = ''
 gClassDescription = ''
+gFile = ''
 gInstance = ''
 #gILTable = ''
 gLevel = ''
@@ -138,7 +140,8 @@ class errorCode(Enum):
     noEndPlaceholder                   = -36
     noCodeTemplateFile                 = -37
     nonASCIICharacter                  = -38
-    unknownAttribute                   = -39
+    nonASCIITemplate                   = -39
+    unknownAttribute                   = -40
 
 errorMessage = {
     errorCode.cannotCommit             : 'Cannot commit changes to sqlite database',
@@ -166,6 +169,7 @@ errorMessage = {
     errorCode.noClassDBSheet           : 'idb Template Worksheet does not include a template called @1.',
     errorCode.noCodeTemplateFile       : 'Code template file @1 does not exist!',
     errorCode.nonASCIICharacter        : 'Query element @1 using SQL expression @2 and parameters @3 returned a non ascii-encoded unicode string',
+    errorCode.nonASCIITemplate         : 'Template @1 contains a non ascii-encoded unicode string: @2',
     errorCode.unknownAttribute         : 'Attribute @1 is unknown.',
 }
 
@@ -276,6 +280,26 @@ def main():
         errorHandler(errProc, errorCode.cannotCreateTable, query, 'no parameters')
 
     #--------------------------------------------------------------------------#
+    # Create the eventConfirmNo table:                                         #
+    #--------------------------------------------------------------------------#
+    try:
+        c = conn.cursor()
+        query = cgSQL.sql[cgSQL.sqlCode.tblCreateEventConfirmNo]
+        c.execute(query)
+    except:
+        errorHandler(errProc, errorCode.cannotCreateTable, query, 'no parameters')
+
+    #--------------------------------------------------------------------------#
+    # Create the eventConfirmYes table:                                        #
+    #--------------------------------------------------------------------------#
+    try:
+        c = conn.cursor()
+        query = cgSQL.sql[cgSQL.sqlCode.tblCreateEventConfirmYes]
+        c.execute(query)
+    except:
+        errorHandler(errProc, errorCode.cannotCreateTable, query, 'no parameters')
+
+    #--------------------------------------------------------------------------#
     # Create the eventLogMsg table:                                            #
     #--------------------------------------------------------------------------#
     try:
@@ -350,6 +374,46 @@ def main():
     try:
         c = conn.cursor()
         query = cgSQL.sql[cgSQL.sqlCode.updateEventPrompt]
+        c.execute(query)
+    except:
+        errorHandler(errProc, errorCode.cannotUpdateTable, query, 'no parameters')
+
+    #--------------------------------------------------------------------------#
+    # Populate the eventPrompt Confirm Yes table:                              #
+    #--------------------------------------------------------------------------#
+    try:
+        c = conn.cursor()
+        query = cgSQL.sql[cgSQL.sqlCode.insertEventConfirmYes]
+        c.execute(query)
+    except:
+        errorHandler(errProc, errorCode.cannotInsertTable, query, 'no parameters')
+
+    #--------------------------------------------------------------------------#
+    # Update the index in the eventPrompt Confirm Yes table:                   #
+    #--------------------------------------------------------------------------#
+    try:
+        c = conn.cursor()
+        query = cgSQL.sql[cgSQL.sqlCode.updateEventConfirmYes]
+        c.execute(query)
+    except:
+        errorHandler(errProc, errorCode.cannotUpdateTable, query, 'no parameters')
+
+    #--------------------------------------------------------------------------#
+    # Populate the eventPrompt Confirm No table:                               #
+    #--------------------------------------------------------------------------#
+    try:
+        c = conn.cursor()
+        query = cgSQL.sql[cgSQL.sqlCode.insertEventConfirmNo]
+        c.execute(query)
+    except:
+        errorHandler(errProc, errorCode.cannotInsertTable, query, 'no parameters')
+
+    #--------------------------------------------------------------------------#
+    # Update the index in the eventPrompt Confirm No table:                    #
+    #--------------------------------------------------------------------------#
+    try:
+        c = conn.cursor()
+        query = cgSQL.sql[cgSQL.sqlCode.updateEventConfirmNo]
         c.execute(query)
     except:
         errorHandler(errProc, errorCode.cannotUpdateTable, query, 'no parameters')
@@ -553,7 +617,7 @@ def processLevel(sParent, sLevel, pbwt):
         #----------------------------------------------------------------------#
         sPrefix = 'ifb'
         createClass(sLevel, sParent, sClass, row['Description'],
-                    sPrefix, row['inheritsInstance'], row['nameInstance'], True)
+                    sPrefix, row['inheritsInstance'], 'awl', row['nameInstance'], 'awl', True)
 
         #----------------------------------------------------------------------#
         # Create PLC communications transfer function for each class:          #
@@ -561,7 +625,7 @@ def processLevel(sParent, sLevel, pbwt):
         sPrefix = 'fbx'
         if (sLevel == 'CM' or sLevel == 'EM' or sLevel == 'UN'):
             createClass(sLevel, sParent, sClass, row['Description'],
-                        sPrefix, '', sClass, True)
+                        sPrefix, '', 'awl', sClass, 'awl', True)
 
 #        elif (sLevel == 'IL'):
 #            createClass(sLevel, sParent, sClass, row['Description'],
@@ -574,7 +638,7 @@ def processLevel(sParent, sLevel, pbwt):
         if (sPrefix != 'DEL'):
             gClass = sClass
             createClass(sLevel, sParent, sClass, row['Description'],
-                        sPrefix, row['inheritsClass'], row['nameClass'], True)
+                        sPrefix, row['inheritsClass'], 'awl', row['nameClass'], 'awl', True)
 
         #----------------------------------------------------------------------#
         # Update the progress message:                                         #
@@ -590,26 +654,26 @@ def processLevel(sParent, sLevel, pbwt):
         #----------------------------------------------------------------------#
         # Create the critical interlock instance DB:                           #
         #----------------------------------------------------------------------#
-        createClass(sLevel, sParent, '', '', '', 'idbIL', 'idb' + sLevel + 's', False)
+        createClass(sLevel, sParent, '', '', '', 'idbIL', 'awl', 'idb' + sLevel + 's', 'awl', False)
 #        createClass(sLevel, sParent, '', '', '', 'dbxIL', 'dbx' + sLevel + 's', False)
     else:
         #----------------------------------------------------------------------#
         # Must be a functional level and not an interlock class. Create the    #
         # instance DBs for the functional levels:                              #
         #----------------------------------------------------------------------#
-        createClass(sLevel, sParent, '', '', '', 'dbi', 'idb' + sLevel + 's', False)
+        createClass(sLevel, sParent, '', '', '', 'dbi', 'awl', 'idb' + sLevel + 's', 'awl', False)
 
         #----------------------------------------------------------------------#
         # Create fcCall to be called from OB1 and scan each instance:          #
         #----------------------------------------------------------------------#
-        createClass(sLevel, sParent, '', '', '', 'fcCall', 'fcCall' + sLevel + 's', False)
+        createClass(sLevel, sParent, '', '', '', 'fcCall', 'awl', 'fcCall' + sLevel + 's', 'awl', False)
 
         #----------------------------------------------------------------------#
         # Create the transfer call instance DBs and calls:                     #
         #----------------------------------------------------------------------#
         if (sLevel == 'CM' or sLevel == 'EM' or sLevel == 'UN'):
-            createClass(sLevel, sParent, '', '', '', 'dbx', 'dbx' + sLevel + 's', False)
-            createClass(sLevel, sParent, '', '', '', 'fcCallx', 'fcCallx' + sLevel + 's', False)
+            createClass(sLevel, sParent, '', '', '', 'dbx', 'awl', 'dbx' + sLevel + 's', 'awl', False)
+            createClass(sLevel, sParent, '', '', '', 'fcCallx', 'awl', 'fcCallx' + sLevel + 's', 'awl', False)
 
     #--------------------------------------------------------------------------#
     # Update the progress message:                                             #
@@ -753,7 +817,7 @@ def createProgramFiles(sParent, sLevel, pbwt):
         #----------------------------------------------------------------------#
         # Create the output file from the input awl source:                    #
         #----------------------------------------------------------------------#
-        createClass(sLevel, sParent, '', '', '', row['File'], row['File'], False)
+        createClass(sLevel, sParent, '', '', '', row['File'], row['extInput'], row['File'], row['extOutput'], False)
 
     #--------------------------------------------------------------------------#
     # Update the progress message:                                             #
@@ -778,11 +842,13 @@ def createProgramFiles(sParent, sLevel, pbwt):
 # sClassDescription     The class description.                                 #
 # sPrefix               The file prefix.                                       #
 # sTemplate             The code template file name.                           #
+# sEXtIn                The input file extension.                              #
 # sNameOutput           The output file name after the prefix.                 #
+# sEXtOut               The output file extension.                             #
 # bOne                  Create output file just the specified class.           #
 #------------------------------------------------------------------------------#
 def createClass(sLevel, sParent, sClass, sClassDescription,
-                sPrefix, sTemplate, sNameOutput, bOne):
+                sPrefix, sTemplate, sExtIn, sNameOutput, sExtOut, bOne):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
@@ -795,6 +861,7 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
     global iCountTemplateMax
     global conn
     global gClass
+    global gFile
 #    global gILTable
     global pathOutput
     global pathTemplates
@@ -841,7 +908,7 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
         #----------------------------------------------------------------------#
         # Get the code template file name and check that it exists:            #
         #----------------------------------------------------------------------#
-        sFileNameIn = pathTemplates + '/' + sPrefix + sTemplate + '.awl'
+        sFileNameIn = pathTemplates + '/' + sPrefix + sTemplate + '.' + sExtIn
         logging.info(sFileNameIn)
         if not os.path.exists(sFileNameIn):
             errorHandler(errProc, errorCode.filenotExist, sFileNameIn)
@@ -854,6 +921,7 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
         bSkipLine = False
         bTemplateBegin = False
         bTemplateEnd = False
+        sQuery = ''
         txtData = ''
         txtTemplate = ''
         for sBuffer in file:
@@ -925,6 +993,9 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
                     #----------------------------------------------------------#
                     # Replace the fields in the instance template:             #
                     #----------------------------------------------------------#
+                    gFile = sPrefix + sTemplate + '.' + sExtIn
+                    p.set_description(sParent + ': ' + sClass + ': ' + gFile + ': ' + sQuery)
+                    p.refresh()
                     txtData = processTemplate(data, txtTemplate, txtData, bOne)
                     txtTemplate = ''
                     bTemplateBegin = False
@@ -957,9 +1028,9 @@ def createClass(sLevel, sParent, sClass, sClassDescription,
         # Write the output instance file:                                      #
         #----------------------------------------------------------------------#
         if (bOne or sClass == 'IL' or sTemplate == 'fcCall' or sTemplate == 'fcCallx' or sTemplate == 'dbi' or sTemplate == 'dbx'):
-            sFileNameOut = pathOutput + '/' + sPrefix + sNameOutput + '.awl'
+            sFileNameOut = pathOutput + '/' + sPrefix + sNameOutput + '.' + sExtOut
         else:
-            sFileNameOut = pathOutput + '/' + sTemplate + '.awl'
+            sFileNameOut = pathOutput + '/' + sTemplate + '.' + sExtOut
         file = open(sFileNameOut, 'w')
         file.write(txtData)
         file.close()
@@ -1096,6 +1167,7 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
     global gAlias
     global gChildClass
     global gClass
+    global gFile
     global gInstance
     global gLevel
     global gParent
@@ -1143,10 +1215,13 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
             #------------------------------------------------------------------#
             # Strip out the extra carriage returns from the template text:     #
             #------------------------------------------------------------------#
-            if (ord(txtTemplate[-2:-1]) == 13):
-                txtTemplate = txtTemplate[2:-1]
-            else:
-                txtTemplate = txtTemplate[2:]
+            try:
+                if (ord(txtTemplate[-2:-1]) == 13):
+                    txtTemplate = txtTemplate[2:-1]
+                else:
+                    txtTemplate = txtTemplate[2:]
+            except:
+                errorHandler(errProc, errorCode.nonASCIITemplate, sTemplateAttrName, txtTemplate)
 
             #------------------------------------------------------------------#
             # Get any Default template definition tags:                        #
@@ -1157,6 +1232,8 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
             #------------------------------------------------------------------#
             # Check to see if the cursor contains any data:                    #
             #------------------------------------------------------------------#
+            p.set_description(gParent + ': ' + gClass + ': ' + gFile + ': ' + sTemplateAttrName)
+            p.refresh()
             data = getNamedQueryData(sTemplateAttrName)
             if (len(data) == 0):
                 #--------------------------------------------------------------#
@@ -1852,10 +1929,10 @@ def defaultParameters(sParent, txtInstance):
     try:
         c = conn.cursor()
         query = cgSQL.sql[cgSQL.sqlCode.defaultParameters]
-        c.execute(query)
+        c.execute(query, (sParent, ))
     except:
         errorHandler(errProc, errorCode.cannotQuery,
-                     cgSQL.sqlCode.defaultParameters, query, 'no parameters')
+                     cgSQL.sqlCode.defaultParameters, query, sParent)
 
     #--------------------------------------------------------------------------#
     # Process each row in the list of classes:                                 #
@@ -2350,7 +2427,8 @@ def addParameterData(sLevel, sClass, sSource, sState,
     # Declare use of the global sqlite cursor object:                          #
     #--------------------------------------------------------------------------#
     global conn
-    global iEventConfirm
+    global iEventConfirmNo
+    global iEventConfirmYes
     global iEventPrompt
     global iEventLogMsg
     global iEventLogReal
@@ -2523,7 +2601,6 @@ def addParameterData(sLevel, sClass, sSource, sState,
         sChildParameterAttribute == 'INTERLOCK' or
         sChildParameterAttribute == 'CRIL' or
         sChildParameterAttribute == 'NCRIL' or
-        sChildParameterAttribute == 'HYGIENE' or
         sChildParameterAttribute == 'isRead' or
         sChildParameterAttribute == 'modeAUTO' or
         sChildParameterAttribute == 'modeMANUAL' or
@@ -2534,6 +2611,7 @@ def addParameterData(sLevel, sClass, sSource, sState,
         sOperation = 'read'
 
     elif (sChildParameterAttribute == 'CMD' or
+        sChildParameterAttribute == 'HYGIENE' or
         sChildParameterAttribute == 'MODE' or
         sChildParameterAttribute == 'OWNER' or
         sChildParameterAttribute == 'RECIPE' or
@@ -2555,7 +2633,8 @@ def addParameterData(sLevel, sClass, sSource, sState,
     # Confirm or Log:                                                          #
     #--------------------------------------------------------------------------#
     idx = 1
-    isEventConfirm = False
+    isEventConfirmNo = False
+    isEventConfirmYes = False
     isEventPrompt = False
     isEventLogMsg = False
     isEventLogReal = False
@@ -2564,10 +2643,15 @@ def addParameterData(sLevel, sClass, sSource, sState,
     isEventDataTime = False
     isSync = False
     if (sParameterBlock[:7] == 'PROMPT_'):
-        if (sParameterBlock.find('CONFIRM') >= 0):
-            isEventConfirm = True
-            idx = iEventConfirm
-            iEventConfirm = iEventConfirm + 1
+        if (sParameterBlock.find('CONFIRM_NO') >= 0):
+            isEventConfirmNo = True
+            idx = iEventConfirmNo
+            iEventConfirmNo = iEventConfirmNo + 1
+
+        elif (sParameterBlock.find('CONFIRM_YES') >= 0):
+            isEventConfirmYes = True
+            idx = iEventConfirmYes
+            iEventConfirmYes = iEventConfirmYes + 1
         else:
             isEventPrompt = True
             idx = iEventPrompt
@@ -2613,6 +2697,7 @@ def addParameterData(sLevel, sClass, sSource, sState,
     if (sParameterBlock[:2] == 'R_'):
         bIsRecipe = True
         sRecipeClass = ''
+        sOperation = 'write'
     else:
         bIsRecipe= False
         sRecipeClass = ''
@@ -2649,7 +2734,7 @@ def addParameterData(sLevel, sClass, sSource, sState,
                                bIsSFC, bIsChild, bIsGrandchild, bIsLink, bIsSelection,
                                bIsMC, iChildIndex,
                                bIsRecipe, sRecipeClass, idx,
-                               isEventConfirm, isEventPrompt, isEventLogMsg,
+                               isEventConfirmNo, isEventConfirmYes, isEventPrompt, isEventLogMsg,
                                isEventLogReal, isEventLogTime,
                                isEventDataReal, isEventDataTime, isSync))
         except:
@@ -2668,7 +2753,8 @@ def addParameterData(sLevel, sClass, sSource, sState,
                          str(bIsLink) + ', ' + str(bIsSelection) + ', ' +
                          str(bIsMC) + ', ' + str(iChildIndex) + ', ' +
                          str(bIsRecipe) + ', ' + sRecipeClass + ', ' +
-                         str(idx) + ', ' + str(isEventConfirm) + ', ' +
+                         str(idx) + ', ' +
+                         str(isEventConfirmNo) + ', ' + str(isEventConfirmYes) + ', ' +
                          str(isEventPrompt) + ', ' + str(isEventLogMsg) + ', ' +
                          str(isEventLogReal) + ', ' + str(isEventLogTime) + ', ' +
                          str(isEventDataReal) + ', ' + str(isEventDataTime) + ', ' +

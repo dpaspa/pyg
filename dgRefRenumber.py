@@ -14,33 +14,14 @@
 #------------------------------------------------------------------------------#
 # Import the python libraries:                                                 #
 #------------------------------------------------------------------------------#
-import argparse
 import re
 from enum import Enum
 from docx import Document
-import os.path
-import sys
 import traceback
 from tqdm import trange
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
-
-#------------------------------------------------------------------------------#
-# Declare the application title and calling arguments help:                    #
-#------------------------------------------------------------------------------#
-appTitle = 'Document Generator - Reference number renumbering'
-appVersion = '1'
-parser = argparse.ArgumentParser(description='Renumbers the reference numbers in a RefNum document')
-parser.add_argument('-d','--document', help='Input document to renumber', required=True)
-parser.add_argument('-p','--prefix', help='The document reference number prefix', required=True)
-args = vars(parser.parse_args())
-
-#------------------------------------------------------------------------------#
-# Declare global program variables:                                            #
-#------------------------------------------------------------------------------#
-iRefNum = 1
-sRefPrefix = ''
 
 #------------------------------------------------------------------------------#
 # Create a progress bar:                                                       #
@@ -99,160 +80,88 @@ errorMessage = {
 }
 
 #------------------------------------------------------------------------------#
-# Function main                                                                #
+# Function: refRenumber                                                        #
 #                                                                              #
 # Description:                                                                 #
 # The main entry point for the program.                                        #
 #------------------------------------------------------------------------------#
-def main():
+# Calling Parameters:                                                          #
+# d                     The generic document object.                           #
+# sPrefix               The valid prefix array to renumber.                    #
+#------------------------------------------------------------------------------#
+def refRenumber(d, sPrefix):
     #--------------------------------------------------------------------------#
     # Define the procedure name:                                               #
     #--------------------------------------------------------------------------#
-    errProc = main.__name__
-
-    #--------------------------------------------------------------------------#
-    # Use the global variables:                                                #
-    #--------------------------------------------------------------------------#
-    global iRefNum
-    global sRefPrefix
+    errProc = refRenumber.__name__
 
     #--------------------------------------------------------------------------#
     # Get the calling arguments:                                               #
     #--------------------------------------------------------------------------#
-    sDocument = args['document']
-    sRefPrefix = args['prefix']
-    sRefPrefix = sRefPrefix.split(',')
+    sRefPrefix = sPrefix.split(',')
 
     #--------------------------------------------------------------------------#
-    # Open the document object:                                                #
+    # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
-    d = gDoc(sDocument)
-
-    #--------------------------------------------------------------------------#
-    # Renumber any reference numbers:                                          #
-    #--------------------------------------------------------------------------#
-    d.tagRenumber()
+    errProc = 'tagRenumber'
 
     #--------------------------------------------------------------------------#
-    # Save the document:                                                       #
+    # Use global tag number variable:                                          #
     #--------------------------------------------------------------------------#
-    d.document.save(d.inputFile)
-
-    #--------------------------------------------------------------------------#
-    # Output a success message:                                                #
-    #--------------------------------------------------------------------------#
-    print('Congratulations! Reference numbers renumbered successfully.')
-
-#------------------------------------------------------------------------------#
-# Class: gDoc                                                                  #
-#                                                                              #
-# Description:                                                                 #
-# Opens the specified document as an object.                                   #
-#------------------------------------------------------------------------------#
-# Calling Attributes:                                                          #
-# inputFile             The input template file name to use for the document.  #
-#------------------------------------------------------------------------------#
-class gDoc(object):
-    #--------------------------------------------------------------------------#
-    # Constructor:                                                             #
-    #--------------------------------------------------------------------------#
-    def __init__(self, inputFile):
-        #----------------------------------------------------------------------#
-        # Define the procedure name:                                           #
-        #----------------------------------------------------------------------#
-        self.errProc = 'gDoc'
-
-        #----------------------------------------------------------------------#
-        # Make sure the input document file exists:                            #
-        #----------------------------------------------------------------------#
-        if not os.path.exists(inputFile):
-            errorHandler(self.errProc, errorCode.fileNotExist, inputFile)
-
-        #----------------------------------------------------------------------#
-        # Set the instance attributes:                                         #
-        #----------------------------------------------------------------------#
-        self.inputFile = inputFile
-
-        #----------------------------------------------------------------------#
-        # Open the input document:                                             #
-        #----------------------------------------------------------------------#
-        self.document = Document(self.inputFile)
+    global ps
 
     #--------------------------------------------------------------------------#
-    # Function: tagRenumber                                                    #
-    #                                                                          #
-    # Description:                                                             #
-    # Renumbers the tag list.                                                  #
+    # Get the progress weighting:                                              #
     #--------------------------------------------------------------------------#
-    def tagRenumber(self):
-        #----------------------------------------------------------------------#
-        # Define the procedure name and trap any programming errors:           #
-        #----------------------------------------------------------------------#
-        errProc = 'tagRenumber'
+    iRefNum = 1
+    bFoundPrefix = False
+    numTables = len(self.document.tables)
 
-        #----------------------------------------------------------------------#
-        # Use global tag number variable:                                      #
-        #----------------------------------------------------------------------#
-        global ps
-        global iRefNum
-        global sRefPrefix
+    #--------------------------------------------------------------------------#
+    # Loop through all the tables in the document table collection:            #
+    #--------------------------------------------------------------------------#
+    iTable = 0
+    for table in self.document.tables:
+        iRow = 0
+        iTable = iTable + 1
+        for row in table.rows:
+            numRows = len(table.rows)
+            iRow = iRow + 1
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    #----------------------------------------------------------#
+                    # Check if a valid tag number:                             #
+                    #----------------------------------------------------------#
+                    s = paragraph.text
+                    for p in sRefPrefix:
+                        if (len(s) >= 1 + len(p) and s[:len(p)] == p):
+#                            pa = re.compile('[a-zA-Z]')
+                            pn = re.compile('[0-9]')
+#                            ma = pa.match(s[:len(sRefPrefix)])
+                            mn = pn.match(s[len(p):])
+                            if (not mn is None):
+                                bFoundPrefix = True
+                                style = paragraph.style
+                                paragraph.text = ''
+                                sn = p + str(iRefNum)
+                                run = paragraph.add_run(sn)
+                                paragraph.style = style
+                                iRefNum = iRefNum + 1
 
-        #----------------------------------------------------------------------#
-        # Get the progress weighting:                                          #
-        #----------------------------------------------------------------------#
-        bFoundPrefix = False
-        numTables = len(self.document.tables)
-
-        #----------------------------------------------------------------------#
-        # Loop through all the tables in the document table collection:        #
-        #----------------------------------------------------------------------#
-        iTable = 0
-        for table in self.document.tables:
-            iRow = 0
-            iTable = iTable + 1
-            for row in table.rows:
-                numRows = len(table.rows)
-                iRow = iRow + 1
-                for cell in row.cells:
-                    for paragraph in cell.paragraphs:
-                        #------------------------------------------------------#
-                        # Check if a valid tag number:                         #
-                        #------------------------------------------------------#
-                        s = paragraph.text
-                        for p in sRefPrefix:
-                            if (len(s) >= 1 + len(p) and s[:len(p)] == p):
-    #                            pa = re.compile('[a-zA-Z]')
-                                pn = re.compile('[0-9]')
-    #                            ma = pa.match(s[:len(sRefPrefix)])
-                                mn = pn.match(s[len(p):])
-                                if (not mn is None):
-                                    bFoundPrefix = True
-                                    style = paragraph.style
-                                    paragraph.text = ''
-                                    sn = p + str(iRefNum)
-                                    run = paragraph.add_run(sn)
-                                    paragraph.style = style
-                                    iRefNum = iRefNum + 1
-
-                #--------------------------------------------------------------#
-                # Update the progress bar:                                     #
-                #--------------------------------------------------------------#
-                pc = 1.0 / (numTables * numRows)
-                ps.update(pc)
-                ps.set_description('Renumbering table ' + str(iTable) + ' row ' + str(iRow))
-                ps.refresh()
-
-        #----------------------------------------------------------------------#
-        # Report completion regardless of error:                               #
-        #----------------------------------------------------------------------#
-        if (bFoundPrefix):
-            ps.set_description('Processing complete')
+            #------------------------------------------------------------------#
+            # Update the progress bar:                                         #
+            #------------------------------------------------------------------#
+            pc = 1.0 / (numTables * numRows)
+            ps.update(pc)
+            ps.set_description('Renumbering table ' + str(iTable) + ' row ' + str(iRow))
             ps.refresh()
-            ps.close()
-        else:
-            errorHandler(self.errProc, errorCode.noPrefixFound, sRefPrefix)
 
-#------------------------------------------------------------------------------#
-# Call the main function:                                                      #
-#------------------------------------------------------------------------------#
-main()
+    #--------------------------------------------------------------------------#
+    # Report completion regardless of error:                                   #
+    #--------------------------------------------------------------------------#
+    if (bFoundPrefix):
+        ps.set_description('Reference numbers renumbered successfully.')
+        ps.refresh()
+        ps.close()
+    else:
+        errorHandler(self.errProc, errorCode.noPrefixFound, sRefPrefix)

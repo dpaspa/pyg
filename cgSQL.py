@@ -20,158 +20,168 @@ class sqlCode(Enum):
     createIndexFileCount               = -1
     createIndexFile                    = -2
     createClass                        = -3
-    createClassesBlock                 = -7434
-    createClassesForLevel              = -4
-    createClassesGlobal                = -5
-    createClassNone                    = -6
-    createCM                           = -403
-    createEM                           = -404
-    createUN                           = -405
-    createPC                           = -406
-    createInstances                    = -7
-    createInstanceAlarmsGlobal         = -8889
-    createInstancesAll                 = -1237
-    createInstancesForeign             = -8888
-    createInstancesGlobal              = -8
-    xferInstancesGlobal                = -9
-    createSFCGlobal                    = -888
-    numInstances                       = -10
-    GLOBAL_INSTANCE                    = -11
-    createLevel                        = -12
-    createLevelsGlobal                 = -13
-    createParameterSFC                 = -14
-    createProgramFiles                 = -15
-    createProgramFilesCount            = -20
-    defaultParameters                  = -21
-    documentInfo                       = -22
-    checkIfClassParameter              = -2323
-    checkIfChildParameter              = -23
-    checkIfLinkParameter               = -24
-    checkIfSelectionParameter          = -2224
-    getChildIndex                      = -25
-    checkGlobalParameterExists         = -27
-    updateParameterOperation           = -3228
-    insertGlobalParameters             = -28
-    insertEventPrompt                  = -1326
-    insertEventLogMsg                  = -1327
-    insertEventLogReal                 = -1328
-    insertEventLogTime                 = -1329
-    updateEventPrompt                  = -1426
-    updateEventLogMsg                  = -1427
-    updateEventLogReal                 = -1428
-    updateEventLogTime                 = -1429
-    addParametersClass                 = -29
-    getClassChildren                   = -30
-    addParametersSFC                   = -31
-    getChildParameters                 = -1732
-    getDeferredParameters              = -1733
-    processLevel                       = -40
-    processLevelCount                  = -41
-    tblCreateGlobalParameter           = -42
-    tblCreateEventPrompt               = -7142
-    tblCreateEventLogMsg               = -7143
-    tblCreateEventLogReal              = -7144
-    tblCreateEventLogTime              = -7145
-    tblCreateEventDataReal             = -7146
-    tblCreateEventDataTime             = -7147
-    versionHistory                     = -43
-    VERHIST                            = -44
-    ANALOG                             = -45
-    ANALOG_EMBED                       = -46
-    callList                           = -47
-    callListExists                     = -48
-    callListExistsGlobal               = -49
-    callListExistsCRIL                 = -50
-    callListExistsNCRIL                = -60
-    callListExistsXfer                 = -61
-    CHILD                              = -62
-    CHILD_ACQUIRE                      = -63
-    CHILD_CASCADE                      = -64
-    CHILD_ACQUIRED                     = -65
-    CHILD_ACQUIRE_REQ                  = -66
-    CHILD_ACQUIRE_NREQ                 = -67
-    CHILD_BIND                         = -68
-    CHILD_INDEX_MAX                    = -69
-    CHILD_INIT_COMMAND_TRUE            = -70
-    CHILD_INIT_COMMAND_FALSE           = -71
-    CHILD_INSTANCE                     = -72
-    CHILD_INSTANCE_BIND                = -73
-    CHILD_SELECT                       = -713
-    pChildSelect                       = -714
-    pChildSelectExists                 = -715
-    CRIL                               = -74
-    CRIL_EXISTS                        = -75
-    CRIL_INSTANCE                      = -76
-    CRIL_INSTANCE_NUM                  = -77
-    CRIL_NUM                           = -78
-    CRIL_TARGET                        = -79
-    NCRIL                              = -80
-    NCRIL_EXISTS                       = -81
-    NCRIL_INSTANCE                     = -82
-    NCRIL_INSTANCE_NUM                 = -83
-    NCRIL_NUM                          = -84
-    NCRIL_TARGET                       = -85
-    HYGIENE                            = -86
-    FLOWPATH                           = -686
-    INSTANCE_ALL                       = -87
-    INSTANCE_BLK                       = -88
-    INSTANCE_BLK_ALL                   = -7188
-    INSTANCE_SFC                       = -89
-    ISOWNED                            = -901
-    LINK                               = -902
-    LINK_BLK                           = -90
-    LINK_BLK_Define                    = -91
-    pLink                              = -92
-    pLinkExists                        = -93
-    pLinkInput                         = -94
-    pLinkInputMC                       = -95
-    pLinkOutput                        = -96
-    pLinkOutputMC                      = -97
-    UNIQUEID                           = -98
-    PARAMETER_INDEX_MAX                = -99
-    PARENT                             = -100
-    PARENTBLK                          = -101
-    PARENTDATA                         = -731
-    PARENTEM                           = -102
-    PARM_CHILD_VAR_INPUT               = -103
-    PARM_CHILD_VAR_OUTPUT              = -104
-    PARM_CHILD_VAR_IN_OUT              = -105
-    PARM_INSTANCE_VAR_INPUT            = -106
-    PARM_INSTANCE_VAR_OUTPUT           = -107
-    PARM_INSTANCE_VAR_IN_OUT           = -108
-    PARM_INSTANCE_VAR                  = -109
-    PARM_CLASS_VAR_INPUT               = -110
-    PARM_CLASS_VAR_IN_OUT              = -111
-    PARM_CLASS_VAR_OUTPUT              = -120
-    RECIPE                             = -121
-    RECIPE_CLASS                       = -122
-    RECIPE_INSTANCE                    = -123
-    RECIPE_PARAMETERS                  = -124
-    REQUIREMENT                        = -125
-    SCOPE                              = -126
-    SELECT                             = -127
-    SELVALUE                           = -128
-    SFC                                = -129
-    SFCExists                          = -230
-    STATE                              = -130
-    STATE_TIMER                        = -131
-    SETPOINT                           = -132
-    OUTPUT                             = -133
-    TAGS                               = -134
-    TAGALARMS                          = -135
-    TAGSALT                            = -136
-    TIMER                              = -137
-    TRANSITION                         = -138
-    getSFCBlockParameters              = -139
+    createClassesBlock                 = -4
+    createClassesForLevel              = -5
+    createClassesGlobal                = -6
+    createClassNone                    = -7
+    createCM                           = -8
+    createEM                           = -9
+    createUN                           = -20
+    createPC                           = -21
+    createInstances                    = -22
+    createInstanceAlarmsGlobal         = -23
+    createInstancesAll                 = -24
+    createInstancesForeign             = -25
+    createInstancesGlobal              = -26
+    xferInstancesGlobal                = -27
+    createSFCGlobal                    = -28
+    numInstances                       = -29
+    GLOBAL_INSTANCE                    = -40
+    createLevel                        = -41
+    createLevelsGlobal                 = -42
+    createParameterSFC                 = -43
+    createProgramFiles                 = -44
+    createProgramFilesCount            = -45
+    defaultParameters                  = -46
+    documentInfo                       = -47
+    checkIfClassParameter              = -48
+    checkIfChildParameter              = -49
+    checkIfLinkParameter               = -60
+    checkIfSelectionParameter          = -61
+    getChildIndex                      = -62
+    checkGlobalParameterExists         = -63
+    updateParameterOperation           = -64
+    insertGlobalParameters             = -65
+    insertEventPrompt                  = -66
+    insertEventConfirmNo               = -67
+    insertEventConfirmYes              = -68
+    insertEventLogMsg                  = -69
+    insertEventLogReal                 = -80
+    insertEventLogTime                 = -81
+    updateEventPrompt                  = -82
+    updateEventConfirmNo               = -83
+    updateEventConfirmYes              = -84
+    updateEventLogMsg                  = -85
+    updateEventLogReal                 = -86
+    updateEventLogTime                 = -87
+    addParametersClass                 = -88
+    getClassChildren                   = -89
+    addParametersSFC                   = -100
+    getChildParameters                 = -101
+    getDeferredParameters              = -102
+    processLevel                       = -103
+    processLevelCount                  = -104
+    tblCreateGlobalParameter           = -105
+    tblCreateEventPrompt               = -106
+    tblCreateEventConfirmNo            = -107
+    tblCreateEventConfirmYes           = -108
+    tblCreateEventLogMsg               = -109
+    tblCreateEventLogReal              = -120
+    tblCreateEventLogTime              = -121
+    tblCreateEventDataReal             = -122
+    tblCreateEventDataTime             = -123
+    versionHistory                     = -124
+    VERHIST                            = -125
+    ANALOG                             = -126
+    ANALOG_EMBED                       = -127
+    callList                           = -128
+    callListExists                     = -129
+    callListExistsGlobal               = -140
+    callListExistsCRIL                 = -141
+    callListExistsNCRIL                = -142
+    callListExistsXfer                 = -143
+    CHILD                              = -144
+    CHILD_ACQUIRE                      = -145
+    CHILD_CASCADE                      = -146
+    CHILD_ACQUIRED                     = -147
+    CHILD_ACQUIRE_REQ                  = -148
+    CHILD_ACQUIRE_NREQ                 = -149
+    CHILD_BIND                         = -160
+    CHILD_INDEX_MAX                    = -161
+    CHILD_INIT_COMMAND_TRUE            = -162
+    CHILD_INIT_COMMAND_FALSE           = -163
+    CHILD_INSTANCE                     = -164
+    CHILD_INSTANCE_BIND                = -165
+    CHILD_SELECT                       = -166
+    pChildSelect                       = -167
+    pChildSelectExists                 = -168
+    CRIL                               = -169
+    CRIL_EXISTS                        = -180
+    CRIL_INSTANCE                      = -181
+    CRIL_INSTANCE_NUM                  = -182
+    CRIL_NUM                           = -183
+    CRIL_TARGET                        = -184
+    NCRIL                              = -185
+    NCRIL_EXISTS                       = -186
+    NCRIL_INSTANCE                     = -187
+    NCRIL_INSTANCE_NUM                 = -188
+    NCRIL_NUM                          = -189
+    NCRIL_TARGET                       = -200
+    HYGIENE                            = -201
+    FLOWPATH                           = -202
+    INSTANCE_ALL                       = -203
+    INSTANCE_BLK                       = -204
+    INSTANCE_BLK_ALL                   = -205
+    INSTANCE_SFC                       = -206
+    ISOWNED                            = -207
+    LINK                               = -208
+    LINK_BLK                           = -209
+    LINK_BLK_Define                    = -220
+    pLink                              = -221
+    pLinkExists                        = -222
+    pLinkInput                         = -223
+    pLinkInputMC                       = -224
+    pLinkOutput                        = -225
+    pLinkOutputMC                      = -226
+    UNIQUEID                           = -227
+    PARAMETER_INDEX_MAX                = -228
+    PARENT                             = -229
+    PARENTBLK                          = -240
+    PARENTDATA                         = -241
+    PARENTEM                           = -242
+    PARENTUNIT_MX                      = -243
+    PARM_CHILD_VAR_INPUT               = -244
+    PARM_CHILD_VAR_OUTPUT              = -245
+    PARM_CHILD_VAR_IN_OUT              = -246
+    PARM_INSTANCE_VAR_INPUT            = -247
+    PARM_INSTANCE_VAR_OUTPUT           = -248
+    PARM_INSTANCE_VAR_IN_OUT           = -249
+    PARM_INSTANCE_VAR                  = -250
+    PARM_CLASS_VAR_INPUT               = -260
+    PARM_CLASS_VAR_IN_OUT              = -261
+    PARM_CLASS_VAR_OUTPUT              = -262
+    RECIPE                             = -263
+    RECIPE_CLASS                       = -264
+    RECIPE_INSTANCE                    = -265
+    RECIPE_PARAMETERS                  = -266
+    REQUIREMENT                        = -267
+    SCOPE                              = -268
+    SELECT                             = -269
+    SELVALUE                           = -280
+    SFC                                = -281
+    SFCExists                          = -282
+    SFCFlag                            = -283
+    STATE                              = -284
+    STATE_ARM                          = -285
+    STATE_DISARM                       = -286
+    STATE_TIMER                        = -287
+    SETPOINT                           = -288
+    OUTPUT                             = -289
+    TAGS                               = -300
+    TAGALARMS                          = -301
+    TAGSALT                            = -302
+    TIMER                              = -303
+    TRANSITION                         = -304
+    getSFCBlockParameters              = -305
 #    pBLOCK_READ                        = -140
 #    pBLOCK_WRITE                       = -141
-    pBLOCK_RECIPE                      = -131
-    pBLOCK_RECIPE_EXISTS               = -142
+    pBLOCK_RECIPE                      = -306
+    pBLOCK_RECIPE_EXISTS               = -307
 #    pCHILD_NotMC                       = -143
-    pBlock                             = -144
-    pBlockIN                           = -145
-    pBlockIN_OUT                       = -146
-    pBlockOUT                          = -147
+    pBlock                             = -308
+    pBlockIN                           = -309
+    pBlockIN_OUT                       = -320
+    pBlockOUT                          = -321
 #    pChildDefine                       = -148
 #    pChildInput                        = -149
 #    pChildOutput                       = -150
@@ -179,102 +189,139 @@ class sqlCode(Enum):
 #    pChildIN_OUT                       = -152
 #    pChildOUT                          = -153
 #    pClass                             = -154
-    pClassBlockRead                    = -155
-    pClassBlockWrite                   = -156
+    pClassBlockRead                    = -322
+    pClassBlockWrite                   = -323
 #    pClassIN                           = -157
 #    pClassIN_OUT                       = -158
 #    pClassOUT                          = -160
-    pClassSFC                          = -161
+    pClassSFC                          = -324
 #    pSFC                               = -162
-    pSFCLink                           = -163
+    pSFCLink                           = -325
 #    pSFCLinkOutput                     = -164
-    pChildRead                         = -301
-    pChildReadBool                     = -302
-    pChildReadDefine                   = -303
-    pChildWrite                        = -304
-    pChildWriteBool                    = -305
-    pChildWriteDefine                  = -306
-    pParentRead                        = -307
-    pParentReadBool                    = -308
-    pParentWrite                       = -309
-    pParentWriteBool                   = -310
-    pSFCChild                          = -311
+    pChildRead                         = -326
+    pChildReadBool                     = -327
+    pChildReadDefine                   = -328
+    pChildWrite                        = -329
+    pChildWriteBool                    = -330
+    pChildWriteDefine                  = -331
+    pParentRead                        = -332
+    pParentReadBool                    = -333
+    pParentWrite                       = -334
+    pParentWriteBool                   = -335
+    pSFCChild                          = -336
 #    pSFCChildWrite                     = -307
 #    pSFCGrandChild                     = -309
-    pSFCChildMC                        = -312
+    pSFCChildMC                        = -337
 #    pSFCChildMCWrite                   = -311
-    pSFCChildExists                    = -313
+    pSFCChildExists                    = -338
 #    pSFCChildWriteExists               = -313
 #    pSFCGrandChildExists               = -314
-    pSFCChildMCExists                  = -314
+    pSFCChildMCExists                  = -339
 #    pSFCChildMCWriteExists             = -316
-    pSFCSelectMC                       = -315
+    pSFCSelectMC                       = -340
 #    pSFCSelectMCWrite                  = -318
-    pSFCParametersRecipe               = -319
-    pSFCParametersRecipeExist          = -320
-    pSFCParametersBlock                = -2321
+    pSFCParametersRecipe               = -341
+    pSFCParametersRecipeExist          = -342
+    pSFCParametersBlock                = -343
 #    pSFCParametersBlockWrite           = -2322
-    pEventExists                       = -179
-    pEventConfirm                      = -175
-    pEventPrompt                       = -176
+    pEventExists                       = -344
+    pEventConfirm                      = -345
+    pEventPrompt                       = -346
 #    pEventLogMsg                       = -177
-    pEventLogReal                      = -180
-    pEventLogTime                      = -181
-    pEventDataReal                     = -182
-    pEventDataTime                     = -183
-    pEventConfirmExists                = -184
-    pEventPromptExists                 = -185
-    pEventLogRealExists                = -187
-    pEventLogTimeExists                = -188
-    pEventDataRealExists               = -189
-    pEventDataTimeExists               = -200
-    pEventConfirmNoExists              = -201
-    pEventConfirmAll                   = -202
-    pEventPromptAll                    = -203
+    pEventLogReal                      = -347
+    pEventLogTime                      = -348
+    pEventDataReal                     = -349
+    pEventDataTime                     = -350
+#    pEventConfirmExists                = -184
+    pEventPromptExists                 = -351
+    pEventLogRealExists                = -352
+    pEventLogTimeExists                = -353
+#    pEventDataRealExists               = -189
+#    pEventDataTimeExists               = -200
+    pEventPromptConfirmNo              = -1354
+    pEventConfirmNoExists              = -354
+    pEventConfirmYesExists             = -355
+    pEventConfirmAll                   = -356
+    pEventPromptAll                    = -357
 #    pEventLogMsgAll                    = -204
-    pEventLogRealAll                   = -205
-    pEventLogTimeAll                   = -206
-    pEventConfirmNum                   = -209
-    pEventPromptNum                    = -220
-#    pEventLogMsgNum                    = -221
-    pEventLogRealNum                   = -222
-    pEventLogTimeNum                   = -223
-    pEventDataLogMatch                 = -4223
-    pEventDataValueMatch               = -4224
-    pSyncRead                          = -5101
-    pSyncWrite                         = -5102
-    numChildren                        = -8001
-    numReadBool                        = -8002
-    numReadInt                         = -8003
-    numReadReal                        = -8004
-    numReadTime                        = -8005
-    numWriteBool                       = -8005
-    numWriteInt                        = -8007
-    numWriteReal                       = -8008
-    numWriteTime                       = -8009
-    pReadBool                          = -9001
-    pReadInt                           = -9002
-    pReadReal                          = -9003
-    pReadTime                          = -9004
-    pWriteBool                         = -9005
-    pWriteInt                          = -9006
-    pWriteReal                         = -9007
-    pWriteTime                         = -9008
-    pEventLogMsgClass                  = -7171
-    pEventLogMsgExists                 = -7172
-    pEventLogMsgInstance               = -7173
-    pEventLogMsgMaxClass               = -7174
-    pEventLogMsgMaxInstance            = -7175
-    pEventLogMsgWordClass              = -7176
-    pEventLogMsgWordInstance           = -7177
-    pEventLogMsgWordBitClass           = -7178
-    pEventLogMsgWordBitInstance        = -7179
-    simulateDI1                        = -9701
-    simulateDI2                        = -9702
-    simulatePOS2                       = -9703
-    simulatePOS4                       = -9704
-    simulateZSC1                       = -9705
-    simulateZSC2                       = -9706
+    pEventLogRealAll                   = -358
+    pEventLogTimeAll                   = -359
+    pEventPromptNum                    = -360
+    pEventConfirmNoNum                 = -361
+    pEventConfirmYesNum                = -362
+    pEventLogMsgNum                    = -363
+    pEventLogRealNum                   = -364
+    pEventLogTimeNum                   = -365
+    pEventConfirmNoNumAll              = -366
+    pEventConfirmYesNumAll             = -367
+    pEventLogMsgNumAll                 = -368
+    pEventLogRealNumAll                = -369
+    pEventLogTimeNumAll                = -380
+    pEventConfirmNoNumWords            = -381
+    pEventConfirmYesNumWords           = -382
+    pEventLogMsgNumWords               = -383
+    pEventLogRealNumWords              = -384
+    pEventLogTimeNumWords              = -385
+    pEventDataLogMatch                 = -386
+    pEventDataValueMatch               = -387
+    pSyncRead                          = -388
+    pSyncWrite                         = -389
+    numChildren                        = -400
+    numReadBool                        = -401
+    numReadInt                         = -402
+    numReadReal                        = -403
+    numReadTime                        = -404
+    numWriteBool                       = -405
+    numWriteInt                        = -406
+    numWriteReal                       = -407
+    numWriteTime                       = -408
+    pInterfaceBool                     = -409
+    pInterfaceInt                      = -420
+    pInterfaceReal                     = -421
+    pInterfaceTime                     = -422
+    pReadBool                          = -423
+    pReadInt                           = -424
+    pReadReal                          = -425
+    pReadTime                          = -426
+    pWriteBool                         = -427
+    pWriteInt                          = -428
+    pWriteReal                         = -429
+    pWriteTime                         = -440
+    pEventConfirmNoClass               = -441
+    pEventConfirmYesClass              = -442
+    pEventLogMsgClass                  = -443
+    pEventLogRealClass                 = -444
+    pEventLogTimeClass                 = -445
+    pEventLogMsgExists                 = -446
+    pEventConfirmNoInstance            = -447
+    pEventConfirmYesInstance           = -448
+    pEventLogMsgInstance               = -449
+    pEventLogRealInstance              = -460
+    pEventLogTimeInstance              = -461
+    pEventLogMsgMaxClass               = -462
+    pEventLogRealMaxClass              = -463
+    pEventLogTimeMaxClass              = -464
+    pEventLogMsgMaxInstance            = -465
+    pEventLogRealMaxInstance           = -466
+    pEventLogTimeMaxInstance           = -467
+    pEventConfirmNoWordClass           = -468
+    pEventConfirmYesWordClass          = -469
+    pEventLogMsgWordClass              = -480
+    pEventLogRealWordClass             = -482
+    pEventLogTimeWordClass             = -483
+    pEventConfirmNoWordInstance        = -484
+    pEventConfirmYesWordInstance       = -485
+    pEventLogMsgWordInstance           = -486
+    pEventLogRealWordInstance          = -487
+    pEventLogTimeWordInstance          = -488
+    pEventLogMsgWordBitClass           = -489
+    pEventLogMsgWordBitInstance        = -500
+    simulateDI1                        = -501
+    simulateDI2                        = -502
+    simulatePOS2                       = -503
+    simulatePOS4                       = -504
+    simulateZSC1                       = -505
+    simulateZSC2                       = -506
 
 prm = {
     sqlCode.ANALOG                     : ['gInstance'],
@@ -356,6 +403,7 @@ prm = {
     sqlCode.PARENTBLK                  : [],
     sqlCode.PARENTDATA                 : [],
     sqlCode.PARENTEM                   : [],
+    sqlCode.PARENTUNIT_MX              : [],
     sqlCode.RECIPE                     : [],
     sqlCode.RECIPE_CLASS               : [],
     sqlCode.RECIPE_INSTANCE            : ['gInstance'],
@@ -371,7 +419,10 @@ prm = {
     sqlCode.SELVALUE                   : ['gClass', 'gSelectParameter', 'gSelectSelection'],
     sqlCode.SFC                        : ['gClass'],
     sqlCode.SFCExists                  : ['gClass'],
+    sqlCode.SFCFlag                    : ['gClass', 'gClass', 'gClass'],
     sqlCode.STATE                      : ['gClass'],
+    sqlCode.STATE_ARM                  : ['gSFC'],
+    sqlCode.STATE_DISARM               : ['gSFC'],
     sqlCode.STATE_TIMER                : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.SETPOINT                   : [],
     sqlCode.OUTPUT                     : [],
@@ -387,23 +438,36 @@ prm = {
     sqlCode.pEventLogTime              : ['gClass', 'gClass'],
     sqlCode.pEventDataReal             : ['gClass'],
     sqlCode.pEventDataTime             : ['gClass'],
-    sqlCode.pEventConfirmExists        : ['gClass'],
+#    sqlCode.pEventConfirmExists        : ['gClass'],
     sqlCode.pEventPromptExists         : ['gClass'],
     sqlCode.pEventLogRealExists        : ['gClass'],
     sqlCode.pEventLogTimeExists        : ['gClass'],
-    sqlCode.pEventDataRealExists       : ['gClass'],
-    sqlCode.pEventDataTimeExists       : ['gClass'],
-    sqlCode.pEventConfirmNoExists      : ['gClass', 'gChildParameter'],
+#    sqlCode.pEventDataRealExists       : ['gClass'],
+#    sqlCode.pEventDataTimeExists       : ['gClass'],
+    sqlCode.pEventPromptConfirmNo      : ['gClass', 'gChildParameter'],
+    sqlCode.pEventConfirmNoExists      : ['gClass'],
+    sqlCode.pEventConfirmYesExists     : ['gClass'],
     sqlCode.pEventConfirmAll           : [],
     sqlCode.pEventPromptAll            : [],
 #    sqlCode.pEventLogMsgAll            : [],
     sqlCode.pEventLogRealAll           : [],
     sqlCode.pEventLogTimeAll           : [],
-    sqlCode.pEventConfirmNum           : [],
+    sqlCode.pEventConfirmNoNumAll      : [],
+    sqlCode.pEventConfirmYesNumAll     : [],
+    sqlCode.pEventLogMsgNumAll         : [],
+    sqlCode.pEventLogRealNumAll        : [],
+    sqlCode.pEventLogTimeNumAll        : [],
     sqlCode.pEventPromptNum            : [],
-#    sqlCode.pEventLogMsgNum            : [],
-    sqlCode.pEventLogRealNum           : [],
-    sqlCode.pEventLogTimeNum           : [],
+    sqlCode.pEventConfirmNoNum         : ['gClass'],
+    sqlCode.pEventConfirmYesNum        : ['gClass'],
+    sqlCode.pEventLogMsgNum            : ['gClass'],
+    sqlCode.pEventConfirmNoNumWords    : ['gClass', 'gClass', 'gClass', 'gClass'],
+    sqlCode.pEventConfirmYesNumWords   : ['gClass', 'gClass', 'gClass', 'gClass'],
+    sqlCode.pEventLogMsgNumWords       : ['gClass', 'gClass', 'gClass', 'gClass'],
+    sqlCode.pEventLogRealNumWords      : ['gClass', 'gClass', 'gClass', 'gClass'],
+    sqlCode.pEventLogTimeNumWords      : ['gClass', 'gClass', 'gClass', 'gClass'],
+    sqlCode.pEventLogRealNum           : ['gClass'],
+    sqlCode.pEventLogTimeNum           : ['gClass'],
     sqlCode.pEventDataLogMatch         : ['gSFC', 'gChildParameter'],
     sqlCode.pEventDataValueMatch       : ['gSFC', 'gChildParameter'],
     sqlCode.pSyncRead                  : ['gChildClass', 'gClass', 'gChildClass', 'gChildClass', 'gChildClass'],
@@ -476,6 +540,10 @@ prm = {
     sqlCode.numWriteInt                : ['gClass'],
     sqlCode.numWriteReal               : ['gClass'],
     sqlCode.numWriteTime               : ['gClass'],
+    sqlCode.pInterfaceBool             : ['gClass', 'gClass', 'gClass'],
+    sqlCode.pInterfaceInt              : ['gClass', 'gClass', 'gClass'],
+    sqlCode.pInterfaceReal             : ['gClass', 'gClass', 'gClass'],
+    sqlCode.pInterfaceTime             : ['gClass', 'gClass', 'gClass'],
     sqlCode.pReadBool                  : ['gClass', 'gClass', 'gClass'],
     sqlCode.pReadInt                   : ['gClass', 'gClass', 'gClass'],
     sqlCode.pReadReal                  : ['gClass', 'gClass', 'gClass'],
@@ -484,13 +552,33 @@ prm = {
     sqlCode.pWriteInt                  : ['gClass', 'gClass', 'gClass'],
     sqlCode.pWriteReal                 : ['gClass', 'gClass', 'gClass'],
     sqlCode.pWriteTime                 : ['gClass', 'gClass', 'gClass'],
+    sqlCode.pEventConfirmNoClass       : ['gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass'],
+    sqlCode.pEventConfirmYesClass      : ['gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass'],
     sqlCode.pEventLogMsgClass          : ['gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass'],
+    sqlCode.pEventLogRealClass         : ['gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass'],
+    sqlCode.pEventLogTimeClass         : ['gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass'],
     sqlCode.pEventLogMsgExists         : ['gClass'],
+    sqlCode.pEventConfirmNoInstance    : ['gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance'],
+    sqlCode.pEventConfirmYesInstance   : ['gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance'],
     sqlCode.pEventLogMsgInstance       : ['gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance'],
-    sqlCode.pEventLogMsgMaxClass       : ['gClass', 'gClass'],
+    sqlCode.pEventLogRealInstance      : ['gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance'],
+    sqlCode.pEventLogTimeInstance      : ['gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance'],
+    sqlCode.pEventLogMsgMaxClass       : ['gClass', 'gClass', 'gClass', 'gClass'],
+    sqlCode.pEventLogRealMaxClass      : ['gClass', 'gClass'],
+    sqlCode.pEventLogTimeMaxClass      : ['gClass', 'gClass'],
     sqlCode.pEventLogMsgMaxInstance    : [],
+    sqlCode.pEventLogRealMaxInstance   : [],
+    sqlCode.pEventLogTimeMaxInstance   : [],
+    sqlCode.pEventConfirmNoWordClass   : ['gClass', 'gClass'],
+    sqlCode.pEventConfirmYesWordClass  : ['gClass', 'gClass'],
     sqlCode.pEventLogMsgWordClass      : ['gClass', 'gClass'],
+    sqlCode.pEventLogRealWordClass     : ['gClass', 'gClass'],
+    sqlCode.pEventLogTimeWordClass     : ['gClass', 'gClass'],
+    sqlCode.pEventConfirmNoWordInstance: ['gInstance', 'gInstance'],
+    sqlCode.pEventConfirmYesWordInstance: ['gInstance', 'gInstance'],
     sqlCode.pEventLogMsgWordInstance   : ['gInstance', 'gInstance'],
+    sqlCode.pEventLogRealWordInstance  : ['gInstance', 'gInstance'],
+    sqlCode.pEventLogTimeWordInstance  : ['gInstance', 'gInstance'],
     sqlCode.pEventLogMsgWordBitClass   : ['gClass', 'gClass', 'gClass', 'gClass'],
     sqlCode.pEventLogMsgWordBitInstance: ['gInstance'],
     sqlCode.simulateDI1                : ['gParent', 'gParent', 'gParent', 'gParent'],
@@ -687,6 +775,22 @@ sql = {
                                                  'I.GGParent, '
                                                  'I.GGGParent, '
                                                  'C.Description AS ClassDescription, '
+                                                 'CASE  '
+                                                     'WHEN Length(C.Flowpath) = 0 THEN 0 '
+                                                     'WHEN Length(C.Flowpath) > 0 THEN C.Flowpath '
+                                                 'END hasFlowpath, '
+                                                 'CASE  '
+                                                     'WHEN Length(C.History) = 0 THEN 0 '
+                                                     'WHEN Length(C.History) > 0 THEN C.History '
+                                                 'END hasHistory, '
+                                                 'CASE  '
+                                                     'WHEN Length(C.Hygiene) = 0 THEN 0 '
+                                                     'WHEN Length(C.Hygiene) > 0 THEN C.Hygiene '
+                                                 'END hasHygiene, '
+                                                 'IFNULL((SELECT 1 FROM tblInterlockCRIL WHERE Instance = I.Instance), 0) AS hasCRIL, '
+                                                 'IFNULL((SELECT 1 FROM tblInterlockNCRIL WHERE Instance = I.Instance), 0) AS hasNCRIL, '
+                                                 'IFNULL((SELECT IDX FROM tblInterlockCRIL WHERE Instance = I.Instance), -1) AS CRILIDX, '
+                                                 'IFNULL((SELECT IDX FROM tblInterlockNCRIL WHERE Instance = I.Instance), -1) AS NCRILIDX, '
                                                  'printf("%d",I.xPos) AS xPos, '
                                                  'printf("%d",I.yPos) AS yPos '
                                           'FROM tblInstance AS I INNER JOIN '
@@ -844,7 +948,8 @@ sql = {
                                                      'WHEN upper(dataType) = "INT" THEN printf("%d", defaultValue) '
                                                      'WHEN upper(dataType) = "STRING" THEN defaultValue '
                                                  'END defaultValue '
-                                          'FROM tblParameter_Default'
+                                          'FROM tblParameter_Default '
+                                          'WHERE Scope = ?'
                                          ),
     sqlCode.processLevel               : ('SELECT * '
                                           'FROM tblClass '
@@ -1015,7 +1120,8 @@ sql = {
                                                  'childAcquire = "OWNER") AND '
                                                  'length(falseStatement) > 0'
                                          ), # gClass, gState
-    sqlCode.CHILD_INSTANCE             : ('SELECT C.childParameterAlias, '
+    sqlCode.CHILD_INSTANCE             : ('SELECT L.Level AS childLevel, '
+                                                 'C.childParameterAlias, '
                                                  'I.Class AS childAliasClass, '
                                                  'printf("%d", C.childIndex) AS childIndex, '
                                                  'printf("%d", I.IDX) AS childIDX, '
@@ -1030,6 +1136,8 @@ sql = {
                                                  '(I.GParent = ? OR '
                                                  'I.GGParent = ? OR '
                                                  'I.GGGParent = ?))) '
+                                          'INNER JOIN tblClass AS L ON '
+                                                 'C.childClass = L.Class '
                                           'WHERE C.Class = ? AND '
                                                  'C.State = (SELECT [State] FROM tblClass_State WHERE Class = ? LIMIT 1) '
                                           'ORDER BY cast(childIndex as Int)'
@@ -1178,7 +1286,7 @@ sql = {
     sqlCode.HYGIENE                    : ('SELECT * '
                                           'FROM tblClass '
                                           'WHERE [Class] = ? AND '
-                                                 'upper(Hygiene) = "YES"'
+                                                 'Hygiene = 1'
                                          ), # gClass
     sqlCode.INSTANCE_ALL               : ('SELECT printf("%d",I.ID) AS ID, '
                                                  'I.[Level], '
@@ -1213,6 +1321,7 @@ sql = {
                                                  'I.[Level], '
                                                  'I.Instance, '
                                                  'I.[Class], '
+                                                 'I.[Class] AS blockClass, '
                                                  'I.Description, '
                                                  'I.Parent, '
                                                  'I.ParentID, '
@@ -1496,8 +1605,19 @@ sql = {
                                           'WHERE [Level] = "EM" '
                                           'ORDER BY [ID]'
                                          ),
+    sqlCode.PARENTUNIT_MX              : ('SELECT Instance, '
+                                                 'printf("%d", IDX) AS IDX '
+                                          'FROM tblInstance '
+                                          'WHERE Class = "MX" AND '
+                                                 'substr(Level, 1, 1) != "V" '
+                                          'ORDER BY IDX'
+                                         ),
     sqlCode.PARENTDATA                 : ('SELECT P.Level, '
                                                  'P.Class, '
+                                                 'CASE  '
+                                                     'WHEN Length(P.Hygiene) = 0 THEN 0 '
+                                                     'WHEN Length(P.Hygiene) > 0 THEN P.Hygiene '
+                                                 'END hasHygiene, '
                                                  'printf("%d", P.ID) AS IDX, '
                                                  '(SELECT COUNT(C.childAliasTag) '
                                                        'FROM tblClass_Child AS C '
@@ -1508,7 +1628,11 @@ sql = {
                                                        'WHERE P.Class = G.parameterClass AND '
                                                        'G.parameterType LIKE "VAR_%" AND '
                                                        'length(G.childParameterAlias) = 0) '
-                                                       'AS cntParameters '
+                                                       'AS cntParameters, '
+                                                 '(SELECT COUNT(S.State) '
+                                                       'FROM tblClass_State AS S '
+                                                       'WHERE P.Class = S.Class) '
+                                                       'AS cntSubstates '
                                           'FROM tblClass AS P '
                                           'WHERE P.Level = "CM" OR '
                                                  'P.Level = "EM" OR '
@@ -1611,9 +1735,38 @@ sql = {
                                                 'hasSFC = "TRUE" '
                                           'LIMIT 1'
                                          ), # gClass
+    sqlCode.SFCFlag                    : ('SELECT Class, '
+                                                 'CASE '
+                                                     'WHEN (SELECT COUNT(Class) '
+                                                           'FROM tblClass_State '
+                                                           'WHERE Class = ? AND '
+                                                                 'hasSFC = "TRUE") > 0 '
+                                                           'THEN """alwaysHigh""" '
+                                                     'WHEN (SELECT COUNT(Class) '
+                                                           'FROM tblClass_State '
+                                                           'WHERE Class = ? AND '
+                                                                 'hasSFC = "TRUE") = 0 '
+                                                           'THEN """alwaysLow""" '
+                                                 'END existsSFC '
+                                          'FROM tblClass_State '
+                                          'WHERE [Class] = ? '
+                                          'LIMIT 1'
+                                         ), # gClass
     sqlCode.STATE                      : ('SELECT * '
                                           'FROM tblClass_State '
                                           'WHERE [Class] = ? '
+                                          'ORDER BY State'
+                                         ), # gClass
+    sqlCode.STATE_ARM                  : ('SELECT * '
+                                          'FROM tblClass_State '
+                                          'WHERE [SFC] = ? AND '
+                                                'Cast(Arm AS Int) = 1 '
+                                          'ORDER BY State'
+                                         ), # gClass
+    sqlCode.STATE_DISARM               : ('SELECT * '
+                                          'FROM tblClass_State '
+                                          'WHERE [SFC] = ? AND '
+                                                'Cast(Arm AS Int) = 2 '
                                           'ORDER BY State'
                                          ), # gClass
     sqlCode.STATE_TIMER                : ('SELECT printf("%d",I.ID) AS ID, '
@@ -1861,7 +2014,7 @@ sql = {
                                                 'blockParameter = ?'
                                          ),
     sqlCode.insertGlobalParameters     : ('INSERT INTO pGlobal '
-                                          'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                                          'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
                                          ),
     sqlCode.insertEventPrompt          : ('INSERT INTO pEventPrompt '
                                                  'SELECT 0, '
@@ -1884,6 +2037,58 @@ sql = {
                                                  'ON I.Class = P.parameterClass '
                                           'WHERE P.isSFC = 1 AND '
                                                  'P.isEventPrompt = 1 AND '
+                                                 'substr(I.Level, 1, 1) != "V" '
+                                          'ORDER BY I.Instance, '
+                                                 'P.parameterState, '
+                                                 'P.childParameter'
+                                         ),
+    sqlCode.insertEventConfirmNo       : ('INSERT INTO pEventConfirmNo '
+                                                 'SELECT 0, '
+                                                 'I.Instance || P.childParameter || "_" || P.parameterState AS pKey, '
+                                                 'I.Instance, '
+                                                 'printf("%d",I.ID) AS ID, '
+                                                 'printf("%d",I.IDX) AS IDX, '
+                                                 'I.Class, '
+                                                 'I.Description, '
+                                                 'I.instanceChildAlias, '
+                                                 'I.instanceChildSFCAlias, '
+                                                 'P.parameterSource, '
+                                                 'P.parameterState, '
+                                                 'P.childParameter, '
+                                                 'P.blockParameter, '
+                                                 'P.parameterDataType, '
+                                                 'p.parameterDescription '
+                                          'FROM tblInstance AS I '
+                                                 'INNER JOIN pGlobal AS P '
+                                                 'ON I.Class = P.parameterClass '
+                                          'WHERE P.isSFC = 1 AND '
+                                                 'P.isEventConfirmNo = 1 AND '
+                                                 'substr(I.Level, 1, 1) != "V" '
+                                          'ORDER BY I.Instance, '
+                                                 'P.parameterState, '
+                                                 'P.childParameter'
+                                         ),
+    sqlCode.insertEventConfirmYes      : ('INSERT INTO pEventConfirmYes '
+                                                 'SELECT 0, '
+                                                 'I.Instance || P.childParameter || "_" || P.parameterState AS pKey, '
+                                                 'I.Instance, '
+                                                 'printf("%d",I.ID) AS ID, '
+                                                 'printf("%d",I.IDX) AS IDX, '
+                                                 'I.Class, '
+                                                 'I.Description, '
+                                                 'I.instanceChildAlias, '
+                                                 'I.instanceChildSFCAlias, '
+                                                 'P.parameterSource, '
+                                                 'P.parameterState, '
+                                                 'P.childParameter, '
+                                                 'P.blockParameter, '
+                                                 'P.parameterDataType, '
+                                                 'p.parameterDescription '
+                                          'FROM tblInstance AS I '
+                                                 'INNER JOIN pGlobal AS P '
+                                                 'ON I.Class = P.parameterClass '
+                                          'WHERE P.isSFC = 1 AND '
+                                                 'P.isEventConfirmYes = 1 AND '
                                                  'substr(I.Level, 1, 1) != "V" '
                                           'ORDER BY I.Instance, '
                                                  'P.parameterState, '
@@ -1983,6 +2188,42 @@ sql = {
                                                     'AS keyEvent, '
                                                     'pKey AS keyName '
                                                     'FROM pEventPrompt t1) '
+                                                 'WHERE keyName=pKey)'
+                                         ),
+    sqlCode.updateEventConfirmNo       : ('UPDATE pEventConfirmNo '
+                                          'SET idxEvent = ('
+                                                 'SELECT keyEvent FROM '
+                                                    '(SELECT '
+                                                      '(SELECT '
+                                                        '(SELECT COUNT(pKey) '
+                                                         'FROM pEventConfirmNo t2 '
+                                                         'WHERE t2.pKey < t1.pKey) '
+                                                        '+ '
+                                                        '(SELECT COUNT(pKey) '
+                                                         'FROM pEventConfirmNo t3 '
+                                                         'WHERE t3.pKey = T1.pKey) '
+                                                       ') '
+                                                    'AS keyEvent, '
+                                                    'pKey AS keyName '
+                                                    'FROM pEventConfirmNo t1) '
+                                                 'WHERE keyName=pKey)'
+                                         ),
+    sqlCode.updateEventConfirmYes      : ('UPDATE pEventConfirmYes '
+                                          'SET idxEvent = ('
+                                                 'SELECT keyEvent FROM '
+                                                    '(SELECT '
+                                                      '(SELECT '
+                                                        '(SELECT COUNT(pKey) '
+                                                         'FROM pEventConfirmYes t2 '
+                                                         'WHERE t2.pKey < t1.pKey) '
+                                                        '+ '
+                                                        '(SELECT COUNT(pKey) '
+                                                         'FROM pEventConfirmYes t3 '
+                                                         'WHERE t3.pKey = T1.pKey) '
+                                                       ') '
+                                                    'AS keyEvent, '
+                                                    'pKey AS keyName '
+                                                    'FROM pEventConfirmYes t1) '
                                                  'WHERE keyName=pKey)'
                                          ),
     sqlCode.updateEventLogMsg          : ('UPDATE pEventLogMsg '
@@ -2105,7 +2346,8 @@ sql = {
                                                  'isRecipe boolean, '
                                                  'recipeClass text, '
                                                  'idxEvent int, '
-                                                 'isEventConfirm boolean, '
+                                                 'isEventConfirmNo boolean, '
+                                                 'isEventConfirmYes boolean, '
                                                  'isEventPrompt boolean, '
                                                  'isEventLogMsg boolean, '
                                                  'isEventLogReal boolean, '
@@ -2116,6 +2358,42 @@ sql = {
                                          ),
     sqlCode.tblCreateEventPrompt       : ('CREATE TABLE IF NOT EXISTS '
                                           'pEventPrompt ('
+                                                 'idxEvent int NOT NULL, '
+                                                 'pKey text NOT NULL, '
+                                                 'Instance text NOT NULL, '
+                                                 'ID int NOT NULL, '
+                                                 'IDX int NOT NULL, '
+                                                 'Class text NOT NULL, '
+                                                 'Description text NOT NULL, '
+                                                 'instanceChildAlias text NOT NULL, '
+                                                 'instanceChildSFCAlias text NOT NULL, '
+                                                 'parameterSource text NOT NULL, '
+                                                 'parameterState text NOT NULL, '
+                                                 'childParameter text NOT NULL, '
+                                                 'blockParameter text NOT NULL, '
+                                                 'parameterDataType text NOT NULL, '
+                                                 'parameterDescription text NOT NULL)'
+                                         ),
+    sqlCode.tblCreateEventConfirmNo    : ('CREATE TABLE IF NOT EXISTS '
+                                          'pEventConfirmNo ('
+                                                 'idxEvent int NOT NULL, '
+                                                 'pKey text NOT NULL, '
+                                                 'Instance text NOT NULL, '
+                                                 'ID int NOT NULL, '
+                                                 'IDX int NOT NULL, '
+                                                 'Class text NOT NULL, '
+                                                 'Description text NOT NULL, '
+                                                 'instanceChildAlias text NOT NULL, '
+                                                 'instanceChildSFCAlias text NOT NULL, '
+                                                 'parameterSource text NOT NULL, '
+                                                 'parameterState text NOT NULL, '
+                                                 'childParameter text NOT NULL, '
+                                                 'blockParameter text NOT NULL, '
+                                                 'parameterDataType text NOT NULL, '
+                                                 'parameterDescription text NOT NULL)'
+                                         ),
+    sqlCode.tblCreateEventConfirmYes   : ('CREATE TABLE IF NOT EXISTS '
+                                          'pEventConfirmYes ('
                                                  'idxEvent int NOT NULL, '
                                                  'pKey text NOT NULL, '
                                                  'Instance text NOT NULL, '
@@ -2220,7 +2498,7 @@ sql = {
                                           'FROM pEventPrompt '
                                           'WHERE Class = ? AND '
                                                  'Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
-                                          'ORDER BY idxEvent'
+                                          'ORDER BY cast(idxEvent as Int)'
                                          ), # gClass
 #    sqlCode.pEventLogMsg               : ('SELECT * '
 #                                          'FROM pGlobal '
@@ -2233,25 +2511,27 @@ sql = {
                                           'FROM pEventLogReal '
                                           'WHERE Class = ? AND '
                                                  'Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
-                                          'ORDER BY idxEvent'
+                                          'ORDER BY cast(idxEvent as Int)'
                                          ), # gClass
     sqlCode.pEventLogTime              : ('SELECT * '
                                           'FROM pEventLogTime '
                                           'WHERE Class = ? AND '
                                                  'Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
-                                          'ORDER BY idxEvent'
+                                          'ORDER BY cast(idxEvent as Int)'
                                          ), # gClass
-    sqlCode.pEventDataReal             : ('SELECT * '
+    sqlCode.pEventDataReal             : ('SELECT idxEvent, '
+                                                 'idxEvent - 1 AS idxOffset, '
+                                                 '* '
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
-                                                 'isSFC = 1 AND '
                                                  'isEventDataReal = 1 '
                                           'ORDER BY cast(idxEvent as Int)'
                                          ), # gClass
-    sqlCode.pEventDataTime             : ('SELECT * '
+    sqlCode.pEventDataTime             : ('SELECT idxEvent, '
+                                                 'idxEvent - 1 AS idxOffset, '
+                                                 '* '
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
-                                                 'isSFC = 1 AND '
                                                  'isEventDataTime = 1 '
                                           'ORDER BY cast(idxEvent as Int)'
                                          ), # gClass
@@ -2333,28 +2613,28 @@ sql = {
 #                                                 'P.parameterState, '
 #                                                 'P.childParameter'
 #                                         ), # gClass
-    sqlCode.pEventConfirmExists        : ('SELECT isSFC '
-                                          'FROM pGlobal '
-                                          'WHERE parameterClass = ? AND '
-                                                 'isSFC = 1 AND '
-                                                 'isEventConfirm = 1 '
-                                          'LIMIT 1'
-                                         ), # gClass
+#    sqlCode.pEventConfirmExists        : ('SELECT isSFC '
+#                                          'FROM pGlobal '
+#                                          'WHERE parameterClass = ? AND '
+#                                                 'isSFC = 1 AND '
+#                                                 'isEventConfirm = 1 '
+#                                          'LIMIT 1'
+#                                         ), # gClass
     sqlCode.pEventPromptExists         : ('SELECT pKey '
                                           'FROM pEventPrompt '
                                           'WHERE Class = ? '
                                           'LIMIT 1'
                                          ), # gClass
-    sqlCode.pEventLogRealExists        : ('SELECT pKey '
-                                          'FROM pEventLogReal '
-                                          'WHERE Class = ? '
-                                          'LIMIT 1'
-                                         ), # gClass
-    sqlCode.pEventLogTimeExists        : ('SELECT pKey '
-                                          'FROM pEventLogTime '
-                                          'WHERE Class = ? '
-                                          'LIMIT 1'
-                                         ), # gClass
+#    sqlCode.pEventLogRealExists        : ('SELECT pKey '
+#                                          'FROM pEventLogReal '
+#                                          'WHERE Class = ? '
+#                                          'LIMIT 1'
+#                                         ), # gClass
+#    sqlCode.pEventLogTimeExists        : ('SELECT pKey '
+#                                          'FROM pEventLogTime '
+#                                          'WHERE Class = ? '
+#                                          'LIMIT 1'
+#                                         ), # gClass
 #    sqlCode.pEventLogMsgExists         : ('SELECT isSFC '
 #                                          'FROM pGlobal '
 #                                          'WHERE parameterClass = ? AND '
@@ -2362,27 +2642,20 @@ sql = {
 #                                                 'isEventLogMsg = 1 '
 #                                          'LIMIT 1'
 #                                         ), # gClass
-    sqlCode.pEventDataRealExists       : ('SELECT isSFC '
-                                          'FROM pGlobal '
-                                          'WHERE parameterClass = ? AND '
-                                                 'isSFC = 1 AND '
-                                                 'isEventDataReal = 1 '
-                                          'LIMIT 1'
-                                         ), # gClass
-    sqlCode.pEventDataTimeExists       : ('SELECT isSFC '
-                                          'FROM pGlobal '
-                                          'WHERE parameterClass = ? AND '
-                                                 'isSFC = 1 AND '
-                                                 'isEventDataTime = 1 '
-                                          'LIMIT 1'
-                                         ), # gClass
-    sqlCode.pEventConfirmNoExists      : ('SELECT isSFC '
-                                          'FROM pGlobal '
-                                          'WHERE parameterClass = ? AND '
-                                                 'isSFC = 1 AND '
-                                                 'isEventConfirm = 1 AND '
-                                                 'childParameter = ? || "_confirm_no"'
-                                         ), # gClass
+#    sqlCode.pEventDataRealExists       : ('SELECT isSFC '
+#                                          'FROM pGlobal '
+#                                          'WHERE parameterClass = ? AND '
+#                                                 'isSFC = 1 AND '
+#                                                 'isEventDataReal = 1 '
+#                                          'LIMIT 1'
+#                                         ), # gClass
+#    sqlCode.pEventDataTimeExists       : ('SELECT isSFC '
+#                                          'FROM pGlobal '
+#                                          'WHERE parameterClass = ? AND '
+#                                                 'isSFC = 1 AND '
+#                                                 'isEventDataTime = 1 '
+#                                          'LIMIT 1'
+#                                         ), # gClass
     sqlCode.pEventConfirmAll           : ('SELECT *, '
                                                  'Replace(childParameter,"_confirm",".confirm") AS dbEventParameter '
                                           'FROM pGlobal '
@@ -2413,6 +2686,21 @@ sql = {
     sqlCode.pEventPromptNum            : ('SELECT COUNT(pKey) AS idxEventMax '
                                           'FROM pEventPrompt'
                                          ),
+    sqlCode.pEventConfirmNoNumAll      : ('SELECT COUNT(pKey) AS idxEventMax '
+                                          'FROM pEventConfirmNo'
+                                         ),
+    sqlCode.pEventConfirmYesNumAll     : ('SELECT COUNT(pKey) AS idxEventMax '
+                                          'FROM pEventConfirmYes'
+                                         ),
+    sqlCode.pEventLogMsgNumAll         : ('SELECT COUNT(pKey) - 1 AS idxEventMax '
+                                          'FROM pEventLogMsg'
+                                         ),
+    sqlCode.pEventLogRealNumAll        : ('SELECT COUNT(pKey) - 1 AS idxEventMax '
+                                          'FROM pEventLogReal'
+                                         ),
+    sqlCode.pEventLogTimeNumAll        : ('SELECT COUNT(pKey) - 1 AS idxEventMax '
+                                          'FROM pEventLogTime'
+                                         ),
 #    sqlCode.pEventLogMsgInstanceNum    : ('SELECT COUNT(I.Instance) AS idxEventMax '
 #                                          'FROM tblInstance AS I '
 #                                                 'INNER JOIN pGlobal AS P '
@@ -2425,14 +2713,75 @@ sql = {
 #                                          'FROM pGlobal '
 #                                          'WHERE isEventPrompt = 1'
 #                                         ),
-#    sqlCode.pEventLogMsgNum            : ('SELECT COUNT(pKey) AS idxEventMax '
-#                                          'FROM pEventLogMsg'
-#                                         ),
-    sqlCode.pEventLogRealNum           : ('SELECT COUNT(pKey) AS idxEventMax '
-                                          'FROM pEventLogReal'
+    sqlCode.pEventConfirmNoNum         : ('SELECT COUNT(pKey) - 1 AS idxEventMax '
+                                          'FROM pEventConfirmNo '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)'
                                          ),
-    sqlCode.pEventLogTimeNum           : ('SELECT COUNT(pKey) AS idxEventMax '
-                                          'FROM pEventLogTime'
+    sqlCode.pEventConfirmYesNum        : ('SELECT COUNT(pKey) - 1 AS idxEventMax '
+                                          'FROM pEventConfirmYes '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)'
+                                         ),
+    sqlCode.pEventLogMsgNum            : ('SELECT COUNT(pKey) - 1 AS idxEventMax '
+                                          'FROM pEventLogMsg '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)'
+                                         ),
+    sqlCode.pEventLogRealNum           : ('SELECT COUNT(pKey) - 1 AS idxEventMax '
+                                          'FROM pEventLogReal '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)'
+                                         ),
+    sqlCode.pEventLogTimeNum           : ('SELECT COUNT(pKey) - 1 AS idxEventMax '
+                                          'FROM pEventLogTime '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)'
+                                         ),
+    sqlCode.pEventConfirmNoNumWords    : ('SELECT CAST(((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventConfirmNo WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2)/ 16 AS INT) '
+                                                '+ CASE '
+                                                'WHEN ((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventConfirmNo WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2) % 16 > 0 THEN 1 '
+                                                'WHEN ((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventConfirmNo WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2) % 16 = 0 THEN 0 '
+                                                'END - 1 '
+                                            'AS cWordMax '
+                                            'FROM pEventConfirmNo '
+                                            'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                            'LIMIT 1'
+                                         ),
+    sqlCode.pEventConfirmYesNumWords   : ('SELECT CAST(((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventConfirmYes WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2)/ 16 AS INT) '
+                                                '+ CASE '
+                                                'WHEN ((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventConfirmYes WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2) % 16 > 0 THEN 1 '
+                                                'WHEN ((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventConfirmYes WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2) % 16 = 0 THEN 0 '
+                                                'END - 1 '
+                                            'AS cWordMax '
+                                            'FROM pEventConfirmYes '
+                                            'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                            'LIMIT 1'
+                                         ),
+    sqlCode.pEventLogMsgNumWords       : ('SELECT CAST(((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2)/ 16 AS INT) '
+                                                '+ CASE '
+                                                'WHEN ((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2) % 16 > 0 THEN 1 '
+                                                'WHEN ((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2) % 16 = 0 THEN 0 '
+                                                'END - 1 '
+                                            'AS cWordMax '
+                                            'FROM pEventLogMsg '
+                                            'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                            'LIMIT 1'
+                                         ),
+    sqlCode.pEventLogRealNumWords       : ('SELECT CAST(((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2)/ 16 AS INT) '
+                                                '+ CASE '
+                                                'WHEN ((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2) % 16 > 0 THEN 1 '
+                                                'WHEN ((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2) % 16 = 0 THEN 0 '
+                                                'END - 1 '
+                                            'AS cWordMax '
+                                            'FROM pEventLogReal '
+                                            'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                            'LIMIT 1'
+                                         ),
+    sqlCode.pEventLogTimeNumWords       : ('SELECT CAST(((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2)/ 16 AS INT) '
+                                                '+ CASE '
+                                                'WHEN ((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2) % 16 > 0 THEN 1 '
+                                                'WHEN ((SELECT COUNT(pKey) - 1 AS idxEventMax FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1)) + 2) % 16 = 0 THEN 0 '
+                                                'END - 1 '
+                                            'AS cWordMax '
+                                            'FROM pEventLogTime '
+                                            'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                            'LIMIT 1'
                                          ),
     sqlCode.pEventDataLogMatch         : ('SELECT isSFC '
                                           'FROM pGlobal '
@@ -3061,7 +3410,6 @@ sql = {
                                                  'parameterDescription '
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
-                                                 'parameterType LIKE "VAR_%" AND '
                                                  'isChild = 0 AND '
                                                  'isLink = 0 AND '
                                                  'isRecipe = 1 '
@@ -3070,7 +3418,6 @@ sql = {
     sqlCode.pBLOCK_RECIPE_EXISTS       : ('SELECT DISTINCT Level '
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
-                                                 'parameterType LIKE "VAR_%" AND '
                                                  'isChild = 0 AND '
                                                  'isLink = 0 AND '
                                                  'isRecipe = 1 '
@@ -3328,309 +3675,639 @@ sql = {
                                               'isLink = 0 AND '
                                               'isSelection = 0'
                                          ), # gClass
-    sqlCode.pReadBool                  : ('SELECT DISTINCT parameterClass, '
+    sqlCode.pInterfaceBool                  : ('SELECT DISTINCT parameterClass, '
                                                 'blockParameter, '
+                                                '[parameterDataType], '
+                                                '[operation], '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t2 '
                                                 'WHERE t2.blockParameter < t1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "BOOL" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
-                                                    'operation = "read" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 '+  '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t3 '
                                                 'WHERE t3.blockParameter = T1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "BOOL" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
-                                                    'operation = "read" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 'AS PIDX '
                                                 'FROM pGlobal t1 '
                                                 'WHERE parameterClass = ? AND '
                                                     'parameterDataType = "BOOL" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
-                                                    'operation = "read" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0 '
-                                                'ORDER BY blockParameter'
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_" '
+                                                'ORDER BY [operation], '
+                                                    'blockParameter'
                                          ), # gClass
-    sqlCode.pReadInt                   : ('SELECT DISTINCT parameterClass, '
+    sqlCode.pInterfaceInt                   : ('SELECT DISTINCT parameterClass, '
                                                 'blockParameter, '
+                                                '[parameterDataType], '
+                                                '[operation], '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t2 '
                                                 'WHERE t2.blockParameter < t1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "INT" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
-                                                    'operation = "read" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 '+  '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t3 '
                                                 'WHERE t3.blockParameter = T1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "INT" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
-                                                    'operation = "read" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 'AS PIDX '
                                                 'FROM pGlobal t1 '
                                                 'WHERE parameterClass = ? AND '
                                                     'parameterDataType = "INT" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
-                                                    'operation = "read" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0 '
-                                                'ORDER BY blockParameter'
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_" '
+                                                'ORDER BY [operation], '
+                                                    'blockParameter'
                                          ), # gClass
-    sqlCode.pReadReal                  : ('SELECT DISTINCT parameterClass, '
+    sqlCode.pInterfaceReal                  : ('SELECT DISTINCT parameterClass, '
                                                 'blockParameter, '
+                                                '[parameterDataType], '
+                                                '[operation], '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t2 '
                                                 'WHERE t2.blockParameter < t1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "REAL" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
-                                                    'operation = "read" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 '+  '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t3 '
                                                 'WHERE t3.blockParameter = T1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "REAL" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
-                                                    'operation = "read" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 'AS PIDX '
                                                 'FROM pGlobal t1 '
                                                 'WHERE parameterClass = ? AND '
                                                     'parameterDataType = "REAL" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
-                                                    'operation = "read" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0 '
-                                                'ORDER BY blockParameter'
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_" '
+                                                'ORDER BY [operation], '
+                                                    'blockParameter'
                                          ), # gClass
-    sqlCode.pReadTime                  : ('SELECT DISTINCT parameterClass, '
+    sqlCode.pInterfaceTime                  : ('SELECT DISTINCT parameterClass, '
                                                 'blockParameter, '
+                                                '[parameterDataType], '
+                                                '[operation], '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t2 '
                                                 'WHERE t2.blockParameter < t1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "TIME" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
-                                                    'operation = "read" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 '+  '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t3 '
                                                 'WHERE t3.blockParameter = T1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "TIME" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
-                                                    'operation = "read" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 'AS PIDX '
                                                 'FROM pGlobal t1 '
                                                 'WHERE parameterClass = ? AND '
                                                     'parameterDataType = "TIME" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
+                                                    'isMC = 0 AND '
+                                                    'isChild = 0 AND '
+                                                    'isLink = 0 AND '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_" '
+                                                'ORDER BY [operation], '
+                                                    'blockParameter'
+                                         ), # gClass
+    sqlCode.pReadBool                 : ('SELECT DISTINCT parameterClass, '
+                                                'blockParameter, '
+                                                '[parameterDataType], '
+                                                '(SELECT COUNT (DISTINCT blockParameter) '
+                                                'FROM pGlobal t2 '
+                                                'WHERE t2.blockParameter < t1.blockParameter AND '
+                                                    'parameterClass = ? AND '
+                                                    'parameterDataType = "BOOL" AND '
                                                     'isMC = 0 AND '
                                                     'operation = "read" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0 '
-                                                'ORDER BY blockParameter'
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
+                                                '+  '
+                                                '(SELECT COUNT (DISTINCT blockParameter) '
+                                                'FROM pGlobal t3 '
+                                                'WHERE t3.blockParameter = T1.blockParameter AND '
+                                                    'parameterClass = ? AND '
+                                                    'parameterDataType = "BOOL" AND '
+                                                    'isMC = 0 AND '
+                                                    'operation = "read" AND '
+                                                    'isChild = 0 AND '
+                                                    'isLink = 0 AND '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
+                                                'AS PIDX '
+                                                'FROM pGlobal t1 '
+                                                'WHERE parameterClass = ? AND '
+                                                    'parameterDataType = "BOOL" AND '
+                                                    'isMC = 0 AND '
+                                                    'operation = "read" AND '
+                                                    'isChild = 0 AND '
+                                                    'isLink = 0 AND '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_" '
+                                                'ORDER BY [operation], '
+                                                    'blockParameter'
+                                         ), # gClass
+    sqlCode.pReadInt                  : ('SELECT DISTINCT parameterClass, '
+                                                'blockParameter, '
+                                                '[parameterDataType], '
+                                                '(SELECT COUNT (DISTINCT blockParameter) '
+                                                'FROM pGlobal t2 '
+                                                'WHERE t2.blockParameter < t1.blockParameter AND '
+                                                    'parameterClass = ? AND '
+                                                    'parameterDataType = "INT" AND '
+                                                    'isMC = 0 AND '
+                                                    'operation = "read" AND '
+                                                    'isChild = 0 AND '
+                                                    'isLink = 0 AND '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
+                                                '+  '
+                                                '(SELECT COUNT (DISTINCT blockParameter) '
+                                                'FROM pGlobal t3 '
+                                                'WHERE t3.blockParameter = T1.blockParameter AND '
+                                                    'parameterClass = ? AND '
+                                                    'parameterDataType = "INT" AND '
+                                                    'isMC = 0 AND '
+                                                    'operation = "read" AND '
+                                                    'isChild = 0 AND '
+                                                    'isLink = 0 AND '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
+                                                'AS PIDX '
+                                                'FROM pGlobal t1 '
+                                                'WHERE parameterClass = ? AND '
+                                                    'parameterDataType = "INT" AND '
+                                                    'isMC = 0 AND '
+                                                    'operation = "read" AND '
+                                                    'isChild = 0 AND '
+                                                    'isLink = 0 AND '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_" '
+                                                'ORDER BY [operation], '
+                                                    'blockParameter'
+                                         ), # gClass
+    sqlCode.pReadReal                 : ('SELECT DISTINCT parameterClass, '
+                                                'blockParameter, '
+                                                '[parameterDataType], '
+                                                '(SELECT COUNT (DISTINCT blockParameter) '
+                                                'FROM pGlobal t2 '
+                                                'WHERE t2.blockParameter < t1.blockParameter AND '
+                                                    'parameterClass = ? AND '
+                                                    'parameterDataType = "REAL" AND '
+                                                    'isMC = 0 AND '
+                                                    'operation = "read" AND '
+                                                    'isChild = 0 AND '
+                                                    'isLink = 0 AND '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
+                                                '+  '
+                                                '(SELECT COUNT (DISTINCT blockParameter) '
+                                                'FROM pGlobal t3 '
+                                                'WHERE t3.blockParameter = T1.blockParameter AND '
+                                                    'parameterClass = ? AND '
+                                                    'parameterDataType = "REAL" AND '
+                                                    'isMC = 0 AND '
+                                                    'operation = "read" AND '
+                                                    'isChild = 0 AND '
+                                                    'isLink = 0 AND '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
+                                                'AS PIDX '
+                                                'FROM pGlobal t1 '
+                                                'WHERE parameterClass = ? AND '
+                                                    'parameterDataType = "REAL" AND '
+                                                    'isMC = 0 AND '
+                                                    'operation = "read" AND '
+                                                    'isChild = 0 AND '
+                                                    'isLink = 0 AND '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_" '
+                                                'ORDER BY [operation], '
+                                                    'blockParameter'
+                                         ), # gClass
+    sqlCode.pReadTime                 : ('SELECT DISTINCT parameterClass, '
+                                                'blockParameter, '
+                                                '[parameterDataType], '
+                                                '(SELECT COUNT (DISTINCT blockParameter) '
+                                                'FROM pGlobal t2 '
+                                                'WHERE t2.blockParameter < t1.blockParameter AND '
+                                                    'parameterClass = ? AND '
+                                                    'parameterDataType = "TIME" AND '
+                                                    'isMC = 0 AND '
+                                                    'operation = "read" AND '
+                                                    'isChild = 0 AND '
+                                                    'isLink = 0 AND '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
+                                                '+  '
+                                                '(SELECT COUNT (DISTINCT blockParameter) '
+                                                'FROM pGlobal t3 '
+                                                'WHERE t3.blockParameter = T1.blockParameter AND '
+                                                    'parameterClass = ? AND '
+                                                    'parameterDataType = "TIME" AND '
+                                                    'isMC = 0 AND '
+                                                    'operation = "read" AND '
+                                                    'isChild = 0 AND '
+                                                    'isLink = 0 AND '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
+                                                'AS PIDX '
+                                                'FROM pGlobal t1 '
+                                                'WHERE parameterClass = ? AND '
+                                                    'parameterDataType = "TIME" AND '
+                                                    'isMC = 0 AND '
+                                                    'operation = "read" AND '
+                                                    'isChild = 0 AND '
+                                                    'isLink = 0 AND '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_" '
+                                                'ORDER BY [operation], '
+                                                    'blockParameter'
                                          ), # gClass
     sqlCode.pWriteBool                 : ('SELECT DISTINCT parameterClass, '
                                                 'blockParameter, '
+                                                '[parameterDataType], '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t2 '
                                                 'WHERE t2.blockParameter < t1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "BOOL" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
                                                     'operation = "write" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 '+  '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t3 '
                                                 'WHERE t3.blockParameter = T1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "BOOL" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
                                                     'operation = "write" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 'AS PIDX '
                                                 'FROM pGlobal t1 '
                                                 'WHERE parameterClass = ? AND '
                                                     'parameterDataType = "BOOL" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
                                                     'operation = "write" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0 '
-                                                'ORDER BY blockParameter'
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_" '
+                                                'ORDER BY [operation], '
+                                                    'blockParameter'
                                          ), # gClass
     sqlCode.pWriteInt                  : ('SELECT DISTINCT parameterClass, '
                                                 'blockParameter, '
+                                                '[parameterDataType], '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t2 '
                                                 'WHERE t2.blockParameter < t1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "INT" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
                                                     'operation = "write" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 '+  '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t3 '
                                                 'WHERE t3.blockParameter = T1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "INT" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
                                                     'operation = "write" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 'AS PIDX '
                                                 'FROM pGlobal t1 '
                                                 'WHERE parameterClass = ? AND '
                                                     'parameterDataType = "INT" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
                                                     'operation = "write" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0 '
-                                                'ORDER BY blockParameter'
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_" '
+                                                'ORDER BY [operation], '
+                                                    'blockParameter'
                                          ), # gClass
     sqlCode.pWriteReal                 : ('SELECT DISTINCT parameterClass, '
                                                 'blockParameter, '
+                                                '[parameterDataType], '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t2 '
                                                 'WHERE t2.blockParameter < t1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "REAL" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
                                                     'operation = "write" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 '+  '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t3 '
                                                 'WHERE t3.blockParameter = T1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "REAL" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
                                                     'operation = "write" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 'AS PIDX '
                                                 'FROM pGlobal t1 '
                                                 'WHERE parameterClass = ? AND '
                                                     'parameterDataType = "REAL" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
                                                     'operation = "write" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0 '
-                                                'ORDER BY blockParameter'
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_" '
+                                                'ORDER BY [operation], '
+                                                    'blockParameter'
                                          ), # gClass
     sqlCode.pWriteTime                 : ('SELECT DISTINCT parameterClass, '
                                                 'blockParameter, '
+                                                '[parameterDataType], '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t2 '
                                                 'WHERE t2.blockParameter < t1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "TIME" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
                                                     'operation = "write" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 '+  '
                                                 '(SELECT COUNT (DISTINCT blockParameter) '
                                                 'FROM pGlobal t3 '
                                                 'WHERE t3.blockParameter = T1.blockParameter AND '
                                                     'parameterClass = ? AND '
                                                     'parameterDataType = "TIME" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
                                                     'operation = "write" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0) '
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_") '
                                                 'AS PIDX '
                                                 'FROM pGlobal t1 '
                                                 'WHERE parameterClass = ? AND '
                                                     'parameterDataType = "TIME" AND '
-                                                    'parameterType LIKE "VAR_%" AND '
                                                     'isMC = 0 AND '
                                                     'operation = "write" AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isSelection = 0 '
-                                                'ORDER BY blockParameter'
+                                                    'isSelection = 0 AND '
+                                                    '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
+                                                    'OR parameterType LIKE "VAR_%") AND '
+                                                    'substr(blockParameter, 1, 4) != "LOG_" AND '
+                                                    'substr(blockParameter, 1, 7) != "PROMPT_" '
+                                                'ORDER BY [operation], '
+                                                    'blockParameter'
+                                         ), # gClass
+    sqlCode.pEventConfirmNoClass       : ('SELECT idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) AS cOffset, '
+                                                 '((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
+                                                  'idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
+                                                 'parameterSource, parameterState, childParameter, blockParameter, parameterDescription, cast(val AS int) AS magicNum '
+                                          'FROM pEventConfirmNo LEFT JOIN bitInt on cast(bit AS int) = idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                          'ORDER BY cast(idxEvent as Int)'
+                                         ), # gClass
+    sqlCode.pEventConfirmYesClass      : ('SELECT idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) AS cOffset, '
+                                                 '((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
+                                                  'idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
+                                                 'parameterSource, parameterState, childParameter, blockParameter, parameterDescription, cast(val AS int) AS magicNum '
+                                          'FROM pEventConfirmYes LEFT JOIN bitInt on cast(bit AS int) = idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                          'ORDER BY cast(idxEvent as Int)'
                                          ), # gClass
     sqlCode.pEventLogMsgClass          : ('SELECT idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) AS cOffset, '
                                                  '((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
-                                                 'idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
+                                                  'idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
                                                  'parameterSource, parameterState, childParameter, blockParameter, parameterDescription, cast(val AS int) AS magicNum '
                                           'FROM pEventLogMsg LEFT JOIN bitInt on cast(bit AS int) = idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) '
                                           'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
-                                          'ORDER BY idxEvent'
+                                          'ORDER BY cast(idxEvent as Int)'
+                                         ), # gClass
+    sqlCode.pEventLogRealClass          : ('SELECT idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) AS cOffset, '
+                                                 '((idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
+                                                 'parameterSource, parameterState, childParameter, blockParameter, parameterDescription, cast(val AS int) AS magicNum '
+                                          'FROM pEventLogReal LEFT JOIN bitInt on cast(bit AS int) = idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gClass
+    sqlCode.pEventLogTimeClass          : ('SELECT idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) AS cOffset, '
+                                                 '((idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
+                                                 'parameterSource, parameterState, childParameter, blockParameter, parameterDescription, cast(val AS int) AS magicNum '
+                                          'FROM pEventLogTime LEFT JOIN bitInt on cast(bit AS int) = idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gClass
+    sqlCode.pEventConfirmNoInstance    : ('SELECT idxEvent - (SELECT idxEvent FROM pEventConfirmNo ORDER BY idxEvent LIMIT 1) AS gOffset, '
+                                                 '((idxEvent - (SELECT idxEvent FROM pEventConfirmNo ORDER BY idxEvent LIMIT 1)) / 16) AS gWord, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmNo ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmNo ORDER BY idxEvent LIMIT 1)) / 16)) AS gBit, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1) AS cOffset, '
+                                                 '((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
+                                                 'cast(G.val AS int) AS gMagicNum, cast(C.val AS int) AS cMagicNum, * '
+                                          'FROM pEventConfirmNo '
+                                          'LEFT JOIN bitInt AS G on cast(G.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventConfirmNo ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmNo ORDER BY idxEvent LIMIT 1)) / 16)) '
+                                          'LEFT JOIN bitInt AS C on cast(C.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) '
+                                          'WHERE Instance = ? '
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gClass
+    sqlCode.pEventConfirmYesInstance   : ('SELECT idxEvent - (SELECT idxEvent FROM pEventConfirmYes ORDER BY idxEvent LIMIT 1) AS gOffset, '
+                                                 '((idxEvent - (SELECT idxEvent FROM pEventConfirmYes ORDER BY idxEvent LIMIT 1)) / 16) AS gWord, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmYes ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmYes ORDER BY idxEvent LIMIT 1)) / 16)) AS gBit, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1) AS cOffset, '
+                                                 '((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
+                                                 'cast(G.val AS int) AS gMagicNum, cast(C.val AS int) AS cMagicNum, * '
+                                          'FROM pEventConfirmYes '
+                                          'LEFT JOIN bitInt AS G on cast(G.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventConfirmYes ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmYes ORDER BY idxEvent LIMIT 1)) / 16)) '
+                                          'LEFT JOIN bitInt AS C on cast(C.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) '
+                                          'WHERE Instance = ? '
+                                          'ORDER BY cast(idxEvent AS Int)'
                                          ), # gClass
     sqlCode.pEventLogMsgInstance       : ('SELECT idxEvent - (SELECT idxEvent FROM pEventLogMsg ORDER BY idxEvent LIMIT 1) AS gOffset, '
                                                  '((idxEvent - (SELECT idxEvent FROM pEventLogMsg ORDER BY idxEvent LIMIT 1)) / 16) AS gWord, '
@@ -3643,15 +4320,85 @@ sql = {
                                           'LEFT JOIN bitInt AS G on cast(G.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventLogMsg ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogMsg ORDER BY idxEvent LIMIT 1)) / 16)) '
                                           'LEFT JOIN bitInt AS C on cast(C.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) '
                                           'WHERE Instance = ? '
-                                          'ORDER BY idxEvent'
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gClass
+    sqlCode.pEventLogRealInstance       : ('SELECT idxEvent - (SELECT idxEvent FROM pEventLogReal ORDER BY idxEvent LIMIT 1) AS gOffset, '
+                                                 '((idxEvent - (SELECT idxEvent FROM pEventLogReal ORDER BY idxEvent LIMIT 1)) / 16) AS gWord, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventLogReal ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogReal ORDER BY idxEvent LIMIT 1)) / 16)) AS gBit, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = ? ORDER BY idxEvent LIMIT 1) AS cOffset, '
+                                                 '((idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
+                                                 'cast(G.val AS int) AS gMagicNum, cast(C.val AS int) AS cMagicNum, * '
+                                          'FROM pEventLogReal '
+                                          'LEFT JOIN bitInt AS G on cast(G.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventLogReal ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogReal ORDER BY idxEvent LIMIT 1)) / 16)) '
+                                          'LEFT JOIN bitInt AS C on cast(C.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) '
+                                          'WHERE Instance = ? '
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gClass
+    sqlCode.pEventLogTimeInstance       : ('SELECT idxEvent - (SELECT idxEvent FROM pEventLogTime ORDER BY idxEvent LIMIT 1) AS gOffset, '
+                                                 '((idxEvent - (SELECT idxEvent FROM pEventLogTime ORDER BY idxEvent LIMIT 1)) / 16) AS gWord, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventLogTime ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogTime ORDER BY idxEvent LIMIT 1)) / 16)) AS gBit, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = ? ORDER BY idxEvent LIMIT 1) AS cOffset, '
+                                                 '((idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
+                                                 'cast(G.val AS int) AS gMagicNum, cast(C.val AS int) AS cMagicNum, * '
+                                          'FROM pEventLogTime '
+                                          'LEFT JOIN bitInt AS G on cast(G.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventLogTime ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogTime ORDER BY idxEvent LIMIT 1)) / 16)) '
+                                          'LEFT JOIN bitInt AS C on cast(C.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) '
+                                          'WHERE Instance = ? '
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gClass
+    sqlCode.pEventPromptConfirmNo      : ('SELECT * FROM pEventConfirmNo '
+                                          'WHERE Class = ? AND '
+                                                 'SUBSTR(childParameter, 1 , length(childParameter) - 11) = ? '
+                                          'LIMIT 1'
+                                         ), # gClass
+    sqlCode.pEventConfirmNoExists      : ('SELECT pKey '
+                                          'FROM pEventConfirmNo '
+                                          'WHERE Class = ? '
+                                          'LIMIT 1'
+                                         ), # gClass
+    sqlCode.pEventConfirmYesExists     : ('SELECT pKey '
+                                          'FROM pEventConfirmYes '
+                                          'WHERE Class = ? '
+                                          'LIMIT 1'
                                          ), # gClass
     sqlCode.pEventLogMsgExists         : ('SELECT pKey '
                                           'FROM pEventLogMsg '
                                           'WHERE Class = ? '
                                           'LIMIT 1'
                                          ), # gClass
-    sqlCode.pEventLogMsgMaxClass       : ('SELECT MAX((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWordMax '
+    sqlCode.pEventLogRealExists        : ('SELECT pKey '
+                                          'FROM pEventLogReal '
+                                          'WHERE Class = ? '
+                                          'LIMIT 1'
+                                         ), # gClass
+    sqlCode.pEventLogTimeExists        : ('SELECT pKey '
+                                          'FROM pEventLogTime '
+                                          'WHERE Class = ? '
+                                          'LIMIT 1'
+                                         ), # gClass
+#    sqlCode.pEventLogMsgMaxClass       : ('SELECT (MAX((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) AS cWordMaxOLD '
+#                                          'FROM pEventLogMsg '
+#                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+#                                          'LIMIT 1'
+#                                         ), # gClass
+    sqlCode.pEventLogMsgMaxClass       : ('SELECT CAST((MAX((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) / 16 AS INT) '
+                                               '+ CASE '
+                                               'WHEN ((MAX((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) % 16 > 0) THEN 1 '
+                                               'WHEN ((MAX((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) % 16 = 0) THEN 0 '
+                                            'END cWordMax '
                                           'FROM pEventLogMsg '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                          'LIMIT 1'
+                                         ), # gClass
+    sqlCode.pEventLogRealMaxClass      : ('SELECT MAX((idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWordMax '
+                                          'FROM pEventLogReal '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                          'LIMIT 1'
+                                         ), # gClass
+    sqlCode.pEventLogTimeMaxClass      : ('SELECT MAX((idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWordMax '
+                                          'FROM pEventLogTime '
                                           'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
                                           'LIMIT 1'
                                          ), # gClass
@@ -3659,29 +4406,85 @@ sql = {
                                           'FROM pEventLogMsg '
                                           'LIMIT 1'
                                          ), # gClass
+    sqlCode.pEventLogRealMaxInstance   : ('SELECT MAX((idxEvent - (SELECT idxEvent FROM pEventLogReal ORDER BY idxEvent LIMIT 1)) / 16) AS gWordMax '
+                                          'FROM pEventLogReal '
+                                          'LIMIT 1'
+                                         ), # gClass
+    sqlCode.pEventLogTimeMaxInstance   : ('SELECT MAX((idxEvent - (SELECT idxEvent FROM pEventLogTime ORDER BY idxEvent LIMIT 1)) / 16) AS gWordMax '
+                                          'FROM pEventLogTime '
+                                          'LIMIT 1'
+                                         ), # gClass
+    sqlCode.pEventConfirmNoWordClass   : ('SELECT DISTINCT ((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWord '
+                                          'FROM pEventConfirmNo '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gClass
+    sqlCode.pEventConfirmYesWordClass  : ('SELECT DISTINCT ((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWord '
+                                          'FROM pEventConfirmYes '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gClass
     sqlCode.pEventLogMsgWordClass      : ('SELECT DISTINCT ((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWord '
                                           'FROM pEventLogMsg '
                                           'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
-                                          'ORDER BY idxEvent'
+                                          'ORDER BY cast(idxEvent AS Int)'
                                          ), # gClass
+    sqlCode.pEventLogRealWordClass     : ('SELECT DISTINCT ((idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWord '
+                                          'FROM pEventLogReal '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gClass
+    sqlCode.pEventLogTimeWordClass     : ('SELECT DISTINCT ((idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWord '
+                                          'FROM pEventLogTime '
+                                          'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gClass
+    sqlCode.pEventConfirmNoWordInstance: ('SELECT DISTINCT '
+                                                '((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
+                                                'Instance '
+                                          'FROM pEventConfirmNo '
+                                          'WHERE Instance = ? '
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gInstance
+    sqlCode.pEventConfirmYesWordInstance: ('SELECT DISTINCT '
+                                                '((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
+                                                'Instance '
+                                          'FROM pEventConfirmYes '
+                                          'WHERE Instance = ? '
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gInstance
     sqlCode.pEventLogMsgWordInstance   : ('SELECT DISTINCT '
                                                 '((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
                                                 'Instance '
                                           'FROM pEventLogMsg '
                                           'WHERE Instance = ? '
-                                          'ORDER BY idxEvent'
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gInstance
+    sqlCode.pEventLogRealWordInstance  : ('SELECT DISTINCT '
+                                                '((idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
+                                                'Instance '
+                                          'FROM pEventLogReal '
+                                          'WHERE Instance = ? '
+                                          'ORDER BY cast(idxEvent AS Int)'
+                                         ), # gInstance
+    sqlCode.pEventLogTimeWordInstance  : ('SELECT DISTINCT '
+                                                '((idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
+                                                'Instance '
+                                          'FROM pEventLogTime '
+                                          'WHERE Instance = ? '
+                                          'ORDER BY cast(idxEvent AS Int)'
                                          ), # gInstance
     sqlCode.pEventLogMsgWordBitClass   : ('SELECT DISTINCT ((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
                                                  'idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit '
                                           'FROM pEventLogMsg '
                                           'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
-                                          'ORDER BY idxEvent'
+                                          'ORDER BY cast(idxEvent AS Int)'
                                          ), # gClass
     sqlCode.pEventLogMsgWordBitInstance: ('SELECT DISTINCT '
                                                  '((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord '
-                                                 'FROM pEventLogMsg '
-                                                 'WHERE Instance = ? '
-                                                 'ORDER BY idxEvent'
+                                          'FROM pEventLogMsg '
+                                          'WHERE Instance = ? '
+                                          'ORDER BY cast(idxEvent AS Int)'
                                          ), # gInstance
 #    sqlCode.pEventLogMsg               : ('SELECT * '
 #                                          'FROM pEventLogMsg '

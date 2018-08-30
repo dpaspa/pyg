@@ -14,32 +14,11 @@
 #------------------------------------------------------------------------------#
 # Import the python libraries:                                                 #
 #------------------------------------------------------------------------------#
-import argparse
-import re
 from enum import Enum
 from docx import Document
-import os.path
-import sys
 import traceback
-
 import logging
 logging.basicConfig(level=logging.DEBUG)
-
-#------------------------------------------------------------------------------#
-# Declare the application title and calling arguments help:                    #
-#------------------------------------------------------------------------------#
-appTitle = 'Document Generator - Set document property'
-appVersion = '1'
-parser = argparse.ArgumentParser(description='Renumbers the reference numbers in a RefNum document')
-parser.add_argument('-d','--document', help='Input document to renumber', required=True)
-parser.add_argument('-p','--property', help='The document property to update', required=True)
-parser.add_argument('-v','--value', help='The document property value to set', required=True)
-args = vars(parser.parse_args())
-
-#------------------------------------------------------------------------------#
-# Declare global program variables:                                            #
-#------------------------------------------------------------------------------#
-sValue = ''
 
 #------------------------------------------------------------------------------#
 # Declare the error handling global variables and procedure:                   #
@@ -83,116 +62,58 @@ errorMessage = {
 }
 
 #------------------------------------------------------------------------------#
-# Function main                                                                #
+# Named functions to set the individual core document property value:          #
+#------------------------------------------------------------------------------#
+def comments(d, sValue):
+    d.document.core_properties.comments = sValue
+
+def keywords(d, sValue):
+    d.document.core_properties.keywords = sValue
+
+def subject(d, sValue):
+    d.document.core_properties.subject = sValue
+
+def title(d, sValue):
+    d.document.core_properties.title = sValue
+
+#------------------------------------------------------------------------------#
+# Function: defProperty                                                        #
 #                                                                              #
 # Description:                                                                 #
 # The main entry point for the program.                                        #
 #------------------------------------------------------------------------------#
-def main():
+# Calling Parameters:                                                          #
+# d                     The generic document object.                           #
+# sProperty             The property name to set.                              #
+# sValue                The value to set the property to.                      #
+#------------------------------------------------------------------------------#
+def setProperty(d, sProperty, sValue):
     #--------------------------------------------------------------------------#
     # Define the procedure name:                                               #
     #--------------------------------------------------------------------------#
-    errProc = main.__name__
+    errProc = setProperty.__name__
 
     #--------------------------------------------------------------------------#
-    # Use the global value:                                                    #
+    # Define the function switcher for the property name:                      #
     #--------------------------------------------------------------------------#
-    global sValue
+    switcher = {
+        "COMMENTS": comments,
+        "KEYWORDS": keywords,
+        "SUBJECT": subject,
+        "TITLE": title
+    }
 
     #--------------------------------------------------------------------------#
-    # Get the calling arguments:                                               #
+    # Get the function name from switcher dictionary:                          #
     #--------------------------------------------------------------------------#
-    sDocument = args['document']
-    sProperty = args['property']
-    sValue = args['value']
+    func = switcher.get(sProperty, lambda: "Invalid property")
 
     #--------------------------------------------------------------------------#
-    # Open the document object:                                                #
+    # Execute the function:                                                    #
     #--------------------------------------------------------------------------#
-    d = gDoc(sDocument)
-
-    #--------------------------------------------------------------------------#
-    # Set the document property:                                               #
-    #--------------------------------------------------------------------------#
-    d.setProperty(sProperty)
-
-    #--------------------------------------------------------------------------#
-    # Save the document:                                                       #
-    #--------------------------------------------------------------------------#
-    d.document.save(d.inputFile)
+    func(d, sValue)
 
     #--------------------------------------------------------------------------#
     # Output a success message:                                                #
     #--------------------------------------------------------------------------#
-    print('Congratulations! Document property ' + sProperty + ' successfully set to ' + sValue)
-
-#------------------------------------------------------------------------------#
-# Class: gDoc                                                                  #
-#                                                                              #
-# Description:                                                                 #
-# Opens the specified document as an object.                                   #
-#------------------------------------------------------------------------------#
-# Calling Attributes:                                                          #
-# inputFile             The input template file name to use for the document.  #
-#------------------------------------------------------------------------------#
-class gDoc(object):
-    #--------------------------------------------------------------------------#
-    # Constructor:                                                             #
-    #--------------------------------------------------------------------------#
-    def __init__(self, inputFile):
-        #----------------------------------------------------------------------#
-        # Define the procedure name:                                           #
-        #----------------------------------------------------------------------#
-        self.errProc = 'gDoc'
-
-        #----------------------------------------------------------------------#
-        # Make sure the input document file exists:                            #
-        #----------------------------------------------------------------------#
-        if not os.path.exists(inputFile):
-            errorHandler(self.errProc, errorCode.fileNotExist, inputFile)
-
-        #----------------------------------------------------------------------#
-        # Set the instance attributes:                                         #
-        #----------------------------------------------------------------------#
-        self.inputFile = inputFile
-
-        #----------------------------------------------------------------------#
-        # Open the input document:                                             #
-        #----------------------------------------------------------------------#
-        self.document = Document(self.inputFile)
-
-    #--------------------------------------------------------------------------#
-    # Function: setProperty                                                    #
-    #                                                                          #
-    # Description:                                                             #
-    # Sets the core document property.                                         #
-    #--------------------------------------------------------------------------#
-    def comments(self):
-        global sValue
-        self.document.core_properties.comments = sValue
-
-    def subject(self):
-        global sValue
-        self.document.core_properties.subject = sValue
-
-    def title(self):
-        global sValue
-        self.document.core_properties.title = sValue
-
-    def setProperty(self, argument):
-        switcher = {
-            "comments": self.comments,
-            "subject": self.subject,
-            "title": self.title
-        }
-
-        # Get the function from switcher dictionary
-        func = switcher.get(argument, lambda: "Invalid property")
-
-        # Execute the function
-        func()
-
-#------------------------------------------------------------------------------#
-# Call the main function:                                                      #
-#------------------------------------------------------------------------------#
-main()
+    print('Document property ' + sProperty + ' successfully set to ' + sValue)

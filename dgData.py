@@ -33,6 +33,8 @@ import datetime
 from contextlib import contextmanager
 import cgSQL
 
+from dgProperty import setProperty
+
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -286,31 +288,31 @@ class gDoc(object):
     # Description:                                                             #
     # Sets the core document property.                                         #
     #--------------------------------------------------------------------------#
-    def comments(self, val):
-        self.document.core_properties.comments = val
+#    def comments(self, val):
+#        self.document.core_properties.comments = val
 
-    def keywords(self, val):
-        self.document.core_properties.keywords = val
+#    def keywords(self, val):
+#        self.document.core_properties.keywords = val
 
-    def subject(self, val):
-        self.document.core_properties.subject = val
+#    def subject(self, val):
+#        self.document.core_properties.subject = val
 
-    def title(self, val):
-        self.document.core_properties.title = val
+#    def title(self, val):
+#        self.document.core_properties.title = val
 
-    def setProperty(self, argument, val):
-        switcher = {
-            "COMMENTS": self.comments,
-            "KEYWORDS": self.keywords,
-            "SUBJECT": self.subject,
-            "TITLE": self.title
-        }
+#    def setProperty(self, argument, val):
+#        switcher = {
+#            "COMMENTS": self.comments,
+#            "KEYWORDS": self.keywords,
+#            "SUBJECT": self.subject,
+#            "TITLE": self.title
+#        }
 
         # Get the function from switcher dictionary
-        func = switcher.get(argument, lambda: "Invalid property")
+#        func = switcher.get(argument, lambda: "Invalid property")
 
         # Execute the function
-        func(val)
+#        func(val)
 
     #--------------------------------------------------------------------------#
     # Function: processTables                                                  #
@@ -467,7 +469,7 @@ class gDoc(object):
             #------------------------------------------------------------------#
             try:
                 prop = data.keys()
-                self.setProperty(prop[0], data[0])
+                setProperty(self.document, prop[0], data[0])
             except:
                 pass
 
