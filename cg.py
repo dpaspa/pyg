@@ -610,6 +610,7 @@ def processLevel(sParent, sLevel, pbwt):
         gClass = sClass
         if (sLevel == 'EM' or sLevel == 'UN' or sLevel == 'PC'):
             addParametersChild(sClass)
+            addParametersChildCMD(sClass)
 #            addParametersDefer(sClass)
 
         #----------------------------------------------------------------------#
@@ -2111,6 +2112,74 @@ def addParametersChild(sClass):
 #                             '', False, sOperation)
 
 #------------------------------------------------------------------------------#
+# Function: addParametersChildCMD                                              #
+#                                                                              #
+# Description:                                                                 #
+# Adds the CMD attribute for all child devices.                                #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# sClass                The parent class to process the children for.          #
+#------------------------------------------------------------------------------#
+def addParametersChildCMD(sClass):
+    #--------------------------------------------------------------------------#
+    # Define the procedure name and trap any programming errors:               #
+    #--------------------------------------------------------------------------#
+    errProc = addParametersChildCMD.__name__
+
+    #--------------------------------------------------------------------------#
+    # Declare use of the global sqlite cursor object:                          #
+    #--------------------------------------------------------------------------#
+    global conn
+
+    #--------------------------------------------------------------------------#
+    # Get the list of child devices for the class:                             #
+    #--------------------------------------------------------------------------#
+    try:
+        c = conn.cursor()
+        query = cgSQL.sql[cgSQL.sqlCode.getClassChildren]
+        c.execute(query, (sClass,))
+    except:
+        errorHandler(errProc, errorCode.cannotQuery,
+                     cgSQL.sqlCode.getClassChildren, query, sClass)
+
+    #--------------------------------------------------------------------------#
+    # Process each row in the list of child devices:                           #
+    #--------------------------------------------------------------------------#
+    for row in c:
+        #----------------------------------------------------------------------#
+        # Get the list of child parameters for the child class from the table  #
+        # tblClass_Child:                                                      #
+        #----------------------------------------------------------------------#
+        sChildParameterClass = row['childAliasClass']
+        sChildParameterAlias = row['childParameterAlias']
+
+        #----------------------------------------------------------------------#
+        # Get the child parameter data:                                        #
+        #----------------------------------------------------------------------#
+        sLevel = row['Level']
+        sSource = 'CHILDCMD'
+        sState = ''
+        sParameterType = 'VAR_IN_OUT'
+        iParameterIndex = 0
+        sParameter = ''
+        sParameterBlock = sChildParameterAlias + '_CMD'
+        sParameterDataType = 'INT'
+        sValue = 0
+        sParameterDescription = row['childAliasDescription'] + ' command'
+        sChildParameterAttribute = 'CMD'
+        sOperation = 'write'
+
+        #----------------------------------------------------------------------#
+        # Add the parameter to the global list:                                #
+        #----------------------------------------------------------------------#
+        addParameterData(gLevel, sClass, sSource, '', sParameterType, iParameterIndex,
+                         sParameter, sChildParameterClass,
+                         sParameterBlock, sParameterDataType,
+                         sValue, sParameterDescription, sChildParameterAlias,
+                         sChildParameterAttribute, False, sOperation)
+
+#------------------------------------------------------------------------------#
 # Function: addParametersDefer                                                 #
 #                                                                              #
 # Description:                                                                 #
@@ -2538,6 +2607,25 @@ def addParameterData(sLevel, sClass, sSource, sState,
             sGrandchildParameterAttribute = sGrandchildParameterAttribute.upper()
 
     #--------------------------------------------------------------------------#
+    # Check if a calling parameter:                                            #
+    #--------------------------------------------------------------------------#
+    try:
+        query = cgSQL.sql[cgSQL.sqlCode.checkIfCallingParameter]
+        c.execute(query, (sClass, sParameterBlock))
+        data = c.fetchone()
+    except:
+        errorHandler(errProc, errorCode.cannotQuery,
+                     cgSQL.sqlCode.checkIfCallingParameter, query, sClass + ', ' + sParameterBlock + '%')
+
+    #--------------------------------------------------------------------------#
+    # Selection device if exists:                                              #
+    #--------------------------------------------------------------------------#
+    if (data is None):
+        bIsCalling = False
+    else:
+        bIsCalling = True
+
+    #--------------------------------------------------------------------------#
     # Check if the parameter is a child selection:                             #
     #--------------------------------------------------------------------------#
     try:
@@ -2558,7 +2646,6 @@ def addParameterData(sLevel, sClass, sSource, sState,
         sChildParameterClass = data['childClass']
         if (len(sChildParameterAlias) == 0):
             sChildParameterAlias = data['linkParameterAlias']
-#            sChildParameterAlias = sChildParameterAlias[1:]
             sChildParameterAlias = sChildParameterAlias.upper()
             sChildParameterAttribute = sParameter[len(sChildParameterAlias) + 2:]
             sChildParameterAttribute = sChildParameterAttribute.upper()
@@ -2598,6 +2685,7 @@ def addParameterData(sLevel, sClass, sSource, sState,
     if (sChildParameterAttribute == 'ME'or
         sChildParameterAttribute == 'CMD_SAFE' or
         sChildParameterAttribute == 'STATE' or
+        sChildParameterAttribute == 'HYGIENE' or
         sChildParameterAttribute == 'INTERLOCK' or
         sChildParameterAttribute == 'CRIL' or
         sChildParameterAttribute == 'NCRIL' or
@@ -2611,7 +2699,6 @@ def addParameterData(sLevel, sClass, sSource, sState,
         sOperation = 'read'
 
     elif (sChildParameterAttribute == 'CMD' or
-        sChildParameterAttribute == 'HYGIENE' or
         sChildParameterAttribute == 'MODE' or
         sChildParameterAttribute == 'OWNER' or
         sChildParameterAttribute == 'RECIPE' or
@@ -2731,7 +2818,7 @@ def addParameterData(sLevel, sClass, sSource, sState,
                                sChildParameterAlias, sChildParameterClass, sChildParameterAttribute,
                                sGrandchildParameterAlias, sGrandchildParameterClass, sGrandchildParameterAttribute,
                                sParameterDataType, sValue, sParameterDescription, sOperation,
-                               bIsSFC, bIsChild, bIsGrandchild, bIsLink, bIsSelection,
+                               bIsSFC, bIsChild, bIsGrandchild, bIsLink, bIsSelection, bIsCalling,
                                bIsMC, iChildIndex,
                                bIsRecipe, sRecipeClass, idx,
                                isEventConfirmNo, isEventConfirmYes, isEventPrompt, isEventLogMsg,
@@ -2751,6 +2838,7 @@ def addParameterData(sLevel, sClass, sSource, sState,
                          str(bIsSFC) + ', ' +
                          str(bIsChild) + ', ' + str(bIsGrandchild) + ', ' +
                          str(bIsLink) + ', ' + str(bIsSelection) + ', ' +
+                         str(bIsCalling) + ', ' +
                          str(bIsMC) + ', ' + str(iChildIndex) + ', ' +
                          str(bIsRecipe) + ', ' + sRecipeClass + ', ' +
                          str(idx) + ', ' +

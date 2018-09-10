@@ -115,13 +115,13 @@ def refRenumber(d, sPrefix):
     #--------------------------------------------------------------------------#
     iRefNum = 1
     bFoundPrefix = False
-    numTables = len(self.document.tables)
+    numTables = len(d.document.tables)
 
     #--------------------------------------------------------------------------#
     # Loop through all the tables in the document table collection:            #
     #--------------------------------------------------------------------------#
     iTable = 0
-    for table in self.document.tables:
+    for table in d.document.tables:
         iRow = 0
         iTable = iTable + 1
         for row in table.rows:
@@ -164,4 +164,4 @@ def refRenumber(d, sPrefix):
         ps.refresh()
         ps.close()
     else:
-        errorHandler(self.errProc, errorCode.noPrefixFound, sRefPrefix)
+        errorHandler(errorCode.noPrefixFound, sRefPrefix)
