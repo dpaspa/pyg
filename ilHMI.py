@@ -81,15 +81,17 @@ def errorHandler(errProc, eCode, *args):
 class errorCode(Enum):
     cannotCreateOutputSheet            = -1
     cannotOpenWorkbook                 = -2
-    cannotReplace                      = -3
-    fileNotExist                       = -4
-    instanceNotFound                   = -5
-    noMatrixWorksheet                  = -6
-    noNamedRange                       = -7
+    cannotQuery                        = -3
+    cannotReplace                      = -4
+    fileNotExist                       = -5
+    instanceNotFound                   = -6
+    noMatrixWorksheet                  = -7
+    noNamedRange                       = -8
 
 errorMessage = {
     errorCode.cannotCreateOutputSheet  : 'Cannot create output worksheet @1',
     errorCode.cannotOpenWorkbook       : 'Cannot open workbook @1',
+    errorCode.cannotQuery              : 'Cannot query with @1.',
     errorCode.cannotReplace            : 'Cannot replace field @1 with value @2.',
     errorCode.fileNotExist             : 'Workbook file @1 does not exist.',
     errorCode.instanceNotFound         : 'Instance @1 does not exist in sheet tblInstance.',

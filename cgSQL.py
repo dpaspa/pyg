@@ -22,10 +22,11 @@ class sqlCode(Enum):
     createClass                        = -3
     createClassesBlock                 = -4
     createClassesForLevel              = -5
-    createClassesGlobal                = -6
-    createClassNone                    = -7
-    createCM                           = -8
-    createEM                           = -9
+    createConnectionsForClass          = -6
+    createClassesGlobal                = -7
+    createClassNone                    = -8
+    createCM                           = -9
+    createEM                           = -10
     createUN                           = -20
     createPC                           = -21
     createInstances                    = -22
@@ -249,6 +250,7 @@ class sqlCode(Enum):
     pEventExists                       = -344
     pEventConfirm                      = -345
     pEventPrompt                       = -346
+    pEventPromptInstance               = -3461
 #    pEventLogMsg                       = -177
     pEventLogReal                      = -347
     pEventLogTime                      = -348
@@ -361,6 +363,7 @@ prm = {
     sqlCode.createClassNone            : [],
     sqlCode.createClassesBlock         : [],
     sqlCode.createClassesForLevel      : ['gLevel'],
+    sqlCode.createConnectionsForClass  : ['gClass'],
     sqlCode.createClassesGlobal        : [],
     sqlCode.createCM                   : [],
     sqlCode.createEM                   : [],
@@ -461,7 +464,8 @@ prm = {
     sqlCode.TIMER                      : ['gClass'],
     sqlCode.pEventExists               : ['gClass'],
     sqlCode.pEventConfirm              : ['gClass'],
-    sqlCode.pEventPrompt               : ['gClass', 'gClass'],
+    sqlCode.pEventPrompt               : ['gClass', 'gClass', 'gClass', 'gClass'],
+    sqlCode.pEventPromptInstance       : ['gClass', 'gInstance', 'gClass', 'gInstance'],
 #    sqlCode.pEventLogMsg               : ['gClass'],
     sqlCode.pEventLogReal              : ['gClass', 'gClass'],
     sqlCode.pEventLogTime              : ['gClass', 'gClass'],
@@ -607,8 +611,8 @@ prm = {
     sqlCode.pEventLogRealClass         : ['gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass'],
     sqlCode.pEventLogTimeClass         : ['gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass', 'gClass'],
     sqlCode.pEventLogMsgExists         : ['gClass'],
-    sqlCode.pEventConfirmNoInstance    : ['gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance'],
-    sqlCode.pEventConfirmYesInstance   : ['gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance'],
+    sqlCode.pEventConfirmNoInstance    : ['gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance'],
+    sqlCode.pEventConfirmYesInstance   : ['gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance'],
     sqlCode.pEventLogMsgInstance       : ['gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance'],
     sqlCode.pEventLogRealInstance      : ['gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance'],
     sqlCode.pEventLogTimeInstance      : ['gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance', 'gInstance'],
@@ -669,6 +673,11 @@ sql = {
                                           'FROM tblClass '
                                           'WHERE upper([Level]) = ? '
                                           'ORDER BY [Class]'
+                                         ),
+    sqlCode.createConnectionsForClass  : ('SELECT DISTINCT Connection '
+                                          'FROM tblInstance '
+                                          'WHERE upper([Class]) = ?'
+                                          'ORDER BY Connection'
                                          ),
     sqlCode.createClassesGlobal        : ('SELECT Level,  '
                                                  'Class, '
@@ -737,7 +746,7 @@ sql = {
                                                  'I.[Class], '
                                                  'I.Description, '
                                                  'substr(I.Description, 1, 35) AS briefDescription, '
-                                                 '(I.Instance || " - " || A.Mnemonic || " - " || A.Message) AS Message, '
+                                                 '(I.Instance || " : " || A.Mnemonic || " : " || A.Message) AS Message, '
                                                  'I.Parent, '
                                                  'I.ParentID, '
                                                  'I.ParentClass, '
@@ -793,6 +802,7 @@ sql = {
                                                  'I.[Class], '
                                                  'I.Description, '
                                                  'substr(I.Description, 1, 35) AS briefDescription, '
+                                                 'I.Connection, '
                                                  'I.Parent, '
                                                  'I.ParentID, '
                                                  'I.ParentClass, '
@@ -803,7 +813,9 @@ sql = {
                                                      'WHEN I.NC=0 THEN """alwaysLow""" '
                                                      'WHEN I.NC=1 THEN """alwaysHigh""" '
                                                  'END NC, '
-                                                 'C.Description AS ClassDescription '
+                                                 'C.Description AS ClassDescription, '
+                                                 'I.Recipe, '
+                                                 'I.RecipeClass '
                                           'FROM tblInstance AS I INNER JOIN '
                                                   'tblClass AS C ON I.ClassID = C.ID '
                                           'WHERE I.[Class] = ? AND '
@@ -841,7 +853,8 @@ sql = {
                                                  'IFNULL((SELECT IDX FROM tblInterlockCRIL WHERE Instance = I.Instance), -1) AS CRILIDX, '
                                                  'IFNULL((SELECT IDX FROM tblInterlockNCRIL WHERE Instance = I.Instance), -1) AS NCRILIDX, '
                                                  'printf("%d",I.xPos) AS xPos, '
-                                                 'printf("%d",I.yPos) AS yPos '
+                                                 'printf("%d",I.yPos) AS yPos, '
+                                                 'I.Connection '
                                           'FROM tblInstance AS I INNER JOIN '
                                                   'tblClass AS C ON I.ClassID = C.ID '
                                           'WHERE (upper(I.[Level]) == "CM" or '
@@ -1021,10 +1034,17 @@ sql = {
                                           'WHERE upper(V.KeyName) = ? AND '
                                                 'V.KeyValue = ? ORDER BY V.Ver DESC '
                                          ),
-    sqlCode.ADDITIONAL_ATTRIBUTE       : ('SELECT A.*, '
+    sqlCode.ADDITIONAL_ATTRIBUTE       : ('SELECT A.Level, '
+                                                 'A.attrClass, '
+                                                 'A.attrParameter, '
+                                                 'A.attrDataType, '
+                                                 'printf("%d",A.attrDataLength) AS attrDataLength, '
+                                                 'A.attrOperation, '
+                                                 'A.attrDescription, '
                                                  'I.Instance, '
                                                  'I.Class, '
-                                                 'printf("%d",I.IDX) AS IDX '
+                                                 'printf("%d",I.IDX) AS IDX, '
+                                                 'I.Connection '
                                           'FROM tblInstance AS I INNER JOIN '
                                                  'tblClass_Attribute AS A ON I.Class = A.attrClass '
                                           'ORDER BY A.attrParameter'
@@ -1033,6 +1053,7 @@ sql = {
                                                  'T.Instance, '
                                                  'T.[Class], '
                                                  'T.Description, '
+                                                 'T.Connection, '
                                                  'A.Polarity, '
                                                  'A.rangeLow, '
                                                  'A.rangeHigh, '
@@ -1055,6 +1076,7 @@ sql = {
                                                  'T.Instance, '
                                                  'T.[Class], '
                                                  'T.Description, '
+                                                 'T.Connection, '
                                                  'A.Polarity, '
                                                  'A.rangeLow, '
                                                  'A.rangeHigh, '
@@ -1149,7 +1171,7 @@ sql = {
                                                  'childCommandStatement <> "NONE" '
                                           'ORDER BY childParameterAlias'
                                          ), # gClass
-    sqlCode.CHILD_COMMAND_BLK          : ('SELECT P.childParameterAlias, '
+    sqlCode.CHILD_COMMAND_BLK          : ('SELECT DISTINCT P.childParameterAlias, '
                                                  'P.childAliasClass, '
                                                  'P.childCommandStatement '
                                           'FROM tblClass_Child AS P '
@@ -1508,6 +1530,7 @@ sql = {
                                                      'WHEN I.NC=0 THEN """alwaysLow""" '
                                                      'WHEN I.NC=1 THEN """alwaysHigh""" '
                                                  'END NC, '
+                                                 'I.Connection, '
                                                  'I.instanceChildAlias, '
                                                  'I.instanceChildAliasClass, '
                                                  'C.Description AS ClassDescription '
@@ -2179,6 +2202,7 @@ sql = {
                                                  'printf("%d",I.IDX) AS IDX, '
                                                  'I.Class, '
                                                  'I.Description, '
+                                                 'I.Connection, '
                                                  'I.instanceChildAlias, '
                                                  'I.instanceChildSFCAlias, '
                                                  'P.parameterSource, '
@@ -2186,7 +2210,7 @@ sql = {
                                                  'P.childParameter, '
                                                  'P.blockParameter, '
                                                  'P.parameterDataType, '
-                                                 'p.parameterDescription '
+                                                 'P.parameterDescription '
                                           'FROM tblInstance AS I '
                                                  'INNER JOIN pGlobal AS P '
                                                  'ON I.Class = P.parameterClass '
@@ -2205,6 +2229,7 @@ sql = {
                                                  'printf("%d",I.IDX) AS IDX, '
                                                  'I.Class, '
                                                  'I.Description, '
+                                                 'I.Connection, '
                                                  'I.instanceChildAlias, '
                                                  'I.instanceChildSFCAlias, '
                                                  'P.parameterSource, '
@@ -2231,6 +2256,7 @@ sql = {
                                                  'printf("%d",I.IDX) AS IDX, '
                                                  'I.Class, '
                                                  'I.Description, '
+                                                 'I.Connection, '
                                                  'I.instanceChildAlias, '
                                                  'I.instanceChildSFCAlias, '
                                                  'P.parameterSource, '
@@ -2257,6 +2283,7 @@ sql = {
                                                  'printf("%d",I.IDX) AS IDX, '
                                                  'I.Class, '
                                                  'I.Description, '
+                                                 'I.Connection, '
                                                  'I.instanceChildAlias, '
                                                  'I.instanceChildSFCAlias, '
                                                  'P.parameterSource, '
@@ -2283,6 +2310,7 @@ sql = {
                                                  'printf("%d",I.IDX) AS IDX, '
                                                  'I.Class, '
                                                  'I.Description, '
+                                                 'I.Connection, '
                                                  'I.instanceChildAlias, '
                                                  'I.instanceChildSFCAlias, '
                                                  'P.parameterSource, '
@@ -2309,6 +2337,7 @@ sql = {
                                                  'printf("%d",I.IDX) AS IDX, '
                                                  'I.Class, '
                                                  'I.Description, '
+                                                 'I.Connection, '
                                                  'I.instanceChildAlias, '
                                                  'I.instanceChildSFCAlias, '
                                                  'P.parameterSource, '
@@ -2343,7 +2372,7 @@ sql = {
                                                     'AS keyEvent, '
                                                     'pKey AS keyName '
                                                     'FROM pEventPrompt t1) '
-                                                 'WHERE keyName=pKey)'
+                                                 'WHERE keyName = pKey)'
                                          ),
     sqlCode.updateEventConfirmNo       : ('UPDATE pEventConfirmNo '
                                           'SET idxEvent = ('
@@ -2361,7 +2390,7 @@ sql = {
                                                     'AS keyEvent, '
                                                     'pKey AS keyName '
                                                     'FROM pEventConfirmNo t1) '
-                                                 'WHERE keyName=pKey)'
+                                                 'WHERE keyName = pKey)'
                                          ),
     sqlCode.updateEventConfirmYes      : ('UPDATE pEventConfirmYes '
                                           'SET idxEvent = ('
@@ -2379,7 +2408,7 @@ sql = {
                                                     'AS keyEvent, '
                                                     'pKey AS keyName '
                                                     'FROM pEventConfirmYes t1) '
-                                                 'WHERE keyName=pKey)'
+                                                 'WHERE keyName = pKey)'
                                          ),
     sqlCode.updateEventLogMsg          : ('UPDATE pEventLogMsg '
                                           'SET idxEvent = ('
@@ -2397,7 +2426,7 @@ sql = {
                                                     'AS keyEvent, '
                                                     'pKey AS keyName '
                                                     'FROM pEventLogMsg t1) '
-                                                 'WHERE keyName=pKey)'
+                                                 'WHERE keyName = pKey)'
                                          ),
     sqlCode.updateEventLogReal         : ('UPDATE pEventLogReal '
                                           'SET idxEvent = ('
@@ -2415,7 +2444,7 @@ sql = {
                                                     'AS keyEvent, '
                                                     'pKey AS keyName '
                                                     'FROM pEventLogReal t1) '
-                                                 'WHERE keyName=pKey)'
+                                                 'WHERE keyName = pKey)'
                                          ),
     sqlCode.updateEventLogTime         : ('UPDATE pEventLogTime '
                                           'SET idxEvent = ('
@@ -2433,7 +2462,7 @@ sql = {
                                                     'AS keyEvent, '
                                                     'pKey AS keyName '
                                                     'FROM pEventLogTime t1) '
-                                                 'WHERE keyName=pKey)'
+                                                 'WHERE keyName = pKey)'
                                          ),
     sqlCode.addParametersClass         : ('SELECT * '
                                           'FROM tblClass_Parameter '
@@ -2441,7 +2470,8 @@ sql = {
                                                  'parameterClass, '
                                                  'blockParameter'
                                          ),
-    sqlCode.getClassChildren           : ('SELECT Level, childParameterAlias, '
+    sqlCode.getClassChildren           : ('SELECT Level, '
+                                                 'childParameterAlias, '
                                                  'childAliasClass, '
                                                  'childAliasDescription '
                                           'FROM tblClass_Child '
@@ -2462,7 +2492,8 @@ sql = {
 #                                         ), # gClass
     sqlCode.getChildParameters          : ('SELECT * '
                                           'FROM tblClass_Parameter '
-                                          'WHERE parameterClass = ? '
+                                          'WHERE parameterClass = ? AND '
+                                                'parameterDefer = 1 '
                                           'ORDER BY blockParameter'
                                          ), # gClass
     sqlCode.getDeferredParameters      : ('SELECT * '
@@ -2522,6 +2553,7 @@ sql = {
                                                  'IDX int NOT NULL, '
                                                  'Class text NOT NULL, '
                                                  'Description text NOT NULL, '
+                                                 'Connection text NOT NULL, '
                                                  'instanceChildAlias text NOT NULL, '
                                                  'instanceChildSFCAlias text NOT NULL, '
                                                  'parameterSource text NOT NULL, '
@@ -2540,6 +2572,7 @@ sql = {
                                                  'IDX int NOT NULL, '
                                                  'Class text NOT NULL, '
                                                  'Description text NOT NULL, '
+                                                 'Connection text NOT NULL, '
                                                  'instanceChildAlias text NOT NULL, '
                                                  'instanceChildSFCAlias text NOT NULL, '
                                                  'parameterSource text NOT NULL, '
@@ -2558,6 +2591,7 @@ sql = {
                                                  'IDX int NOT NULL, '
                                                  'Class text NOT NULL, '
                                                  'Description text NOT NULL, '
+                                                 'Connection text NOT NULL, '
                                                  'instanceChildAlias text NOT NULL, '
                                                  'instanceChildSFCAlias text NOT NULL, '
                                                  'parameterSource text NOT NULL, '
@@ -2576,6 +2610,7 @@ sql = {
                                                  'IDX int NOT NULL, '
                                                  'Class text NOT NULL, '
                                                  'Description text NOT NULL, '
+                                                 'Connection text NOT NULL, '
                                                  'instanceChildAlias text NOT NULL, '
                                                  'instanceChildSFCAlias text NOT NULL, '
                                                  'parameterSource text NOT NULL, '
@@ -2594,6 +2629,7 @@ sql = {
                                                  'IDX int NOT NULL, '
                                                  'Class text NOT NULL, '
                                                  'Description text NOT NULL, '
+                                                 'Connection text NOT NULL, '
                                                  'instanceChildAlias text NOT NULL, '
                                                  'instanceChildSFCAlias text NOT NULL, '
                                                  'parameterSource text NOT NULL, '
@@ -2612,6 +2648,7 @@ sql = {
                                                  'IDX int NOT NULL, '
                                                  'Class text NOT NULL, '
                                                  'Description text NOT NULL, '
+                                                 'Connection text NOT NULL, '
                                                  'instanceChildAlias text NOT NULL, '
                                                  'instanceChildSFCAlias text NOT NULL, '
                                                  'parameterSource text NOT NULL, '
@@ -2651,10 +2688,32 @@ sql = {
 #                                                 'isEventPrompt = 1 '
 #                                          'ORDER BY cast(idxEvent as Int)'
 #                                         ), # gClass
-    sqlCode.pEventPrompt               : ('SELECT * '
+    sqlCode.pEventPrompt               : ('SELECT *, '
+                                                '1 + idxEvent - (SELECT '
+                                                '(SELECT COUNT(pKey) FROM pEventPrompt t2 WHERE t2.pKey < t1.pKey) '
+                                                '+ '
+                                                '(SELECT COUNT(pKey) FROM pEventPrompt t3 WHERE t3.pKey = T1.pKey) '
+                                            'FROM pEventPrompt t1 '
+                                            'WHERE Class = ? AND Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                            'ORDER BY cast(idxEvent as Int) '
+                                            ') AS numEvent '
                                           'FROM pEventPrompt '
                                           'WHERE Class = ? AND '
                                                  'Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
+                                          'ORDER BY cast(idxEvent as Int)'
+                                         ), # gClass
+    sqlCode.pEventPromptInstance       : ('SELECT *, '
+                                                '1 + idxEvent - (SELECT '
+                                                '(SELECT COUNT(pKey) FROM pEventPrompt t2 WHERE t2.pKey < t1.pKey) '
+                                                '+ '
+                                                '(SELECT COUNT(pKey) FROM pEventPrompt t3 WHERE t3.pKey = T1.pKey) '
+                                            'FROM pEventPrompt t1 '
+                                            'WHERE Class = ? AND Instance = ? '
+                                            'ORDER BY cast(idxEvent as Int) '
+                                            ') AS numEvent '
+                                          'FROM pEventPrompt '
+                                          'WHERE Class = ? AND '
+                                                 'Instance = ? '
                                           'ORDER BY cast(idxEvent as Int)'
                                          ), # gClass
 #    sqlCode.pEventLogMsg               : ('SELECT * '
@@ -3577,6 +3636,7 @@ sql = {
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
                                                  'isMC = 0 AND '
+                                                 'isLink = 0 AND '
                                                  'operation = "read" AND '
                                                  'parameterType LIKE "VAR_%" AND '
                                                  'upper(parameterDataType) != "BOOL" AND '
@@ -3588,6 +3648,7 @@ sql = {
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
                                                  'isMC = 0 AND '
+                                                 'isLink = 0 AND '
                                                  'operation = "read" AND '
                                                  'parameterType LIKE "VAR_%" AND '
                                                  'upper(parameterDataType) = "BOOL" AND '
@@ -3602,6 +3663,7 @@ sql = {
                                           'WHERE parameterClass = ? AND '
                                                  'childParameterAlias = ? AND '
                                                  'isMC = 0 AND '
+                                                 'isLink = 0 AND '
                                                  'operation = "read" AND '
                                                  'parameterType LIKE "VAR_%" AND '
                                                  'upper(parameterDataType) != "BOOL" AND '
@@ -3617,6 +3679,7 @@ sql = {
                                           'WHERE parameterClass = ? AND '
                                                  'childParameterAlias = ? AND '
                                                  'isMC = 0 AND '
+                                                 'isLink = 0 AND '
                                                  'operation = "read" AND '
                                                  'parameterType LIKE "VAR_%" AND '
                                                  'upper(parameterDataType) = "BOOL" AND '
@@ -3632,6 +3695,7 @@ sql = {
                                           'WHERE parameterClass = ? AND '
                                                  'childParameterAlias = ? AND '
                                                  'isMC = 0 AND '
+                                                 'isLink = 0 AND '
                                                  'operation = "write" AND '
                                                  'parameterType LIKE "VAR_%" AND '
                                                  'upper(parameterDataType) != "BOOL" AND '
@@ -3647,6 +3711,7 @@ sql = {
                                           'WHERE parameterClass = ? AND '
                                                  'childParameterAlias = ? AND '
                                                  'isMC = 0 AND '
+                                                 'isLink = 0 AND '
                                                  'operation = "write" AND '
                                                  'parameterType LIKE "VAR_%" AND '
                                                  'upper(parameterDataType) = "BOOL" AND '
@@ -4788,29 +4853,29 @@ sql = {
                                           'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
                                           'ORDER BY cast(idxEvent AS Int)'
                                          ), # gClass
-    sqlCode.pEventConfirmNoInstance    : ('SELECT idxEvent - (SELECT idxEvent FROM pEventConfirmNo ORDER BY idxEvent LIMIT 1) AS gOffset, '
-                                                 '((idxEvent - (SELECT idxEvent FROM pEventConfirmNo ORDER BY idxEvent LIMIT 1)) / 16) AS gWord, '
-                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmNo ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmNo ORDER BY idxEvent LIMIT 1)) / 16)) AS gBit, '
-                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1) AS cOffset, '
+    sqlCode.pEventConfirmNoInstance    : ('SELECT *, idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1) AS cOffset, '
                                                  '((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
-                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
-                                                 'cast(G.val AS int) AS gMagicNum, cast(C.val AS int) AS cMagicNum, * '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit '
                                           'FROM pEventConfirmNo '
-                                          'LEFT JOIN bitInt AS G on cast(G.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventConfirmNo ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmNo ORDER BY idxEvent LIMIT 1)) / 16)) '
-                                          'LEFT JOIN bitInt AS C on cast(C.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) '
                                           'WHERE Instance = ? '
                                           'ORDER BY cast(idxEvent AS Int)'
                                          ), # gClass
-    sqlCode.pEventConfirmYesInstance   : ('SELECT idxEvent - (SELECT idxEvent FROM pEventConfirmYes ORDER BY idxEvent LIMIT 1) AS gOffset, '
-                                                 '((idxEvent - (SELECT idxEvent FROM pEventConfirmYes ORDER BY idxEvent LIMIT 1)) / 16) AS gWord, '
-                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmYes ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmYes ORDER BY idxEvent LIMIT 1)) / 16)) AS gBit, '
-                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1) AS cOffset, '
+#    sqlCode.pEventConfirmNoInstance    : ('SELECT DISTINCT Instance, '
+#                                                 '((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord '
+#                                          'FROM pEventConfirmNo '
+#                                          'WHERE Instance = ? '
+#                                          'ORDER BY cast(idxEvent AS Int)'
+#                                         ), # gClass
+#    sqlCode.pEventConfirmYesInstance   : ('SELECT DISTINCT Instance, '
+#                                                 '((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord '
+#                                          'FROM pEventConfirmYes '
+#                                          'WHERE Instance = ? '
+#                                          'ORDER BY cast(idxEvent AS Int)'
+#                                         ), # gClass
+    sqlCode.pEventConfirmYesInstance   : ('SELECT *, idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1) AS cOffset, '
                                                  '((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
-                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
-                                                 'cast(G.val AS int) AS gMagicNum, cast(C.val AS int) AS cMagicNum, * '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit '
                                           'FROM pEventConfirmYes '
-                                          'LEFT JOIN bitInt AS G on cast(G.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventConfirmYes ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmYes ORDER BY idxEvent LIMIT 1)) / 16)) '
-                                          'LEFT JOIN bitInt AS C on cast(C.bit AS int) = idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16)) '
                                           'WHERE Instance = ? '
                                           'ORDER BY cast(idxEvent AS Int)'
                                          ), # gClass
@@ -4946,35 +5011,40 @@ sql = {
                                          ), # gClass
     sqlCode.pEventConfirmNoWordInstance: ('SELECT DISTINCT '
                                                 '((idxEvent - (SELECT idxEvent FROM pEventConfirmNo WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
-                                                'Instance '
+                                                'Instance, '
+                                                'Connection '
                                           'FROM pEventConfirmNo '
                                           'WHERE Instance = ? '
                                           'ORDER BY cast(idxEvent AS Int)'
                                          ), # gInstance
     sqlCode.pEventConfirmYesWordInstance: ('SELECT DISTINCT '
                                                 '((idxEvent - (SELECT idxEvent FROM pEventConfirmYes WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
-                                                'Instance '
+                                                'Instance, '
+                                                'Connection '
                                           'FROM pEventConfirmYes '
                                           'WHERE Instance = ? '
                                           'ORDER BY cast(idxEvent AS Int)'
                                          ), # gInstance
     sqlCode.pEventLogMsgWordInstance   : ('SELECT DISTINCT '
                                                 '((idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
-                                                'Instance '
+                                                'Instance, '
+                                                'Connection '
                                           'FROM pEventLogMsg '
                                           'WHERE Instance = ? '
                                           'ORDER BY cast(idxEvent AS Int)'
                                          ), # gInstance
     sqlCode.pEventLogRealWordInstance  : ('SELECT DISTINCT '
                                                 '((idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
-                                                'Instance '
+                                                'Instance, '
+                                                'Connection '
                                           'FROM pEventLogReal '
                                           'WHERE Instance = ? '
                                           'ORDER BY cast(idxEvent AS Int)'
                                          ), # gInstance
     sqlCode.pEventLogTimeWordInstance  : ('SELECT DISTINCT '
                                                 '((idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = ? ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
-                                                'Instance '
+                                                'Instance, '
+                                                'Connection '
                                           'FROM pEventLogTime '
                                           'WHERE Instance = ? '
                                           'ORDER BY cast(idxEvent AS Int)'
