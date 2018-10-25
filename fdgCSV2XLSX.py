@@ -196,6 +196,11 @@ def csv2xlsx(fileCSV, pathOut, fileOutputName):
     wb.save(filename = xlsxName)
 
     #--------------------------------------------------------------------------#
+    # Delete the CSV file:                                                     #
+    #--------------------------------------------------------------------------#
+#    os.remove(fileCSV)
+
+    #--------------------------------------------------------------------------#
     # Report completion regardless of error:                                   #
     #--------------------------------------------------------------------------#
     ps.set_description(csvBaseName + ': Processing complete')

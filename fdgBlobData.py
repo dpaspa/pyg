@@ -57,6 +57,18 @@ errorMessage = {
 }
 
 #------------------------------------------------------------------------------#
+# Function findnth                                                             #
+#                                                                              #
+# Description:                                                                 #
+# Find the nth occurrence of one string within another string.                 #
+#------------------------------------------------------------------------------#
+def findnth(string, substring, n):
+    parts = string.split(substring, n + 1)
+    if (len(parts) <= n + 1):
+        return -1
+    return len(string) - len(parts[-1]) - len(substring)
+
+#------------------------------------------------------------------------------#
 # Class: blobData                                                              #
 #------------------------------------------------------------------------------#
 class blobData(object):
@@ -70,6 +82,13 @@ class blobData(object):
         self.errProc = 'blobData_init'
 
         #----------------------------------------------------------------------#
+        # Set the marker properties:                                           #
+        #----------------------------------------------------------------------#
+        self.dataFilter = ''
+        self.markerSearchBegin = ''
+        self.markerSearchEnd = ''
+
+        #----------------------------------------------------------------------#
         # Make sure the input document file exists:                            #
         #----------------------------------------------------------------------#
         if not os.path.exists(fileInput):
@@ -78,8 +97,57 @@ class blobData(object):
         #----------------------------------------------------------------------#
         # Load the whole text file in RAM at once. Don't read line by line:    #
         #----------------------------------------------------------------------#
-        with open(fileInput, 'r') as content_file:
-            self.content = content_file.read()
+        with open(fileInput, 'r') as fileContent:
+            self.content = fileContent.read()
+
+    #--------------------------------------------------------------------------#
+    # Function: getTime                                                        #
+    #                                                                          #
+    # Description:                                                             #
+    # Gets the time stampe of the marker search string:                        #
+    #--------------------------------------------------------------------------#
+    # Calling Parameters:                                                      #
+    # markerSearchString    The marker event search string.                    #
+    #--------------------------------------------------------------------------#
+    def getTime(self, markerSearchString):
+        #----------------------------------------------------------------------#
+        # Define the procedure name:                                           #
+        #----------------------------------------------------------------------#
+        self.errProc = 'getTime'
+
+        #----------------------------------------------------------------------#
+        # Get the search term position:                                        #
+        #----------------------------------------------------------------------#
+        s = markerSearchString.replace('@@FILTER@@', str(self.dataFilter))
+        posBegin = self.getMarkerPosition(s, True)
+        posEnd = self.content.find('\n', posBegin)
+        s = self.content[posBegin:posEnd]
+        posTime = findnth(s, ',', 13)
+        return s[posTime + 1:16]
+
+    #--------------------------------------------------------------------------#
+    # Function: setMarker                                                      #
+    #                                                                          #
+    # Description:                                                             #
+    # Sets the marker name and search string:                                  #
+    #--------------------------------------------------------------------------#
+    # Calling Parameters:                                                      #
+    # markerName            The maker name.                                    #
+    # markerSearchString    The marker event search string.                    #
+    #--------------------------------------------------------------------------#
+    def setMarker(self, markerName, markerSearchString):
+        #----------------------------------------------------------------------#
+        # Define the procedure name:                                           #
+        #----------------------------------------------------------------------#
+        self.errProc = 'setMarker'
+
+        #----------------------------------------------------------------------#
+        # Get the search term position:                                        #
+        #----------------------------------------------------------------------#
+        if (markerName[:5].upper() == 'BEGIN'):
+            self.markerSearchBegin = markerSearchString.replace('@@FILTER@@', str(self.dataFilter))
+        else:
+            self.markerSearchEnd = markerSearchString.replace('@@FILTER@@', str(self.dataFilter))
 
     #--------------------------------------------------------------------------#
     # Function: getMarkerPosition                                              #
@@ -96,7 +164,7 @@ class blobData(object):
         #----------------------------------------------------------------------#
         # Define the procedure name:                                           #
         #----------------------------------------------------------------------#
-        self.errProc = getMarkerPosition.__name__
+        self.errProc = 'getMarkerPosition'
 
         #----------------------------------------------------------------------#
         # Get the search term position:                                        #
@@ -121,7 +189,7 @@ class blobData(object):
             #------------------------------------------------------------------#
             # Update the end marker to the end of the previous line:           #
             #------------------------------------------------------------------#
-            posMarker = self.content.find('\n', posEnd) - 1
+            posMarker = self.content.find('\n', posMarker) - 1
 
         #----------------------------------------------------------------------#
         # Return the found position:                                           #
@@ -135,24 +203,29 @@ class blobData(object):
     # Extracts data from an ASCII file between two specified markers.          #
     #--------------------------------------------------------------------------#
     # Calling Parameters:                                                      #
-    # markBegin             The begin marker search term.                      #
-    # markEnd               The end marker search term.                        #
+    # fileName              The filename to extract the data to.               #
     #--------------------------------------------------------------------------#
-    def extractData(self, markBegin, markEnd):
+    def extractData(self, fileName):
         #----------------------------------------------------------------------#
         # Define the procedure name:                                           #
         #----------------------------------------------------------------------#
-        self.errProc = extractData.__name__
+        self.errProc = 'extractData'
 
         #----------------------------------------------------------------------#
         # Get the begin and end marker positions:                              #
         #----------------------------------------------------------------------#
-        posBegin = self.getMarkerPosition(markBegin, True)
-        posEnd = self.getMarkerPosition(markEnd, False)
+        posBegin = self.getMarkerPosition(self.markerSearchBegin, True)
+        posEnd = self.getMarkerPosition(self.markerSearchEnd, False)
+
+        #----------------------------------------------------------------------#
+        # Get the title from the first row:                                    #
+        #----------------------------------------------------------------------#
+        posMarker = self.content.find('\n', 1)
+        titleRow = self.content[:posMarker]
 
         #----------------------------------------------------------------------#
         # Save the extracted data:                                             #
         #----------------------------------------------------------------------#
-        text_file = open("test.csv", "w")
-        text_file.write(content[posBegin:posEnd])
-        text_file.close()
+        fileOutput = open(fileName, 'w')
+        fileOutput.write(titleRow + '\n' + self.content[posBegin:posEnd])
+        fileOutput.close()

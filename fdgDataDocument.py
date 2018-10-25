@@ -356,20 +356,20 @@ def getBaseData(query):
     c = getQueryData(query)
     d.dataBase = c.fetchall()
 
-#--------------------------------------------------------------------------#
-# Function: docProperty                                                    #
-#                                                                          #
-# Description:                                                             #
-# Sets the document property based on the query result.                    #
-#--------------------------------------------------------------------------#
-# Calling parameters:                                                      #
-#                                                                          #
-# query                 The query string for the table data.               #
-#--------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+# Function: docProperty                                                        #
+#                                                                              #
+# Description:                                                                 #
+# Sets the document property based on the query result.                        #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# query                 The query string for the table data.                   #
+#------------------------------------------------------------------------------#
 def docProperty(query):
-    #----------------------------------------------------------------------#
-    # Define the procedure name:                                           #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Define the procedure name:                                               #
+    #--------------------------------------------------------------------------#
     errProc = 'docProperty'
 
     #--------------------------------------------------------------------------#
@@ -377,36 +377,36 @@ def docProperty(query):
     #--------------------------------------------------------------------------#
     global d
 
-    #----------------------------------------------------------------------#
-    # Execute the query and get the data. Static table can only handle     #
-    # one record:                                                          #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Execute the query and get the data. Static table can only handle  one    #
+    # record:                                                                  #
+    #--------------------------------------------------------------------------#
     c = getQueryData(query)
     data = c.fetchone()
     if (not data is None):
-        #------------------------------------------------------------------#
-        # Try to set the document property if the field exists:            #
-        #------------------------------------------------------------------#
+        #----------------------------------------------------------------------#
+        # Try to set the document property if the field exists:                #
+        #----------------------------------------------------------------------#
         try:
             prop = data.keys()
             setProperty(d, prop[0], data[0])
         except:
             pass
 
-#--------------------------------------------------------------------------#
-# Function: tableAddRows                                                   #
-#                                                                          #
-# Description:                                                             #
-# Adds one table row for each row in the cursor.                           #
-#--------------------------------------------------------------------------#
-# Calling parameters:                                                      #
-#                                                                          #
-# query                 The query string to get the data for.              #
-#--------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+# Function: tableAddRows                                                       #
+#                                                                              #
+# Description:                                                                 #
+# Adds one table row for each row in the cursor.                               #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# query                 The query string to get the data for.                  #
+#------------------------------------------------------------------------------#
 def tableAddRows(query):
-    #----------------------------------------------------------------------#
-    # Define the procedure name and trap any programming errors:           #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Define the procedure name and trap any programming errors:               #
+    #--------------------------------------------------------------------------#
     errProc = 'tableAddRows'
 
     #--------------------------------------------------------------------------#
@@ -414,61 +414,63 @@ def tableAddRows(query):
     #--------------------------------------------------------------------------#
     global currentTable
 
-    #----------------------------------------------------------------------#
-    # Execute the query and get the data:                                  #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Execute the query and get the data:                                      #
+    #--------------------------------------------------------------------------#
     bHasData = False
     c = getQueryData(query)
     data = c.fetchall()
 
-    #----------------------------------------------------------------------#
-    # Iterate the data to get the row count:                               #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Iterate the data to get the row count:                                   #
+    #--------------------------------------------------------------------------#
     rowCount = 0
     for row in data:
         bHasData = True
         rowCount = rowCount + 1
 
-    #----------------------------------------------------------------------#
-    # There is no data so delete the entire table and the paragraph:       #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # There is no data so delete the entire table and the paragraph:           #
+    #--------------------------------------------------------------------------#
     if (not bHasData):
         p1 = getTableParagraph(currentTable)
         remove_table(currentTable)
         remove_paragraph(p1)
     else:
-        #------------------------------------------------------------------#
-        # Re-query to refresh the cursor:                                  #
-        #------------------------------------------------------------------#
+        #----------------------------------------------------------------------#
+        # Re-query to refresh the cursor:                                      #
+        #----------------------------------------------------------------------#
         c = getQueryData(query)
         data = c.fetchall()
 
-        #------------------------------------------------------------------#
-        # Get the column attribute row:                                    #
-        #------------------------------------------------------------------#
+        #----------------------------------------------------------------------#
+        # Get the column attribute row:                                        #
+        #----------------------------------------------------------------------#
         rowAttr = currentTable.rows[1]
         cellsAttr = rowAttr.cells
         para = cellsAttr[0].paragraphs[0]
         styleAttr = para.style
 
-        #------------------------------------------------------------------#
-        # Process each row of returned data:                               #
-        #------------------------------------------------------------------#
+        #----------------------------------------------------------------------#
+        # Process each row of returned data:                                   #
+        #----------------------------------------------------------------------#
         for row in data:
-            #--------------------------------------------------------------#
-            # Add a new row to the table and enter a loop to process each  #
-            # cell:                                                        #
-            #--------------------------------------------------------------#
+            #------------------------------------------------------------------#
+            # Add a new row to the table and enter a loop to process each cell #
+            # and prevent the row from breaking across pages:                  #
+            #------------------------------------------------------------------#
             rowNew = currentTable.add_row()
+            preventRowSplit(rowNew)
+
 #            rowNew.height_rule = WD_ROW_HEIGHT.EXACTLY
             rowNew.height_rule = 2
             rowNew.height = shared.Cm(1.2)
 #            cellsNew = currentTable.add_row().cells
             cellsNew = rowNew.cells
             for i in range(0, len(cellsAttr)):
-                #----------------------------------------------------------#
-                # Replace the field placeholders in the cell text:         #
-                #----------------------------------------------------------#
+                #--------------------------------------------------------------#
+                # Replace the field placeholders in the cell text:             #
+                #--------------------------------------------------------------#
                 s = cellsAttr[i].text
                 for fld in row.keys():
                     try:
@@ -480,9 +482,9 @@ def tableAddRows(query):
                 run = para.add_run(s)
                 para.style = styleAttr
 
-        #------------------------------------------------------------------#
-        # Clean up the table by deleting the query and attribute rows:     #
-        #------------------------------------------------------------------#
+        #----------------------------------------------------------------------#
+        # Clean up the table by deleting the query and attribute rows:         #
+        #----------------------------------------------------------------------#
         remove_row(currentTable, rowAttr)
 
 #------------------------------------------------------------------------------#
@@ -517,20 +519,20 @@ def tableBaseRecord():
         except:
             pass
 
-#--------------------------------------------------------------------------#
-# Function: tableInsertImage                                               #
-#                                                                          #
-# Description:                                                             #
-# Inserts an image into the table cell.                                    #
-#--------------------------------------------------------------------------#
-# Calling parameters:                                                      #
-#                                                                          #
-# sImage                The image filename.                                #
-#--------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+# Function: tableInsertImage                                                   #
+#                                                                              #
+# Description:                                                                 #
+# Inserts an image into the table cell.                                        #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# sImage                The image filename.                                    #
+#------------------------------------------------------------------------------#
 def tableInsertImage(sImage):
-    #----------------------------------------------------------------------#
-    # Define the procedure name and trap any programming errors:           #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Define the procedure name and trap any programming errors:               #
+    #--------------------------------------------------------------------------#
     errProc = 'tableInsertImage'
 
     #--------------------------------------------------------------------------#
@@ -538,22 +540,22 @@ def tableInsertImage(sImage):
     #--------------------------------------------------------------------------#
     global d
 
-    #----------------------------------------------------------------------#
-    # Get the image file:                                                  #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Get the image file:                                                      #
+    #--------------------------------------------------------------------------#
     for fld in d.dataRow.keys():
         sImage = sImage.replace('@@' + fld.upper() + '@@', str(d.dataRow[fld]))
 
-    #----------------------------------------------------------------------#
-    # Check if the image exists:                                           #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Check if the image exists:                                               #
+    #--------------------------------------------------------------------------#
     sImage = d.fileInputDir + '/' + sImage
     if not os.path.exists(sImage):
         errorHandler(errProc, errorCode.fileNotExist, sImage)
 
-    #----------------------------------------------------------------------#
-    # Insert the image:                                                    #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Insert the image:                                                        #
+    #--------------------------------------------------------------------------#
     para = currentRow.cells[0].paragraphs[0]
     style = para.style
     para.text = ''
@@ -561,21 +563,21 @@ def tableInsertImage(sImage):
     run.add_picture(sImage)
     para.style = style
 
-#--------------------------------------------------------------------------#
-# Function: tableStaticFields                                              #
-#                                                                          #
-# Description:                                                             #
-# Populates a table with placeholder data without altering the table       #
-# structure.                                                               #
-#--------------------------------------------------------------------------#
-# Calling parameters:                                                      #
-#                                                                          #
-# query                 The query string for the table data.               #
-#--------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+# Function: tableStaticFields                                                  #
+#                                                                              #
+# Description:                                                                 #
+# Populates a table with placeholder data without altering the table           #
+# structure.                                                                   #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# query                 The query string for the table data.                   #
+#------------------------------------------------------------------------------#
 def tableStaticFields(query):
-    #----------------------------------------------------------------------#
-    # Define the procedure name:                                           #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Define the procedure name:                                               #
+    #--------------------------------------------------------------------------#
     errProc = 'tableStaticFields'
 
     #--------------------------------------------------------------------------#
@@ -583,57 +585,57 @@ def tableStaticFields(query):
     #--------------------------------------------------------------------------#
     global currentTable
 
-    #----------------------------------------------------------------------#
-    # Execute the query and get the data. Static table can only handle     #
-    # one record:                                                          #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Execute the query and get the data. Static table can only handle one     #
+    # record:                                                                  #
+    #--------------------------------------------------------------------------#
     c = getQueryData(query)
     data = c.fetchone()
     if (data is None):
-        #------------------------------------------------------------------#
-        # No data so delete the table and the paragraph:                   #
-        #------------------------------------------------------------------#
+        #----------------------------------------------------------------------#
+        # No data so delete the table and the paragraph:                       #
+        #----------------------------------------------------------------------#
         p1 = getTableParagraph(currentTable)
         remove_table(currentTable)
         remove_paragraph(p1)
     else:
-        #------------------------------------------------------------------#
-        # Process each field in the data and all cells in the table:       #
-        #------------------------------------------------------------------#
+        #----------------------------------------------------------------------#
+        # Process each field in the data and all cells in the table:           #
+        #----------------------------------------------------------------------#
         for fld in data.keys():
-            #--------------------------------------------------------------#
-            # Ignore non-ascii characters:                                 #
-            #--------------------------------------------------------------#
+            #------------------------------------------------------------------#
+            # Ignore non-ascii characters:                                     #
+            #------------------------------------------------------------------#
             try:
                 str(data[fld]).decode('ascii')
                 srTable(currentTable, '@@' + fld.upper() + '@@', str(data[fld]))
             except:
                 errorHandler(errProc, errorCode.nonASCIIField, query, fld)
 
-#--------------------------------------------------------------------------#
-# Function: getQueryData                                                   #
-#                                                                          #
-# Description:                                                             #
-# Queries the database with the specified SQL string.                      #
-#--------------------------------------------------------------------------#
-# Calling parameters:                                                      #
-#                                                                          #
-# txtQuery              The query string for the table data.               #
-#--------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+# Function: getQueryData                                                       #
+#                                                                              #
+# Description:                                                                 #
+# Queries the database with the specified SQL string.                          #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# txtQuery              The query string for the table data.                   #
+#------------------------------------------------------------------------------#
 def getQueryData(txtQuery):
-    #----------------------------------------------------------------------#
-    # Define the procedure name in case of programming errors:             #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Define the procedure name in case of programming errors:                 #
+    #--------------------------------------------------------------------------#
     errProc = 'getQueryData'
 
-    #----------------------------------------------------------------------#
-    # Get any parameters from the query string:                            #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Get any parameters from the query string:                                #
+    #--------------------------------------------------------------------------#
     q = getQueryParameters(txtQuery)
 
-    #----------------------------------------------------------------------#
-    # Execute the query:                                                   #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Execute the query:                                                       #
+    #--------------------------------------------------------------------------#
     try:
         c = q.conn.cursor()
         c.execute(q.query, q.parms)
@@ -641,64 +643,63 @@ def getQueryData(txtQuery):
         errorHandler(errProc, errorCode.cannotQuery, q.query, q.parms)
     return c
 
-#--------------------------------------------------------------------------#
-# Function: getQueryParameters                                             #
-#                                                                          #
-# Description:                                                             #
-# Gets the parameter values from the parameter names in the query string.  #
-#--------------------------------------------------------------------------#
-# Calling parameters:                                                      #
-#                                                                          #
-# txtQuery              The query string for the table data.               #
-#--------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+# Function: getQueryParameters                                                 #
+#                                                                              #
+# Description:                                                                 #
+# Gets the parameter values from the parameter names in the query string.      #
+#------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# txtQuery              The query string for the table data.                   #
+#------------------------------------------------------------------------------#
 def getQueryParameters(txtQuery):
-    #----------------------------------------------------------------------#
-    # Define the procedure name in case of any programming errors:         #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Define the procedure name in case of any programming errors:             #
+    #--------------------------------------------------------------------------#
     errProc = 'getQueryParameters'
 
-    #----------------------------------------------------------------------#
-    # Declare the named tuple for the returned data:                       #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Declare the named tuple for the returned data:                           #
+    #--------------------------------------------------------------------------#
     global d
     Query = collections.namedtuple('Query', ['conn', 'query', 'parms'])
 
-    #----------------------------------------------------------------------#
-    # Declare local parameter list to return:                              #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Declare local parameter list to return:                                  #
+    #--------------------------------------------------------------------------#
     parms = []
 
-    #----------------------------------------------------------------------#
-    # Enter a loop to process all of the parameter placeholders in the     #
-    # query:                                                               #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Enter a loop to process all of the parameter placeholders in the query:  #
+    #--------------------------------------------------------------------------#
     while (txtQuery.find('@@') >= 0):
-        #------------------------------------------------------------------#
-        # Search for any parameter placeholders in the query string:       #
-        #------------------------------------------------------------------#
+        #----------------------------------------------------------------------#
+        # Search for any parameter placeholders in the query string:           #
+        #----------------------------------------------------------------------#
         iTagBegin = txtQuery.find('@@')
         iTagEnd = txtQuery.find('@@', iTagBegin + 2)
         if (iTagBegin == -1):
-            #--------------------------------------------------------------#
-            # Nothing to do. Return null:                                  #
-            #--------------------------------------------------------------#
+            #------------------------------------------------------------------#
+            # Nothing to do. Return null:                                      #
+            #------------------------------------------------------------------#
             return;
 
         elif (iTagBegin > iTagEnd):
             errorHandler(errProc, errorCode.noEndPlaceholder, txtQuery)
         else:
-            #--------------------------------------------------------------#
+            #------------------------------------------------------------------#
             # Get the parameter text between the BEGIN and END tags and    #
             # replace the parameter with a question mark. Add the          #
             # parameter to the list:                                       #
-            #--------------------------------------------------------------#
+            #------------------------------------------------------------------#
             sParameterName = txtQuery[iTagBegin + 2:iTagEnd]
             txtQuery = txtQuery[:iTagBegin] + '?' + txtQuery[iTagEnd + 2:]
             parms.append(sParameterName)
 
-    #----------------------------------------------------------------------#
-    # Replace the parameters with the existing property values:            #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Replace the parameters with the existing property values:                #
+    #--------------------------------------------------------------------------#
     for i in range(len(parms)):
         if (parms[i].upper() == 'FILTER'):
             parms[i] = d.docFilter
@@ -708,6 +709,12 @@ def getQueryParameters(txtQuery):
 
         elif (parms[i].upper() == 'PROJECT'):
             parms[i] = d.projectName
+
+        elif (parms[i].upper() == 'TIMEBEGIN'):
+            parms[i] = d.td.timeBegin
+
+        elif (parms[i].upper() == 'TIMEEND'):
+            parms[i] = d.td.timeEnd
 
     #--------------------------------------------------------------------------#
     # Use the base datasource as the default:                                  #
@@ -739,18 +746,18 @@ def getQueryParameters(txtQuery):
                     dataConnection = dc.conn
                     break
 
-    #----------------------------------------------------------------------#
-    # Return the parameter value list:                                     #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Return the parameter value list:                                         #
+    #--------------------------------------------------------------------------#
     q = Query(conn=dataConnection, query=txtQuery, parms=parms)
     return q;
 
 def srParagraph(paragraph, txtSearch, txtReplace):
     errProc = 'srParagraph'
 
-    #----------------------------------------------------------------------#
-    # Update the text in the paragraph by replacing the search text:       #
-    #----------------------------------------------------------------------#
+    #--------------------------------------------------------------------------#
+    # Update the text in the paragraph by replacing the search text:           #
+    #--------------------------------------------------------------------------#
     s = paragraph.text
     if (s.find(txtSearch) >= 0):
         style = paragraph.style
@@ -807,10 +814,10 @@ def remove_table(t):
 #        tbl = t._tbl
 #        document.tables.remove(tbl)
 
-#--------------------------------------------------------------------------#
-# Return a newly created paragraph, inserted directly before this          #
-# item (Table, etc.):                                                      #
-#--------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+# Return a newly created paragraph, inserted directly before this              #
+# item (Table, etc.):                                                          #
+#------------------------------------------------------------------------------#
 #    def insert_paragraph_before(item, text, style=None):
 #        p = CT_P.add_p_before(item._element)
 #        p2 = Paragraph(p, item._parent)
@@ -818,13 +825,12 @@ def remove_table(t):
 #        p2.style = style
 #        return p2
 
-#--------------------------------------------------------------------------#
-# Yield each paragraph and table child within *parent*, in document order. #
-# Each returned value is an instance of either Table or Paragraph. *parent*#
-# would most commonly be a reference to a main Document object, but        #
-# also works for a _Cell object, which itcan contain paragraphs and   #
-# tables:                                                                  #
-#--------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+# Yield each paragraph and table child within *parent*, in document order.     #
+# Each returned value is an instance of either Table or Paragraph. *parent*    #
+# would most commonly be a reference to a main Document object, but            #
+# also works for a _Cell object, which can contain paragraphs and tables:      #
+#------------------------------------------------------------------------------#
 def iter_block_items(parent):
     if isinstance(parent, type(d.document)):
         parent_elm = parent.element.body
@@ -850,3 +856,18 @@ def getTableParagraph(t):
                 return nodePrev
         else:
             nodePrev = node
+
+#------------------------------------------------------------------------------#
+# Function: preventRowSplit                                                    #
+#------------------------------------------------------------------------------#
+def preventRowSplit(r):
+    tr = r._tr
+    trPr = tr.trPr
+    if (trPr is None):
+        child = OxmlElement('w:trPr')  # Create arbitrary tag
+        tr.append(child)                   # Append in the new tag
+        trPr = tr.trPr
+
+    cantSplit = OxmlElement('w:cantSplit')  # Create arbitrary tag
+    cantSplit.set(qn('w:val'), 'true')
+    trPr.append(cantSplit)                   # Append in the new tag

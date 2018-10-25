@@ -137,6 +137,7 @@ class gDoc(object):
         self.projectName = ''
         self.refNumber = 0
         self.rowCount = 0
+        self.td = None
         logging.info('Object ' + self.fileInputBaseName + ' created.')
 
     #--------------------------------------------------------------------------#
@@ -214,12 +215,17 @@ class gDoc(object):
     #--------------------------------------------------------------------------#
     def printPDF(self):
         #----------------------------------------------------------------------#
+        # Define the procedure name:                                           #
+        #----------------------------------------------------------------------#
+        self.errProc = 'printPDF'
+
+        #----------------------------------------------------------------------#
         # Save the output document as PDF:                                     #
         #----------------------------------------------------------------------#
-        output = subprocess.check_output(['libreoffice', '--convert-to', 'pdf' ,
-                                         '--outdir', self.fileOutputDir, self.fileOutput])
         with silence_stdout():
-            print(output)
+#            output = subprocess.check_output(['abiword', '--to', 'pdf', self.fileOutput])
+            output = subprocess.check_output(['libreoffice', '--convert-to', 'pdf:writer_pdf_Export' ,
+                                         '--outdir', self.fileOutputDir, self.fileOutput])
         self.fileOutputPDF = self.fileOutputDir + '/' + self.fileOutputBaseName + '.pdf'
 
     #--------------------------------------------------------------------------#
@@ -229,6 +235,10 @@ class gDoc(object):
     # Adds page numbers to a PDF document.                                     #
     #--------------------------------------------------------------------------#
     def pdfPageNumbers(self):
+        #----------------------------------------------------------------------#
+        # Define the procedure name:                                           #
+        #----------------------------------------------------------------------#
+        self.errProc = 'pdfPageNumbers'
 
         ps = trange(1, desc='Insert PDF page numbers...', leave=False)
 

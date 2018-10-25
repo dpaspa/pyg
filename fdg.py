@@ -40,7 +40,7 @@ ps = None
 parser = argparse.ArgumentParser(description='Generates a document from a configuration spreadsheet and set of document templates')
 parser.add_argument('-c','--config', help='Configuration spreadsheet', required=True)
 parser.add_argument('-f','--docFilter', help='The document data filter for the WHERE clause', required=False)
-parser.add_argument('-i','--input', help='The input file path for the document templates', required=False)
+parser.add_argument('-i','--inputData', help='The input data path if variable and blank in conf spreadhseet', required=False)
 parser.add_argument('-n','--projectName', help='The document project name', required=True)
 parser.add_argument('-o','--output', help='The ouput file path to save to', required=True)
 parser.add_argument('-r','--report', help='Print to PDF if a report', required=True)
@@ -114,6 +114,7 @@ def main():
     #--------------------------------------------------------------------------#
     global ps
 
+
     #--------------------------------------------------------------------------#
     # Create a progress bar:                                                   #
     #--------------------------------------------------------------------------#
@@ -147,8 +148,8 @@ def main():
     # Get the input path:                                                      #
     #--------------------------------------------------------------------------#
     pathInput = ''
-    if (not args['input'] is None):
-        pathInput = args['input']
+    if (not args['inputData'] is None):
+        pathInput = args['inputData']
         if not os.path.exists(pathInput):
             errorHandler(errProc, errorCode.pathNotExist, pathInput)
 
@@ -171,34 +172,14 @@ def main():
     conn = xlsx2db(wbName, pathOutput)
 
     #--------------------------------------------------------------------------#
-    # Get the data connections from the configuration database:                #
+    # Get the batch begin and end times:                                       #
     #--------------------------------------------------------------------------#
-    query = 'SELECT * FROM dataConnections WHERE projectName = ?'
-    try:
-        c = conn.cursor()
-        c.execute(query, (projectName,))
-    except:
-        errorHandler(errProc, errorCode.cannotQuery, query)
+    td = getTimes(conn, pathInput, projectName, docFilter)
 
     #--------------------------------------------------------------------------#
-    # Process each row of returned data. Add the data sources to a list with   #
-    # a connection to the converted SQLite database:                           #
+    # Get the list of data connections:                                        #
     #--------------------------------------------------------------------------#
-    data = c.fetchall()
-    for row in data:
-        #----------------------------------------------------------------------#
-        # Get the data source filename:                                        #
-        #----------------------------------------------------------------------#
-        s = row['fileInputData']
-        if (len(pathInput) > 0):
-            fileName = pathInput + '/' + s
-        else:
-            fileName = row['pathInputData'] + '/' + s
-
-        #----------------------------------------------------------------------#
-        # Get the data connections:                                            #
-        #----------------------------------------------------------------------#
-        dc = getData(conn, fileName, projectName, row['connectionName'], pathOutput, row['dbOutputName'])
+    dc = getConnections(conn, pathInput, pathOutput, projectName, docFilter)
 
     #--------------------------------------------------------------------------#
     # Get the parent documents from the configuration database:                #
@@ -219,7 +200,7 @@ def main():
         #----------------------------------------------------------------------#
         # Get the document information from the configuration database:        #
         #----------------------------------------------------------------------#
-        query = 'SELECT * FROM docInfo WHERE projectName = ? and docFilter = ?'
+        query = 'SELECT * FROM docInfo WHERE projectName = ? and (docFilter = ? or docFilter = "-")'
         try:
             c = conn.cursor()
             c.execute(query, (projectName, docFilter))
@@ -239,14 +220,14 @@ def main():
         #----------------------------------------------------------------------#
         fileInput = rowParent['fileInput']
         fileOutput = pathOutput + '/' + rowParent['nameOutput'] + '_' + docFilter + '.docx'
-        d = createDocument(fileInput, fileOutput, conn, dc,
+        d = createDocument(fileInput, fileOutput, conn, dc, td,
                            docFilter, rowParent['parentKey'], projectName,
                            docInfo['propertyComments'], docInfo['propertyKeywords'],
                            docInfo['propertySubject'], docInfo['propertyTitle'],
                            rowParent['refNumPrefix'], 1, '', isReport)
 
         #----------------------------------------------------------------------#
-        # Get the parent documents from the configuration database:            #
+        # Get the child documents from the configuration database:             #
         #----------------------------------------------------------------------#
         query = 'SELECT * FROM docChild WHERE projectName = ?'
         try:
@@ -303,7 +284,7 @@ def main():
                     #----------------------------------------------------------#
                     # Create the child document object:                        #
                     #----------------------------------------------------------#
-                    dChild = createDocument(fileInput, fileOutput, conn, dc,
+                    dChild = createDocument(fileInput, fileOutput, conn, dc, td,
                                             docFilter, sChildKey, projectName,
                                             docInfo['propertyComments'], docInfo['propertyKeywords'],
                                             docInfo['propertySubject'], docInfo['propertyTitle'],
@@ -340,6 +321,7 @@ def main():
 # fileOutput            The output document file to save to.                   #
 # cc                    The configuration database sqlite connection.          #
 # dc                    The array of sqlite database connections.              #
+# td                    The time data structure array.                         #
 # docFilter             The source data FILTER filter.                         #
 # filterKey             The source data KEY filter.                            #
 # projectName               The configuration file project filter.             #
@@ -352,7 +334,7 @@ def main():
 # dataRow               The data row to populate the document with.            #
 # isReport              Create a PDF report if true.                           #
 #------------------------------------------------------------------------------#
-def createDocument(fileInput, fileOutput, cc, dc,
+def createDocument(fileInput, fileOutput, cc, dc, td,
                    docFilter, filterKey, projectName,
                    propertyComments, propertyKeywords, propertySubject, propertyTitle,
                    refNumPrefix, iRefNumberStart, dataRow, isReport):
@@ -376,6 +358,7 @@ def createDocument(fileInput, fileOutput, cc, dc,
     d.docFilter = docFilter
     d.projectName = projectName
     d.refNumber = iRefNumberStart
+    d.td = td
 
     #--------------------------------------------------------------------------#
     # Set the internal document properties:                                    #
@@ -413,7 +396,7 @@ def createDocument(fileInput, fileOutput, cc, dc,
     #--------------------------------------------------------------------------#
     if (isReport):
         d.printPDF()
-        d.docxDelete()
+#        d.docxDelete()
 
     #--------------------------------------------------------------------------#
     # Return the document object reference:                                    #
@@ -421,34 +404,186 @@ def createDocument(fileInput, fileOutput, cc, dc,
     return d
 
 #------------------------------------------------------------------------------#
-# Function: getData                                                            #
+# Function: getConnections                                                     #
 #                                                                              #
 # Description:                                                                 #
-# Creates the sqlite database and provides a connector.                        #
+# Gets the list of data connections.                                           #
+#------------------------------------------------------------------------------#
+# Calling Parameters:                                                          #
+# conn                  The configuration file data connection.                #
+# pathInput             The input data path.                                   #
+# pathOutput            The output file path.                                  #
+# projectName           The project filter.                                    #
+# docFilter             The data filter from the document filter.              #
+#------------------------------------------------------------------------------#
+def getConnections(conn, pathInput, pathOutput, projectName, docFilter):
+    #--------------------------------------------------------------------------#
+    # Define the procedure name:                                               #
+    #--------------------------------------------------------------------------#
+    errProc = getConnections.__name__
+
+    #--------------------------------------------------------------------------#
+    # Get the list of data connections from the configuration database:        #
+    #--------------------------------------------------------------------------#
+    query = 'SELECT DISTINCT connectionName FROM dataConnections WHERE projectName = ?'
+    try:
+        c = conn.cursor()
+        c.execute(query, (projectName,))
+    except:
+        errorHandler(errProc, errorCode.cannotQuery, query)
+
+    #--------------------------------------------------------------------------#
+    # Process each connection name:                                            #
+    #--------------------------------------------------------------------------#
+    dc = []
+    dataConn = c.fetchall()
+    for rowConn in dataConn:
+        #----------------------------------------------------------------------#
+        # Get the connection name:                                             #
+        #----------------------------------------------------------------------#
+        connectionName = rowConn['connectionName']
+
+        #----------------------------------------------------------------------#
+        # Get the data connections from the configuration database:            #
+        #----------------------------------------------------------------------#
+        query = 'SELECT * FROM dataConnections WHERE projectName = ? AND connectionName = ?'
+        try:
+            c = conn.cursor()
+            c.execute(query, (projectName, connectionName))
+        except:
+            errorHandler(errProc, errorCode.cannotQuery, query)
+
+        #----------------------------------------------------------------------#
+        # Process each row of returned data. Add the data sources to a list    #
+        # a connection to the converted SQLite database:                       #
+        #----------------------------------------------------------------------#
+        data = c.fetchall()
+        for row in data:
+            #------------------------------------------------------------------#
+            # Get the data source filename:                                    #
+            #------------------------------------------------------------------#
+            fileInputData = row['fileInputData']
+            if (len(pathInput) > 0):
+                fileName = pathInput + '/' + fileInputData
+            else:
+                fileName = row['pathInputData'] + '/' + fileInputData
+
+            #------------------------------------------------------------------#
+            # Get the xlsx data:                                               #
+            #------------------------------------------------------------------#
+            fileName = getDataXLSX(conn, fileName, fileInputData, projectName, connectionName, pathOutput, docFilter)
+
+        #----------------------------------------------------------------------#
+        # Get the data connections:                                            #
+        #----------------------------------------------------------------------#
+        t = getDataDB(fileName, connectionName, pathOutput)
+        dc.append(t)
+
+    #--------------------------------------------------------------------------#
+    # Return the connections array:                                            #
+    #--------------------------------------------------------------------------#
+    return dc
+
+#------------------------------------------------------------------------------#
+# Function: getTimes                                                           #
+#                                                                              #
+# Description:                                                                 #
+# Gets the begin and end times of the batch.                                   #
+#------------------------------------------------------------------------------#
+# Calling Parameters:                                                          #
+# conn                  The configuration file data connection.                #
+# pathInput             The input data path.                                   #
+# projectName           The project filter.                                    #
+# dataFilter            The data filter from the document filter.              #
+#------------------------------------------------------------------------------#
+def getTimes(conn, pathInput, projectName, dataFilter):
+    #--------------------------------------------------------------------------#
+    # Define the procedure name:                                               #
+    #--------------------------------------------------------------------------#
+    errProc = getTimes.__name__
+
+    #--------------------------------------------------------------------------#
+    # Define the time data structure:                                          #
+    #--------------------------------------------------------------------------#
+    sTimeBegin = ''
+    sTimeEnd = ''
+    objTimeData = collections.namedtuple('objTimeData', 'timeBegin timeEnd')
+
+    #--------------------------------------------------------------------------#
+    # Get the time markers`from the configuration database:                    #
+    #--------------------------------------------------------------------------#
+    query = 'SELECT * FROM timeMarkers WHERE projectName = ?'
+    try:
+        c = conn.cursor()
+        c.execute(query, (projectName,))
+    except:
+        errorHandler(errProc, errorCode.cannotQuery, query)
+
+    #--------------------------------------------------------------------------#
+    # Check if any time markers defined for the project:                       #
+    #--------------------------------------------------------------------------#
+    data = c.fetchall()
+    if (len(data) > 0):
+        #----------------------------------------------------------------------#
+        # Process each row in the time markers table:                          #
+        #----------------------------------------------------------------------#
+        for row in data:
+            #------------------------------------------------------------------#
+            # Get the file contents as a blob in memory:                       #
+            #------------------------------------------------------------------#
+            fileInputData = row['fileInputData']
+            b = blobData(pathInput + '/' + fileInputData)
+            b.dataFilter = dataFilter
+
+            #------------------------------------------------------------------#
+            # Get the time of the marker:                                      #
+            #------------------------------------------------------------------#
+            marker = row['markerName']
+            markerSearch = row['markerEventString']
+            s = b.getTime(markerSearch)
+
+            #------------------------------------------------------------------#
+            # Set the program begin and end times for the project:             #
+            #------------------------------------------------------------------#
+            if (marker[:5].upper() == 'BEGIN'):
+                sTimeBegin = s
+            else:
+                sTimeEnd = s
+
+    #--------------------------------------------------------------------------#
+    # Return the time data array:                                              #
+    #--------------------------------------------------------------------------#
+    td = objTimeData(timeBegin=sTimeBegin, timeEnd=sTimeEnd)
+    return td
+
+#------------------------------------------------------------------------------#
+# Function: getDataXLSX                                                        #
+#                                                                              #
+# Description:                                                                 #
+# Creates an xlsx file from the source data.                                   #
 #------------------------------------------------------------------------------#
 # Calling Parameters:                                                          #
 # conn                  The configuration file data connection.                #
 # fileInput             The input source data file.                            #
-# projectName         The project filter.                                    #
+# fileInputData         The input source data file designation.                #
+# projectName           The project filter.                                    #
 # connectionName        The data connection name in the project.               #
 # pathOutput            The output path.                                       #
-# fileOutputName        The output file name for the sqlite database.          #
+# dataFilter            The data filter from the document filter.              #
 #------------------------------------------------------------------------------#
-def getData(conn, fileInput, projectName, connectionName, pathOutput, fileOutputName):
+def getDataXLSX(conn, fileInput, fileInputData, projectName, connectionName, pathOutput, dataFilter):
     #--------------------------------------------------------------------------#
     # Define the procedure name:                                               #
     #--------------------------------------------------------------------------#
-    errProc = getData.__name__
+    errProc = getDataXLSX.__name__
 
     #--------------------------------------------------------------------------#
-    # Get the data connections from the configuration database:                #
+    # Get the data markers`from the configuration database:                    #
     #--------------------------------------------------------------------------#
-    dc = []
-    objData = collections.namedtuple('objData', 'name file conn')
-    query = 'SELECT * FROM dataMarkers WHERE [projectName] = ? AND [connectionName] = ?'
+    query = 'SELECT * FROM dataMarkers WHERE [projectName] = ? AND [fileInputData] = ?'
     try:
         c = conn.cursor()
-        c.execute(query, (projectName, connectionName))
+        c.execute(query, (projectName, fileInputData))
     except:
         errorHandler(errProc, errorCode.cannotQuery, query)
 
@@ -456,20 +591,13 @@ def getData(conn, fileInput, projectName, connectionName, pathOutput, fileOutput
     # Check if any data markers defined for the connection:                    #
     #--------------------------------------------------------------------------#
     data = c.fetchall()
-    if (len(data) == 0):
+    if (len(data) > 0):
         #----------------------------------------------------------------------#
-        # No data markers. Just use the entire file as is:                     #
+        # Get the file contents as a blob in memory:                           #
         #----------------------------------------------------------------------#
-        f, ext = os.path.splitext(fileInput)
-        fileInputName = os.path.basename(fileInput)
-        fileInputBaseName = os.path.splitext(fileInputName)[0]
-        if (ext.upper() == '.CSV'):
-            fileInput = csv2xlsx(fileInput, pathOutput, fileOutputName)
+        b = blobData(fileInput)
+        b.dataFilter = dataFilter
 
-        dataConn = xlsx2db(fileInput, pathOutput)
-        t = objData(name=connectionName, file=fileInput, conn=dataConn)
-        dc.append(t)
-    else:
         #----------------------------------------------------------------------#
         # Process each row in the data markers table:                          #
         #----------------------------------------------------------------------#
@@ -478,55 +606,73 @@ def getData(conn, fileInput, projectName, connectionName, pathOutput, fileOutput
             # Get the file data based on the markers:                          #
             #------------------------------------------------------------------#
             marker = row['markerName']
-            b = blobData(fileInput)
-            if (marker == 'docFilter'):
-                pass
+            markerSearch = row['markerEventString']
+            b.setMarker(marker, markerSearch)
 
-            elif (marker == 'time'):
-                pass
-
-            #------------------------------------------------------------------#
-            # Get the input file data:                                         #
-            #------------------------------------------------------------------#
-            f, ext = os.path.splitext(fileInput)
-            fileInputName = os.path.basename(fileInput)
-            fileInputBaseName = os.path.splitext(fileInputName)[0]
-            if (ext.upper() == '.CSV'):
-                fileInput = csv2xlsx(fileInput, pathOutput, fileOutputName)
-
-            dataConn = xlsx2db(fileInput, pathOutput)
-            t = objData(name=connectionName, file=fileInput, conn=dataConn)
-            dc.append(t)
+        #----------------------------------------------------------------------#
+        # Extract the data to a new file:                                      #
+        #----------------------------------------------------------------------#
+        fileInputName = os.path.basename(fileInput)
+        fileInputBaseName = os.path.splitext(fileInputName)[0]
+        fileInput = pathOutput + '/' + fileInputBaseName + '.csv'
+        b.extractData(fileInput)
 
     #--------------------------------------------------------------------------#
-    # Return the data connections array:                                       #
+    # Get the input file data:                                                 #
     #--------------------------------------------------------------------------#
-    return dc
+    f, ext = os.path.splitext(fileInput)
+    fileInputName = os.path.basename(fileInput)
+    fileInputBaseName = os.path.splitext(fileInputName)[0]
+
+    #--------------------------------------------------------------------------#
+    # Set the output file name to the input file name if no connection name:   #
+    #--------------------------------------------------------------------------#
+    if (len(connectionName) == 0):
+        connectionName = fileInputBaseName
+
+    #--------------------------------------------------------------------------#
+    # Convert to xlsx if csv file:                                             #
+    #--------------------------------------------------------------------------#
+    if (ext.upper() == '.CSV'):
+        fileInput = csv2xlsx(fileInput, pathOutput, connectionName)
+
+    #--------------------------------------------------------------------------#
+    # Return the input file name:                                              #
+    #--------------------------------------------------------------------------#
+    return fileInput
 
 #------------------------------------------------------------------------------#
-# Function: createVersionHistory                                               #
+# Function: getDataDB                                                          #
 #                                                                              #
 # Description:                                                                 #
-# Creates the version history table.                                           #
+# Creates a sqlite database from an xlsx file and provides a connector.        #
 #------------------------------------------------------------------------------#
 # Calling Parameters:                                                          #
-# conn                  The configuration file data connection.                #
 # fileInput             The input source data file.                            #
-# projectName         The project filter.                                    #
 # connectionName        The data connection name in the project.               #
 # pathOutput            The output path.                                       #
-# fileOutputName        The output file name for the sqlite database.          #
 #------------------------------------------------------------------------------#
-#def createVersionHistory(conn, fileInput, projectName, connectionName, pathOutput, fileOutputName):
+def getDataDB(fileInput, connectionName, pathOutput):
     #--------------------------------------------------------------------------#
     # Define the procedure name:                                               #
     #--------------------------------------------------------------------------#
-#    errProc = createVersionHistory.__name__
+    errProc = getDataDB.__name__
 
     #--------------------------------------------------------------------------#
-    # Get the data connections from the configuration database:                #
+    # Define the connection structure:                                         #
     #--------------------------------------------------------------------------#
-#    query = 'SELECT printf("%d",V.Ver) AS Ver, V.ChangedBy, substr("00"||printf("%d",V.D), -2, 2) || "-" || substr("00"||printf("%d",V.M), -2, 2) || "-" || printf("%d",V.Y) AS ChangedDate, V.ChangeNumber, V.Description FROM tblRevisionHistory AS V WHERE upper(V.KeyName) = @@DOCTYPE@@ AND V.KeyValue = @@SCOPE@@ ORDER BY V.Ver DESC'
+    objData = collections.namedtuple('objData', 'name file conn')
+
+    #--------------------------------------------------------------------------#
+    # Convert xlsx to sqlite database:                                         #
+    #--------------------------------------------------------------------------#
+    dataConn = xlsx2db(fileInput, pathOutput)
+
+    #--------------------------------------------------------------------------#
+    # Return the data connection:                                              #
+    #--------------------------------------------------------------------------#
+    t = objData(name=connectionName, file=fileInput, conn=dataConn)
+    return t
 
 #------------------------------------------------------------------------------#
 # Call the main function:                                                      #
