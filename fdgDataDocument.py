@@ -21,15 +21,15 @@ from docx.oxml.text.paragraph import CT_P
 from docx.table import _Cell, Table
 from docx.text.paragraph import Paragraph
 import os.path
-from shutil import copyfile
+#from shutil import copyfile
 import sys
 import traceback
 from tqdm import trange
-from time import sleep
+#from time import sleep
 import sqlite3
 import collections
 import datetime
-from contextlib import contextmanager
+#from contextlib import contextmanager
 
 from fdgProperty import setProperty
 

@@ -51,7 +51,7 @@ for fileName in $pathBase/queue/*; do
     #--------------------------------------------------------------------------#
     # Run the report:                                                          #
     #--------------------------------------------------------------------------#
-    python $pathBase/py/fdg.py -c $pathBase/py/conf.xlsx -o $pathBase/report -i $pathBase/data/$pathData -n $procNameString -r Y -f $serialNumber
+    python $pathBase/py/fdg.py -c $pathBase/py/conf.xlsx -o $pathBase/report -i $pathBase/data/$pathData -n $procName -r Y -f $serialNumber
     if [ $? -ne 0 ]; then
         echo FAIL $?
         exit 1

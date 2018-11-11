@@ -39,6 +39,8 @@ args = vars(parser.parse_args())
 #------------------------------------------------------------------------------#
 # Declare global variables:                                                    #
 #------------------------------------------------------------------------------#
+connInstance = 0
+idxInstance = -1
 wb = ''
 
 #------------------------------------------------------------------------------#
@@ -165,6 +167,7 @@ def main():
         wso.cell(row=1, column=4).value = 'Description'
         wso.cell(row=1, column=5).value = 'DescriptionIL'
         wso.cell(row=1, column=6).value = 'Interlock'
+        wso.cell(row=1, column=7).value = 'Connection'
 
         #----------------------------------------------------------------------#
         # Delete the Non-Critical Interlock output worksheet if exists:        #
@@ -194,6 +197,7 @@ def main():
         wso.cell(row=1, column=4).value = 'Description'
         wso.cell(row=1, column=5).value = 'DescriptionIL'
         wso.cell(row=1, column=6).value = 'Interlock'
+        wso.cell(row=1, column=7).value = 'Connection'
 
     #--------------------------------------------------------------------------#
     # Get the new output worksheet object references:                          #
@@ -278,6 +282,8 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, sParent, pbwt, at, doll
     #--------------------------------------------------------------------------#
     # Use the global progress bar:                                             #
     #--------------------------------------------------------------------------#
+    global connInstance
+    global idxInstance
     global p
 
     #--------------------------------------------------------------------------#
@@ -362,7 +368,10 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, sParent, pbwt, at, doll
                 #--------------------------------------------------------------#
                 logging.info('Source: ' + sSource)
                 sSource = sSource.replace('@', at)
-                sCode = sCode.replace('@@IDX@@', str(getInstanceIDX(sSource)))
+                getInstanceIDX(sSource)
+                sCode = sCode.replace('@@IDX@@', str(idxInstance))
+                sCode = sCode.replace('@@CONNECTION@@', str(connInstance))
+#                sCode = sCode.replace('@@IDX@@', str(getInstanceIDX(sSource)))
                 sCode = sCode.replace('@@STATE@@', sState)
                 sDescriptionIL = sDescriptionIL.replace('@', at)
                 sDescriptionIL = sDescriptionIL.replace('%', percent)
@@ -426,6 +435,7 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, sParent, pbwt, at, doll
                     wso.cell(row=iRowOut, column=4).value = sDescriptionTarget
                     wso.cell(row=iRowOut, column=5).value = sExplanation
                     wso.cell(row=iRowOut, column=6).value = sExpression
+                    wso.cell(row=iRowOut, column=7).value = connInstance
                     iRowOut = iRowOut + 1
 
                 #--------------------------------------------------------------#
@@ -463,6 +473,8 @@ def getInstanceIDX(sInstance):
     #--------------------------------------------------------------------------#
     # Define global variables used in this procedure:                          #
     #--------------------------------------------------------------------------#
+    global connInstance
+    global idxInstance
     global wb
 
     #--------------------------------------------------------------------------#
@@ -476,8 +488,9 @@ def getInstanceIDX(sInstance):
     iRow = 2
     while (not ws.cell(row=iRow, column=3).value is None):
         if (ws.cell(row=iRow, column=3).value == sInstance):
-            return ws.cell(row=iRow, column=7).value
-            break;
+            idxInstance = ws.cell(row=iRow, column=7).value
+            connInstance = ws.cell(row=iRow, column=21).value
+            return;
         else:
             iRow = iRow + 1
 

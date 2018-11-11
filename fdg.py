@@ -22,7 +22,7 @@ from fdgBlobData import blobData
 from fdgDataDocument import dataDocument
 from fdgDoc import gDoc
 from fdgProperty import setProperty
-from fdgRefRenumber import refRenumber
+from fdgRefNumber import refRenumber
 from fdgCSV2XLSX import csv2xlsx
 from fdgXLSX2DB import xlsx2db
 
@@ -396,7 +396,7 @@ def createDocument(fileInput, fileOutput, cc, dc, td,
     #--------------------------------------------------------------------------#
     if (isReport):
         d.printPDF()
-#        d.docxDelete()
+        d.docxDelete()
 
     #--------------------------------------------------------------------------#
     # Return the document object reference:                                    #

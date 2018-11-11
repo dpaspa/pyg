@@ -2005,6 +2005,7 @@ def addParameterClass():
         sParameterBlock = row['blockParameter']
         sParameterDataType = row['parameterDataType']
         sParameterDataType = sParameterDataType.upper()
+        sValue = ''
         sValue = row['parameterValue']
         sParameterDescription = row['parameterDescription']
         sChildParameterAlias = ''
@@ -2086,6 +2087,7 @@ def addParametersChild(sClass):
             sParameterBlock = sChildParameterAlias + '_' + rowp['blockParameter']
             sParameterDataType = rowp['parameterDataType']
             sParameterDataType = sParameterDataType.upper()
+            sValue = ''
             sValue = rowp['parameterValue']
             sParameterDescription = rowp['parameterDescription']
             sChildParameterAttribute = rowp['blockParameter']
@@ -2242,6 +2244,7 @@ def addParametersDefer(sClass):
             sParameterBlock = rowp['blockParameter']
             sParameterDataType = rowp['parameterDataType']
             sParameterDataType = sParameterDataType.upper()
+            sValue = ''
             sValue = rowp['parameterValue']
             sParameterDescription = rowp['parameterDescription']
             sChildParameterAttribute = rowp['blockParameter']
@@ -2436,7 +2439,6 @@ def addCodeFileParameters(sLevel, sClass, sSource, sState, txtData, bIsSFC):
             #------------------------------------------------------------------#
             # Set the code data type based on the actual data type:            #
             #------------------------------------------------------------------#
-            sValue = ''
             if (sParameterDataType.upper() == 'BOOL'):
                 sValue = 'FALSE'
 
@@ -2447,7 +2449,7 @@ def addCodeFileParameters(sLevel, sClass, sSource, sState, txtData, bIsSFC):
                 sValue = '0.0'
 
             elif (sParameterDataType.upper() == 'TIME'):
-                sValue = 'T#0ms'
+                sValue = 'T#0s'
 
             #------------------------------------------------------------------#
             # Add the parameter to the global list:                            #
@@ -2811,6 +2813,27 @@ def addParameterData(sLevel, sClass, sSource, sState,
     # already exist. If an SFC parameter just add it:                          #
     #--------------------------------------------------------------------------#
     if (bIsSFC or data is None):
+        #----------------------------------------------------------------------#
+        # Set the default parameter value if it doesn't have one already:      #
+        #----------------------------------------------------------------------#
+#        if (len(sValue) > 0):
+#            pass
+#
+#        elif (sParameterDataType.upper() == 'BOOL'):
+#            sValue = 'FALSE'
+#
+#        elif (sParameterDataType.upper() == 'INT'):
+#            sValue = '0'
+#
+#        elif (sParameterDataType.upper() == 'REAL'):
+#            sValue = '0.0'
+#
+#        elif (sParameterDataType.upper() == 'TIME'):
+#            sValue = 'T#0s'
+
+        #----------------------------------------------------------------------#
+        # Add the parameter to the global parameters table:                    #
+        #----------------------------------------------------------------------#
         try:
             query = cgSQL.sql[cgSQL.sqlCode.insertGlobalParameters]
             c.execute(query, (sLevel, sClass, sSource, sState, sParameterType, iParameterOrder,
@@ -2855,7 +2878,7 @@ def addParameterData(sLevel, sClass, sSource, sState,
         #----------------------------------------------------------------------#
         try:
             query = cgSQL.sql[cgSQL.sqlCode.updateParameterOperation]
-            c.execute(query, (sOperation, sClass, sParameterBlock))
+            c.execute(query, (sOperation, sValue, sClass, sParameterBlock))
         except:
             errorHandler(errProc, errorCode.cannotQuery, cgSQL.sqlCode.updateParameterOperation, query,
                          sOperation + ', ' + sClass + ', ' + sParameterBlock)

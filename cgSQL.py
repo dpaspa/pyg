@@ -27,8 +27,10 @@ class sqlCode(Enum):
     createClassNone                    = -8
     createCM                           = -9
     createEM                           = -10
-    createUN                           = -20
-    createPC                           = -21
+    createUN                           = -11
+    createPC                           = -12
+    createIndexHelp                    = -13
+    createIndexKnowledge               = -14
     createInstances                    = -22
     createInstanceAlarmsGlobal         = -23
     createInstancesAll                 = -24
@@ -95,6 +97,7 @@ class sqlCode(Enum):
     callListExistsXfer                 = -143
     CHILD                              = -144
     CHILD_ACQUIRE                      = -145
+    CHILD_ACQUIRE_EXISTS               = -1451
     CHILD_COMMAND                      = -1445
     CHILD_COMMAND_BLK                  = -1446
     CHILD_COMMAND_BLK_EXISTS           = -1447
@@ -107,6 +110,7 @@ class sqlCode(Enum):
     CHILD_INIT_COMMAND_TRUE            = -162
     CHILD_INIT_COMMAND_FALSE           = -163
     CHILD_INSTANCE                     = -164
+    CHILD_INSTANCE_ALL                 = -1641
     CHILD_INSTANCE_BIND                = -165
     CHILD_SELECT                       = -166
     pChildSelect                       = -167
@@ -369,6 +373,8 @@ prm = {
     sqlCode.createEM                   : [],
     sqlCode.createUN                   : [],
     sqlCode.createPC                   : [],
+    sqlCode.createIndexHelp            : [],
+    sqlCode.createIndexKnowledge       : [],
 #    sqlCode.createInstances            : ['gClass', 'gParent', 'gParent', 'gParent', 'gParent', 'gParent', 'gClass', 'gParent', 'gParent', 'gParent', 'gParent', 'gParent', 'gClass', 'gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.createInstances            : ['gClass', 'gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.createInstanceAlarmsGlobal : [],
@@ -383,6 +389,7 @@ prm = {
     sqlCode.createLevelsGlobal         : [],
     sqlCode.CHILD                      : ['gClass', 'gClass', 'gClass'],
     sqlCode.CHILD_ACQUIRE              : ['gClass'],
+    sqlCode.CHILD_ACQUIRE_EXISTS       : ['gClass'],
     sqlCode.CHILD_COMMAND              : ['gClass'],
     sqlCode.CHILD_COMMAND_BLK          : ['gClass'],
     sqlCode.CHILD_COMMAND_BLK_EXISTS   : ['gClass'],
@@ -395,6 +402,7 @@ prm = {
     sqlCode.CHILD_INIT_COMMAND_TRUE    : ['gClass', 'gState'],
     sqlCode.CHILD_INIT_COMMAND_FALSE   : ['gClass', 'gState'],
     sqlCode.CHILD_INSTANCE             : ['gInstance', 'gParent', 'gParent', 'gParent', 'gClass', 'gClass'],
+    sqlCode.CHILD_INSTANCE_ALL         : [],
     sqlCode.CHILD_INSTANCE_BIND        : ['gInstance', 'gParent', 'gParent', 'gParent', 'gClass', 'gState'],
     sqlCode.CHILD_SELECT               : ['gClass'],
     sqlCode.pChildSelect               : ['gClass'],
@@ -709,6 +717,14 @@ sql = {
                                           'FROM tblClass '
                                           'WHERE upper([Class]) = "PC"'
                                          ),
+    sqlCode.createIndexHelp            : ('SELECT * '
+                                          'FROM tblHelp '
+                                          'WHERE upper(Category) = "HELP"'
+                                         ),
+    sqlCode.createIndexKnowledge       : ('SELECT * '
+                                          'FROM tblHelp '
+                                          'WHERE upper(Category) = "KNOWLEDGE"'
+                                         ),
     sqlCode.createInstances            : ('SELECT printf("%d",I.ID) AS ID, '
                                                  'printf("%d",I.IDX) AS IDX, '
                                                  'I.[Level], '
@@ -723,9 +739,10 @@ sql = {
                                                  'I.GGParent, '
                                                  'I.GGGParent, '
                                                  'CASE '
-                                                     'WHEN I.NC=0 THEN """alwaysLow""" '
-                                                     'WHEN I.NC=1 THEN """alwaysHigh""" '
+                                                     'WHEN printf("%d",I.NC)="0" THEN """alwaysLow""" '
+                                                     'WHEN printf("%d",I.NC)="1" THEN """alwaysHigh""" '
                                                  'END NC, '
+                                                 'I.Connection, '
                                                  'C.Description AS ClassDescription '
                                           'FROM tblInstance AS I INNER JOIN '
                                                  'tblClass AS C ON I.ClassID = C.ID '
@@ -886,7 +903,7 @@ sql = {
                                                   'tblClass AS C ON I.ClassID = C.ID '
                                           'WHERE I.[Class] = ? AND '
                                                  'substr(I.Level, 1, 1) != "V" AND '
-                                                 'I.OwnerID = 0 '
+                                                 'I.transferCPU = 1 '
                                           'ORDER BY I.Instance'
                                          ),
     sqlCode.createSFCGlobal            : ('SELECT Level,  '
@@ -1054,19 +1071,20 @@ sql = {
                                                  'T.[Class], '
                                                  'T.Description, '
                                                  'T.Connection, '
-                                                 'A.Polarity, '
-                                                 'A.rangeLow, '
-                                                 'A.rangeHigh, '
-                                                 'A.limitLL, '
-                                                 'A.limitL, '
-                                                 'A.limitH, '
-                                                 'A.limitHH, '
-                                                 'A.enableLL, '
-                                                 'A.enableL, '
-                                                 'A.enableH, '
-                                                 'A.enableHH '
+                                                 'CASE WHEN length(O.Polarity) = 0 OR O.Polarity IS NULL THEN A.Polarity ELSE O.Polarity END Polarity, '
+                                                 'CASE WHEN length(O.rangeLow) = 0 OR O.rangeLow IS NULL THEN A.rangeLow ELSE O.rangeLow END rangeLow, '
+                                                 'CASE WHEN length(O.rangeHigh) = 0 OR O.rangeHigh IS NULL THEN A.rangeHigh ELSE O.rangeHigh END rangeHigh, '
+                                                 'CASE WHEN length(O.limitLL) = 0 OR O.limitLL IS NULL THEN A.limitLL ELSE O.limitLL END limitLL, '
+                                                 'CASE WHEN length(O.limitL) = 0 OR O.limitL IS NULL THEN A.limitL ELSE O.limitL END limitL, '
+                                                 'CASE WHEN length(O.limitH) = 0 OR O.limitH IS NULL THEN A.limitH ELSE O.limitH END limitH, '
+                                                 'CASE WHEN length(O.limitHH) = 0 OR O.limitHH IS NULL THEN A.limitHH ELSE O.limitHH END limitHH, '
+                                                 'CASE WHEN length(O.enableLL) = 0 OR O.enableLL IS NULL THEN A.enableLL ELSE O.enableLL END enableLL, '
+                                                 'CASE WHEN length(O.enableL) = 0 OR O.enableL IS NULL THEN A.enableL ELSE O.enableL END enableL, '
+                                                 'CASE WHEN length(O.enableH) = 0 OR O.enableH IS NULL THEN A.enableH ELSE O.enableH END enableH, '
+                                                 'CASE WHEN length(O.enableHH) = 0 OR O.enableHH IS NULL THEN A.enableHH ELSE O.enableHH END enableHH '
                                           'FROM tblInstance AS T LEFT JOIN '
-                                                 'tblClass_Analog AS A ON T.ClassID = A.ClassID '
+                                                 'tblClass_Analog AS A ON T.ClassID = A.ClassID LEFT JOIN '
+                                                 'tblInstance_Analog AS O ON T.Instance = O.Instance '
                                           'WHERE T.Instance = ? AND '
                                                 'A.Embedded = "FALSE" AND '
                                                  'substr(T.Level, 1, 1) != "V" '
@@ -1077,19 +1095,20 @@ sql = {
                                                  'T.[Class], '
                                                  'T.Description, '
                                                  'T.Connection, '
-                                                 'A.Polarity, '
-                                                 'A.rangeLow, '
-                                                 'A.rangeHigh, '
-                                                 'A.limitLL, '
-                                                 'A.limitL, '
-                                                 'A.limitH, '
-                                                 'A.limitHH, '
-                                                 'A.enableLL, '
-                                                 'A.enableL, '
-                                                 'A.enableH, '
-                                                 'A.enableHH '
+                                                 'CASE WHEN length(O.Polarity) = 0 OR O.Polarity IS NULL THEN A.Polarity ELSE O.Polarity END Polarity, '
+                                                 'CASE WHEN length(O.rangeLow) = 0 OR O.rangeLow IS NULL THEN A.rangeLow ELSE O.rangeLow END rangeLow, '
+                                                 'CASE WHEN length(O.rangeHigh) = 0 OR O.rangeHigh IS NULL THEN A.rangeHigh ELSE O.rangeHigh END rangeHigh, '
+                                                 'CASE WHEN length(O.limitLL) = 0 OR O.limitLL IS NULL THEN A.limitLL ELSE O.limitLL END limitLL, '
+                                                 'CASE WHEN length(O.limitL) = 0 OR O.limitL IS NULL THEN A.limitL ELSE O.limitL END limitL, '
+                                                 'CASE WHEN length(O.limitH) = 0 OR O.limitH IS NULL THEN A.limitH ELSE O.limitH END limitH, '
+                                                 'CASE WHEN length(O.limitHH) = 0 OR O.limitHH IS NULL THEN A.limitHH ELSE O.limitHH END limitHH, '
+                                                 'CASE WHEN length(O.enableLL) = 0 OR O.enableLL IS NULL THEN A.enableLL ELSE O.enableLL END enableLL, '
+                                                 'CASE WHEN length(O.enableL) = 0 OR O.enableL IS NULL THEN A.enableL ELSE O.enableL END enableL, '
+                                                 'CASE WHEN length(O.enableH) = 0 OR O.enableH IS NULL THEN A.enableH ELSE O.enableH END enableH, '
+                                                 'CASE WHEN length(O.enableHH) = 0 OR O.enableHH IS NULL THEN A.enableHH ELSE O.enableHH END enableHH '
                                           'FROM tblInstance AS T LEFT JOIN '
-                                                 'tblClass_Analog AS A ON T.ClassID = A.ClassID '
+                                                 'tblClass_Analog AS A ON T.ClassID = A.ClassID LEFT JOIN '
+                                                 'tblInstance_Analog AS O ON T.Instance = O.Instance '
                                           'WHERE T.Instance = ? AND '
                                                 'A.Embedded = "TRUE" AND '
                                                  'substr(T.Level, 1, 1) != "V" '
@@ -1162,6 +1181,12 @@ sql = {
                                           'WHERE [Class] = ? AND '
                                                  'childAcquireStatement <> "NONE" '
                                           'ORDER BY childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_ACQUIRE_EXISTS       : ('SELECT Level '
+                                          'FROM tblClass_Child '
+                                          'WHERE [Class] = ? AND '
+                                                 'childAcquireStatement <> "NONE" '
+                                          'LIMIT 1'
                                          ), # gClass
     sqlCode.CHILD_COMMAND              : ('SELECT childParameterAlias, '
                                                  'childAliasClass, '
@@ -1298,6 +1323,24 @@ sql = {
                                                  'C.State = (SELECT [State] FROM tblClass_State WHERE Class = ? LIMIT 1) '
                                           'ORDER BY cast(childIndex as Int)'
                                          ), # gInstance
+    sqlCode.CHILD_INSTANCE_ALL         : ('SELECT DISTINCT L.Level AS childLevel, '
+                                                 'I.Parent As parentInstance, '
+                                                 'I.ParentClass as parentClass, '
+                                                 'C.childParameterAlias, '
+                                                 'I.Class AS childAliasClass, '
+                                                 'printf("%d", C.childIndex) AS childIndex, '
+                                                 'printf("%d", I.IDX) AS childIDX, '
+                                                 'childClass, '
+                                                 'I.Instance AS childInstance, '
+                                                 'I.Description AS childDescription '
+                                          'FROM tblClass_ChildStateValues AS C '
+                                          'INNER JOIN tblInstance AS I ON '
+                                                 'C.childKey = I.childKey '
+                                          'INNER JOIN tblClass AS L ON '
+                                                 'C.childClass = L.Class '
+                                          'ORDER BY I.Parent, '
+                                                 'cast(childIndex as Int)'
+                                         ), # gInstance
     sqlCode.CHILD_INSTANCE_BIND        : ('SELECT C.childParameterAlias, '
                                                  'I.Class AS childAliasClass, '
                                                  'C.conditionStatement, '
@@ -1350,6 +1393,7 @@ sql = {
 #                                         ),
     sqlCode.CRIL                       : ('SELECT DISTINCT Instance, '
                                                  'Description, '
+                                                 'Connection, '
                                                  'substr(Description, 1, 35) AS briefDescription, '
                                                  '(SELECT COUNT (DISTINCT Instance) '
                                                     'FROM tblInterlockCRIL t2 '
@@ -1396,6 +1440,7 @@ sql = {
                                          ),
     sqlCode.NCRIL                      : ('SELECT DISTINCT Instance, '
                                                  'Description, '
+                                                 'Connection, '
                                                  'substr(Description, 1, 35) AS briefDescription, '
                                                  '(SELECT COUNT (DISTINCT Instance) '
                                                     'FROM tblInterlockNCRIL t2 '
@@ -2187,7 +2232,8 @@ sql = {
                                                  'blockParameter = ?'
                                          ), # gClass, sParameter
     sqlCode.updateParameterOperation   : ('UPDATE pGlobal '
-                                          'SET operation = ? '
+                                          'SET operation = ?, '
+                                                'parameterValue = ? '
                                           'WHERE parameterClass = ? AND '
                                                 'blockParameter = ?'
                                          ),
@@ -3011,6 +3057,7 @@ sql = {
                                                  'parameterDataType, '
                                                  'childParameterAlias, '
                                                  'childParameterAttribute, '
+                                                 'parameterValue, '
                                                  'operation '
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
@@ -3044,6 +3091,7 @@ sql = {
                                                  'parameterDataType, '
                                                  'childParameterAlias, '
                                                  'childParameterAttribute, '
+                                                 'parameterValue, '
                                                  'operation '
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
@@ -3078,6 +3126,7 @@ sql = {
                                                  'parameterDataType, '
                                                  'childParameterAlias, '
                                                  'childParameterAttribute, '
+                                                 'parameterValue, '
                                                  'operation '
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
@@ -3405,6 +3454,7 @@ sql = {
                                                  'P.parameterDataType, '
                                                  'P.childParameterAlias, '
                                                  'P.childParameterAttribute, '
+                                                 'parameterValue, '
                                                  'P.operation '
                                           'FROM tblClass_ChildSelection AS S '
                                                  'LEFT JOIN pGlobal AS P ON '
@@ -3439,6 +3489,7 @@ sql = {
                                                  'P.parameterDataType, '
                                                  'P.childParameterAlias, '
                                                  'P.childParameterAttribute, '
+                                                 'parameterValue, '
                                                  'P.operation '
                                           'FROM tblClass_ChildSelection AS S '
                                                  'LEFT JOIN pGlobal AS P ON '
@@ -3953,7 +4004,8 @@ sql = {
                                                  'parameterClass, '
                                                  'blockParameter, '
                                                  'upper(parameterDataType) AS PARAMETERDATATYPE, '
-                                                 'parameterDescription '
+                                                 'parameterDescription, '
+                                                 'parameterValue '
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
                                                  'isChild = 0 AND '
@@ -4060,7 +4112,8 @@ sql = {
 #                                                 'childParameter'
 #                                         ), # gClass
     sqlCode.pClassBlockRead            : ('SELECT DISTINCT blockParameter, '
-                                                 'parameterDataType  '
+                                                 'parameterDataType, '
+                                                 'parameterValue '
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
                                                 'isChild = 0 AND '
@@ -4072,7 +4125,8 @@ sql = {
                                           'ORDER BY blockParameter'
                                          ), # gClass
     sqlCode.pClassBlockWrite           : ('SELECT DISTINCT blockParameter, '
-                                                 'parameterDataType  '
+                                                 'parameterDataType, '
+                                                 'parameterValue '
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
                                                 'isChild = 0 AND '
