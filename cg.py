@@ -65,6 +65,7 @@ gAlias = ''
 gChildClass = ''
 gClass = ''
 gClassDescription = ''
+gCommand = ''
 gFile = ''
 gInstance = ''
 #gILTable = ''
@@ -624,7 +625,7 @@ def processLevel(sParent, sLevel, pbwt):
         # Create PLC communications transfer function for each class:          #
         #----------------------------------------------------------------------#
         sPrefix = 'fbx'
-        if (sLevel == 'CM' or sLevel == 'EM' or sLevel == 'UN'):
+        if (sLevel == 'CM' or sLevel == 'EM' or sLevel == 'UN' or sLevel == 'PC'):
             createClass(sLevel, sParent, sClass, row['Description'],
                         sPrefix, '', 'awl', sClass, 'awl', True)
 
@@ -1168,6 +1169,7 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
     global gAlias
     global gChildClass
     global gClass
+    global gCommand
     global gFile
     global gInstance
     global gLevel
@@ -1316,11 +1318,14 @@ def insertAttributeData(sClass, sInstance, txtInstance, rl):
                             if (fld.upper() == 'CHILDPARAMETERALIAS'):
                                 gAlias = sValue
 
-                            if (fld.upper() == 'CHILDALIASCLASS'):
+                            if (fld.upper() == 'CHILDALIASCLASS' or fld.upper() == 'CHILDPARAMETERCLASS'):
                                 gChildClass = sValue
 
                             elif (fld.upper() == 'CLASS'):
                                 gClass = sValue
+
+                            if (fld.upper() == 'TRUECOMMAND' or fld.upper() == 'FALSECOMMAND'):
+                                gCommand = sValue
 
                             elif (fld.upper() == 'INSTANCE'):
                                 gInstance = sValue
@@ -1461,6 +1466,8 @@ def getNamedQueryData(namedQuery):
             qparms[i] = gChildClass
         elif (qparms[i] == 'gClass'):
             qparms[i] = gClass
+        elif (qparms[i] == 'gCommand'):
+            qparms[i] = gCommand
 #        elif (qparms[i] == 'gILTable'):
 #            qparms[i] = gILTable
         elif (qparms[i] == 'gInstance'):
@@ -2687,7 +2694,6 @@ def addParameterData(sLevel, sClass, sSource, sState,
     if (sChildParameterAttribute == 'ME'or
         sChildParameterAttribute == 'CMD_SAFE' or
         sChildParameterAttribute == 'STATE' or
-        sChildParameterAttribute == 'HYGIENE' or
         sChildParameterAttribute == 'INTERLOCK' or
         sChildParameterAttribute == 'CRIL' or
         sChildParameterAttribute == 'NCRIL' or
@@ -2702,6 +2708,7 @@ def addParameterData(sLevel, sClass, sSource, sState,
 
     elif (sChildParameterAttribute == 'CMD' or
         sChildParameterAttribute == 'MODE' or
+        sChildParameterAttribute == 'HYGIENE' or
         sChildParameterAttribute == 'OWNER' or
         sChildParameterAttribute == 'RECIPE' or
         sChildParameterAttribute == 'SERIALNUM' or
@@ -2775,10 +2782,10 @@ def addParameterData(sLevel, sClass, sSource, sState,
         isSync = True
         idx = iSync
         iSync = iSync + 1
-        if (sParameterBlock[5:10] == 'WRITE'):
-            sOperation = 'write'
-        else:
-            sOperation = 'read'
+#        if (sParameterBlock[5:10] == 'WRITE'):
+#            sOperation = 'write'
+#        else:
+#            sOperation = 'read'
 
     #--------------------------------------------------------------------------#
     # Check if a recipe parameter:                                             #

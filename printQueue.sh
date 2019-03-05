@@ -33,15 +33,21 @@ for fileName in $pathBase/queue/*; do
     #--------------------------------------------------------------------------#
     case procName in
         "0")
-            procNameString = 'cipsip'
+            procNameString = 'cipsip_mx'
             ;;
         "1")
-            procNameString = 'fill'
+            procNameString = 'cipsip_sy'
             ;;
         "2")
-            procNameString = 'filter'
+            procNameString = 'fill_mx'
             ;;
         "3")
+            procNameString = 'fill_sy'
+            ;;
+        "4")
+            procNameString = 'filter'
+            ;;
+        "5")
             procNameString = 'make'
             ;;
         *)

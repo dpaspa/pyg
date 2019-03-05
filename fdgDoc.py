@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #------------------------------------------------------------------------------#
 #                   Copyright 2018 complianceSHORTCUTS.com                     #
 #------------------------------------------------------------------------------#
@@ -223,7 +224,6 @@ class gDoc(object):
         # Save the output document as PDF:                                     #
         #----------------------------------------------------------------------#
         with silence_stdout():
-#            output = subprocess.check_output(['abiword', '--to', 'pdf', self.fileOutput])
             output = subprocess.check_output(['libreoffice', '--convert-to', 'pdf:writer_pdf_Export' ,
                                          '--outdir', self.fileOutputDir, self.fileOutput])
         self.fileOutputPDF = self.fileOutputDir + '/' + self.fileOutputBaseName + '.pdf'

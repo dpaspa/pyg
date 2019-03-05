@@ -36,6 +36,8 @@ class sqlCode(Enum):
     createInstancesAll                 = -24
     createInstancesForeign             = -25
     createInstancesGlobal              = -26
+    createInstancesGlobalForeign       = -261
+    getInstancesForClass               = -262
     xferInstancesGlobal                = -27
     createSFCGlobal                    = -28
     numInstances                       = -29
@@ -98,21 +100,42 @@ class sqlCode(Enum):
     CHILD                              = -144
     CHILD_ACQUIRE                      = -145
     CHILD_ACQUIRE_EXISTS               = -1451
+    CHILD_ACQUIRE_EXISTS_ALIAS         = -14511
+    CHILD_ACQUIRE_STATE                = -14512
+    CHILD_ACQUIRE_STATE_EXISTS         = -14513
     CHILD_COMMAND                      = -1445
+    CHILD_COMMAND_EXISTS               = -14451
+    CHILD_COMMAND_FLOWPATH             = -14452
+    CHILD_COMMAND_FLOWPATH_ALL         = -144521
+    CHILD_COMMAND_FLOWPATH_ALWAYS      = -14453
+    CHILD_COMMAND_FLOWPATH_EXISTS      = -14454
+    CHILD_COMMAND_ALWAYS               = -14455
+    CHILD_COMMAND_SELECTED             = -14456
     CHILD_COMMAND_BLK                  = -1446
     CHILD_COMMAND_BLK_EXISTS           = -1447
+    CHILD_COMMAND_NOT_BLK              = -1448
+    CHILD_COMMAND_CLASS                = -1449
+    CHILD_COMMAND_CLASS_ALIAS          = -14491
+    CHILD_HYGIENE_BLK                  = -14492
     CHILD_CASCADE                      = -146
+    CHILD_CASCADE_ALWAYS               = -1461
+    CHILD_CASCADE_SELECTED             = -1462
     CHILD_ACQUIRED                     = -147
     CHILD_ACQUIRE_REQ                  = -148
     CHILD_ACQUIRE_NREQ                 = -149
     CHILD_BIND                         = -159
     CHILD_INDEX_MAX                    = -160
-    CHILD_INIT_COMMAND_TRUE            = -162
-    CHILD_INIT_COMMAND_FALSE           = -163
+    CHILD_INIT_CMD_TRUE                = -162
+    CHILD_INIT_CMD_TRUE_STATES         = -1621
+    CHILD_INIT_CMD_FALSE               = -163
+    CHILD_INIT_CMD_FALSE_EXISTS        = -1631
+    CHILD_INIT_CMD_FALSE_STATES        = -1632
     CHILD_INSTANCE                     = -164
     CHILD_INSTANCE_ALL                 = -1641
     CHILD_INSTANCE_BIND                = -165
+    CHILD_INSTANCE_SHARED              = -1642
     CHILD_SELECT                       = -166
+    PARENT_PEER                        = -1661
     pChildSelect                       = -167
     pChildSelectExists                 = -168
     CRIL                               = -169
@@ -132,6 +155,7 @@ class sqlCode(Enum):
     INSTANCE_ALL                       = -203
     INSTANCE_BLK                       = -204
     INSTANCE_BLK_ALL                   = -205
+    INSTANCE_BLK_SHARED                = -2041
     INSTANCE_SFC                       = -206
     ISOWNED                            = -207
     LINK                               = -208
@@ -164,17 +188,22 @@ class sqlCode(Enum):
     RECIPE_CLASS                       = -264
     RECIPE_INSTANCE                    = -265
     RECIPE_PARAMETERS                  = -266
+    RECIPE_PARAMETER_CLASS             = -2661
     REQUIREMENT                        = -267
     SCOPE                              = -268
     SELECT                             = -269
+    SELECT_EXISTS                      = -2691
     SELVALUE                           = -279
     SELVALUEMYSELF                     = -280
     SFC                                = -281
     SFCExists                          = -282
     SFCFlag                            = -283
     STATE                              = -284
-    STATE_ARM                          = -285
-    STATE_DISARM                       = -286
+    STATE_NO_SFC                       = -2841
+    STATE_NO_SFCExists                 = -2842
+    CHILD_ARM_COMPLETED                = -2851
+    CHILD_ARM_STARTED                  = -2861
+    CHILD_ARM_STARTED_ALWAYS           = -2862
     STATE_TIMER                        = -287
     SETPOINT                           = -288
     OUTPUT                             = -289
@@ -223,18 +252,24 @@ class sqlCode(Enum):
     pParentReadBoolExists              = -3723
     pParentWrite                       = -334
     pParentWriteBool                   = -335
+    pParentWriteExists                 = -3351
+    pParentSync                        = -3352
     pSFCChildRead                      = -336
     pSFCChildReadDefine                = -3335
     pSFCChildWrite                     = -3336
     pSFCChildWriteDefine               = -3337
+    pSFCChildWriteDefineAlias          = -33371
     pSFCChildWriteBool                 = -3338
     pSFCChildWriteBoolDefine           = -3339
+    pSFCChildWriteBoolDefineAlias      = -33391
 #    pSFCChildWrite                     = -307
 #    pSFCGrandChild                     = -309
     pSFCChildMCRead                    = -3340
     pSFCChildMCReadDefine              = -3341
     pSFCChildMCWrite                   = -3342
+    pSFCChildMCWriteHygiene            = -33421
     pSFCChildMCWriteDefine             = -3343
+    pSFCChildMCWriteDefineHygiene      = -33431
     pNotSFCChildMCWriteDefine          = -3363
 #    pSFCChildMCWrite                   = -311
     pSFCChildExists                    = -338
@@ -246,6 +281,8 @@ class sqlCode(Enum):
     pSFCSelectMCReadDefine             = -3345
     pSFCSelectMCWrite                  = -3346
     pSFCSelectMCWriteDefine            = -3347
+    pSFCSelectMCWriteDefineHygiene     = -33471
+    pSFCSelectMCWriteHygiene           = -3348
 #    pSFCSelectMCWrite                  = -318
     pSFCParametersRecipe               = -341
     pSFCParametersRecipeExist          = -342
@@ -263,9 +300,11 @@ class sqlCode(Enum):
 #    pEventConfirmExists                = -184
     pEventPromptExists                 = -351
     pEventLogRealExists                = -352
+#    pEventLogRealNumEvent              = -3521
     pEventLogTimeExists                = -353
-#    pEventDataRealExists               = -189
-#    pEventDataTimeExists               = -200
+#    pEventLogTimeNumEvent              = -3531
+#    pEventDataRealExists               = -3531
+    pEventDataTimeExists               = -3531
     pEventPromptConfirmNo              = -1354
     pEventConfirmNoExists              = -354
     pEventConfirmYesExists             = -355
@@ -381,30 +420,53 @@ prm = {
     sqlCode.createInstancesAll         : [],
     sqlCode.createInstancesForeign     : ['gClass', 'gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.createInstancesGlobal      : ['gClass'],
+    sqlCode.createInstancesGlobalForeign : ['gInstance'],
+    sqlCode.getInstancesForClass       : ['gClass'],
     sqlCode.xferInstancesGlobal        : ['gClass'],
     sqlCode.createSFCGlobal            : [],
 #    sqlCode.numInstances               : ['gClass', 'gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.numInstances               : ['gClass'],
     sqlCode.createLevel                : ['gLevel'],
     sqlCode.createLevelsGlobal         : [],
-    sqlCode.CHILD                      : ['gClass', 'gClass', 'gClass'],
+    sqlCode.CHILD                      : ['gClass', 'gClass'],
     sqlCode.CHILD_ACQUIRE              : ['gClass'],
     sqlCode.CHILD_ACQUIRE_EXISTS       : ['gClass'],
+    sqlCode.CHILD_ACQUIRE_EXISTS_ALIAS : ['gClass', 'gAlias'],
+    sqlCode.CHILD_ACQUIRE_STATE        : ['gClass', 'gAlias'],
+    sqlCode.CHILD_ACQUIRE_STATE_EXISTS : ['gClass', 'gAlias'],
     sqlCode.CHILD_COMMAND              : ['gClass'],
+    sqlCode.CHILD_COMMAND_EXISTS       : ['gClass'],
+    sqlCode.CHILD_COMMAND_FLOWPATH     : ['gClass'],
+    sqlCode.CHILD_COMMAND_FLOWPATH_ALL : ['gClass'],
+    sqlCode.CHILD_COMMAND_FLOWPATH_ALWAYS : ['gClass'],
+    sqlCode.CHILD_COMMAND_FLOWPATH_EXISTS : ['gClass'],
+    sqlCode.CHILD_COMMAND_ALWAYS       : ['gClass'],
+    sqlCode.CHILD_COMMAND_SELECTED     : ['gClass'],
     sqlCode.CHILD_COMMAND_BLK          : ['gClass'],
     sqlCode.CHILD_COMMAND_BLK_EXISTS   : ['gClass'],
+    sqlCode.CHILD_COMMAND_NOT_BLK      : ['gClass'],
+    sqlCode.CHILD_COMMAND_CLASS        : ['gClass', 'gChildClass'],
+    sqlCode.CHILD_COMMAND_CLASS_ALIAS  : ['gClass', 'gChildClass', 'gAlias', 'gAlias'],
+    sqlCode.CHILD_HYGIENE_BLK          : ['gClass'],
     sqlCode.CHILD_CASCADE              : ['gClass'],
+    sqlCode.CHILD_CASCADE_ALWAYS       : ['gClass'],
+    sqlCode.CHILD_CASCADE_SELECTED     : ['gClass'],
     sqlCode.CHILD_ACQUIRED             : ['gClass', 'gState'],
     sqlCode.CHILD_ACQUIRE_REQ          : ['gClass', 'gState'],
     sqlCode.CHILD_ACQUIRE_NREQ         : ['gClass', 'gState'],
     sqlCode.CHILD_BIND                 : ['gClass', 'gState'],
     sqlCode.CHILD_INDEX_MAX            : ['gClass'],
-    sqlCode.CHILD_INIT_COMMAND_TRUE    : ['gClass', 'gState'],
-    sqlCode.CHILD_INIT_COMMAND_FALSE   : ['gClass', 'gState'],
+    sqlCode.CHILD_INIT_CMD_TRUE        : ['gClass', 'gAlias', 'gCommand'],
+    sqlCode.CHILD_INIT_CMD_TRUE_STATES : ['gClass', 'gAlias'],
+    sqlCode.CHILD_INIT_CMD_FALSE       : ['gClass', 'gAlias', 'gCommand'],
+    sqlCode.CHILD_INIT_CMD_FALSE_EXISTS: ['gClass', 'gAlias'],
+    sqlCode.CHILD_INIT_CMD_FALSE_STATES: ['gClass', 'gAlias'],
     sqlCode.CHILD_INSTANCE             : ['gInstance', 'gParent', 'gParent', 'gParent', 'gClass', 'gClass'],
     sqlCode.CHILD_INSTANCE_ALL         : [],
     sqlCode.CHILD_INSTANCE_BIND        : ['gInstance', 'gParent', 'gParent', 'gParent', 'gClass', 'gState'],
+    sqlCode.CHILD_INSTANCE_SHARED      : ['gInstance'],
     sqlCode.CHILD_SELECT               : ['gClass'],
+    sqlCode.PARENT_PEER                : ['gClass', 'gAlias'],
     sqlCode.pChildSelect               : ['gClass'],
     sqlCode.pChildSelectExists         : ['gClass'],
     sqlCode.CRIL                       : [],
@@ -425,6 +487,7 @@ prm = {
     sqlCode.INSTANCE_ALL               : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.INSTANCE_BLK               : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.INSTANCE_BLK_ALL           : [],
+    sqlCode.INSTANCE_BLK_SHARED        : [],
     sqlCode.INSTANCE_SFC               : [],
     sqlCode.ISOWNED                    : ['gInstance'],
     sqlCode.LINK                       : ['gInstance'],
@@ -446,7 +509,8 @@ prm = {
     sqlCode.RECIPE                     : [],
     sqlCode.RECIPE_CLASS               : ['gClass'],
     sqlCode.RECIPE_INSTANCE            : ['gInstance'],
-    sqlCode.RECIPE_PARAMETERS          : [],
+    sqlCode.RECIPE_PARAMETERS          : ['gClass'],
+    sqlCode.RECIPE_PARAMETER_CLASS     : [],
 #    sqlCode.PARM_CLASS_VAR_INPUT             : ['gClass'],
 #    sqlCode.PARM_CLASS_VAR_IN_OUT            : ['gClass'],
 #    sqlCode.PARM_CLASS_VAR_OUTPUT            : ['gClass'],
@@ -455,14 +519,18 @@ prm = {
 #    sqlCode.PARM_INSTANCE_VAR_OUTPUT   : ['gInstance'],
 #    sqlCode.PARM_INSTANCE_VAR          : ['gInstance'],
     sqlCode.SELECT                     : ['gClass'],
+    sqlCode.SELECT_EXISTS              : ['gClass'],
     sqlCode.SELVALUE                   : ['gClass', 'gSelectParameter', 'gSelectSelection'],
     sqlCode.SELVALUEMYSELF             : ['gClass', 'gClass'],
     sqlCode.SFC                        : ['gClass'],
     sqlCode.SFCExists                  : ['gClass'],
     sqlCode.SFCFlag                    : ['gClass', 'gClass', 'gClass'],
     sqlCode.STATE                      : ['gClass'],
-    sqlCode.STATE_ARM                  : ['gSFC'],
-    sqlCode.STATE_DISARM               : ['gSFC'],
+    sqlCode.STATE_NO_SFC               : ['gClass'],
+    sqlCode.STATE_NO_SFCExists         : ['gClass'],
+    sqlCode.CHILD_ARM_COMPLETED        : ['gClass'],
+    sqlCode.CHILD_ARM_STARTED          : ['gClass'],
+    sqlCode.CHILD_ARM_STARTED_ALWAYS   : ['gClass'],
     sqlCode.STATE_TIMER                : ['gParent', 'gParent', 'gParent', 'gParent', 'gParent'],
     sqlCode.SETPOINT                   : [],
     sqlCode.OUTPUT                     : [],
@@ -482,9 +550,11 @@ prm = {
 #    sqlCode.pEventConfirmExists        : ['gClass'],
     sqlCode.pEventPromptExists         : ['gClass'],
     sqlCode.pEventLogRealExists        : ['gClass'],
+#    sqlCode.pEventLogRealNumEvent      : ['gClass', 'gInstance', 'gClass', 'gInstance'],
     sqlCode.pEventLogTimeExists        : ['gClass'],
+#    sqlCode.pEventLogTimeNumEvent      : ['gClass', 'gInstance', 'gClass', 'gInstance'],
 #    sqlCode.pEventDataRealExists       : ['gClass'],
-#    sqlCode.pEventDataTimeExists       : ['gClass'],
+    sqlCode.pEventDataTimeExists       : ['gClass'],
     sqlCode.pEventPromptConfirmNo      : ['gClass', 'gChildParameter'],
     sqlCode.pEventConfirmNoExists      : ['gClass'],
     sqlCode.pEventConfirmYesExists     : ['gClass'],
@@ -547,6 +617,8 @@ prm = {
     sqlCode.pParentReadBoolExists      : ['gClass', 'gClass'],
     sqlCode.pParentWrite               : ['gClass', 'gAlias', 'gClass'],
     sqlCode.pParentWriteBool           : ['gClass', 'gAlias', 'gClass'],
+    sqlCode.pParentWriteExists         : ['gClass', 'gAlias', 'gClass'],
+    sqlCode.pParentSync                : ['gClass', 'gSFC'],
 #    sqlCode.pSFCCallingIN_OUT          : ['gSFC'],
 #    sqlCode.pSFCCallingOUT             : ['gSFC'],
 #    sqlCode.pSFC                       : ['gSFC'],
@@ -556,14 +628,18 @@ prm = {
     sqlCode.pSFCChildReadDefine        : ['gClass'],
     sqlCode.pSFCChildWrite             : ['gClass', 'gSFC'],
     sqlCode.pSFCChildWriteDefine       : ['gClass'],
+    sqlCode.pSFCChildWriteDefineAlias  : ['gClass', 'gAlias'],
     sqlCode.pSFCChildWriteBool         : ['gClass', 'gSFC'],
     sqlCode.pSFCChildWriteBoolDefine   : ['gClass'],
+    sqlCode.pSFCChildWriteBoolDefineAlias : ['gClass', 'gAlias'],
 #    sqlCode.pSFCChildWrite             : ['gClass', 'gSFC'],
 #    sqlCode.pSFCGrandChild             : ['gClass', 'gSFC'],
     sqlCode.pSFCChildMCRead            : ['gClass', 'gSFC'],
     sqlCode.pSFCChildMCReadDefine      : ['gClass'],
     sqlCode.pSFCChildMCWrite           : ['gClass', 'gSFC'],
+    sqlCode.pSFCChildMCWriteHygiene    : ['gClass', 'gSFC'],
     sqlCode.pSFCChildMCWriteDefine     : ['gClass'],
+    sqlCode.pSFCChildMCWriteDefineHygiene     : ['gClass'],
     sqlCode.pNotSFCChildMCWriteDefine  : ['gClass'],
 #    sqlCode.pSFCChildMCWrite           : ['gClass', 'gSFC'],
     sqlCode.pSFCChildExists            : ['gClass', 'gSFC'],
@@ -575,6 +651,8 @@ prm = {
     sqlCode.pSFCSelectMCReadDefine     : ['gClass'],
     sqlCode.pSFCSelectMCWrite          : ['gClass', 'gState'],
     sqlCode.pSFCSelectMCWriteDefine    : ['gClass'],
+    sqlCode.pSFCSelectMCWriteDefineHygiene : ['gClass'],
+    sqlCode.pSFCSelectMCWriteHygiene   : ['gClass', 'gState'],
 #    sqlCode.pSFCSelectMCWrite          : ['gClass', 'gState'],
     sqlCode.pSFCParametersRecipe       : ['gSFC'],
     sqlCode.pSFCParametersRecipeExist  : ['gSFC'],
@@ -839,6 +917,36 @@ sql = {
                                                  'substr(I.Level, 1, 1) != "V" '
                                           'ORDER BY I.Instance'
                                          ),
+    sqlCode.createInstancesGlobalForeign : ('SELECT printf("%d",I.ID) AS ID, '
+                                                 'printf("%d",I.IDX) AS IDX, '
+                                                 'I.[Level], '
+                                                 'I.Instance, '
+                                                 'I.[Class], '
+                                                 'I.Description, '
+                                                 'substr(I.Description, 1, 35) AS briefDescription, '
+                                                 'CASE '
+                                                     'WHEN I.Connection = 1 THEN 2 '
+                                                     'WHEN I.Connection = 2 THEN 1 '
+                                                 'END Connection, '
+                                                 'I.Parent, '
+                                                 'I.ParentID, '
+                                                 'I.ParentClass, '
+                                                 'I.GParent, '
+                                                 'I.GGParent, '
+                                                 'I.GGGParent, '
+                                                 'CASE '
+                                                     'WHEN I.NC=0 THEN """alwaysLow""" '
+                                                     'WHEN I.NC=1 THEN """alwaysHigh""" '
+                                                 'END NC, '
+                                                 'C.Description AS ClassDescription, '
+                                                 'I.Recipe, '
+                                                 'I.RecipeClass '
+                                          'FROM tblInstance AS I INNER JOIN '
+                                                  'tblClass AS C ON I.ClassID = C.ID '
+                                          'WHERE I.Instance = ? AND '
+                                                 'substr(I.Level, 1, 1) != "V" '
+                                          'ORDER BY I.Instance'
+                                         ),
     sqlCode.createInstancesAll         : ('SELECT printf("%d",I.ID) AS ID, '
                                                  'printf("%d",I.IDX) AS IDX, '
                                                  'I.[Level], '
@@ -880,6 +988,12 @@ sql = {
                                                  'upper(I.[Level]) == "PC") AND '
                                                  'substr(I.Level, 1, 1) != "V" '
                                           'ORDER BY I.Instance'
+                                         ),
+    sqlCode.getInstancesForClass    : ('SELECT Instance '
+                                       'FROM tblInstance '
+                                       'WHERE Class = ? AND '
+                                                'substr(Level, 1, 1) != "V" '
+                                       'ORDER BY Instance'
                                          ),
     sqlCode.xferInstancesGlobal        : ('SELECT printf("%d",I.ID) AS ID, '
                                                  'printf("%d",I.IDX) AS IDX, '
@@ -1002,7 +1116,7 @@ sql = {
                                           'FROM tblInstance '
                                           'WHERE [Class] = ? AND '
                                                  'substr(Level, 1, 1) != "V" AND '
-                                                 'OwnerID = 0 '
+                                                 'transferCPU = 1 '
                                           'LIMIT 1'
                                          ),
     sqlCode.createProgramFiles         : ('SELECT * '
@@ -1121,7 +1235,7 @@ sql = {
                                           'INNER JOIN tblClass_ChildStateValues AS S ON '
                                                  'C.childKey = S.childKey '
                                           'WHERE C.Class = ? AND '
-                                                 'S.Class = ? AND '
+                                                 'C.includeInGenealogy = "TRUE" AND '
                                           'S.State = (SELECT [State] FROM tblClass_State WHERE Class = ? LIMIT 1) '
                                           'ORDER BY cast(childIndex as Int)'
                                          ), # gClass
@@ -1138,7 +1252,29 @@ sql = {
                                                  'childAcquireStatement, '
                                                  'childCommandStatement '
                                           'FROM tblClass_Child '
-                                          'WHERE [Class] = ? '
+                                          'WHERE [Class] = ? AND '
+                                                 'includeInGenealogy = "TRUE" AND '
+                                                 'childCommandStatement <> "NONE" '
+                                          'ORDER BY childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_CASCADE_ALWAYS       : ('SELECT childParameterAlias, '
+                                                 'childAliasClass, '
+                                                 'childAcquireStatement, '
+                                                 'childCommandStatement '
+                                          'FROM tblClass_Child '
+                                          'WHERE [Class] = ? AND '
+                                                 'includeInGenealogy = "TRUE" AND '
+                                                 'childCommandStatement LIKE "%alwaysHigh%" '
+                                          'ORDER BY childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_CASCADE_SELECTED     : ('SELECT childParameterAlias, '
+                                                 'childAliasClass, '
+                                                 'childAcquireStatement, '
+                                                 'childCommandStatement '
+                                          'FROM tblClass_Child '
+                                          'WHERE [Class] = ? AND '
+                                                 'childCommandStatement NOT LIKE "%alwaysHigh%" AND '
+                                                 'childCommandStatement <> "NONE" '
                                           'ORDER BY childParameterAlias'
                                          ), # gClass
     sqlCode.CHILD_ACQUIRED             : ('SELECT childParameterAlias, '
@@ -1188,12 +1324,110 @@ sql = {
                                                  'childAcquireStatement <> "NONE" '
                                           'LIMIT 1'
                                          ), # gClass
-    sqlCode.CHILD_COMMAND              : ('SELECT childParameterAlias, '
-                                                 'childAliasClass, '
-                                                 'childCommandStatement '
+    sqlCode.CHILD_ACQUIRE_EXISTS_ALIAS : ('SELECT Level '
                                           'FROM tblClass_Child '
                                           'WHERE [Class] = ? AND '
-                                                 'childCommandStatement <> "NONE" '
+                                                 'childParameterAlias = ? AND '
+                                                 'childAcquireStatement <> "NONE" '
+                                          'LIMIT 1'
+                                         ), # gClass
+    sqlCode.CHILD_ACQUIRE_STATE        : ('SELECT State '
+                                          'FROM tblClass_ChildAcquire '
+                                          'WHERE Class = ? AND '
+                                                 'childParameterAlias = ? AND '
+                                                 'childAcquire = "TRUE" '
+                                          'ORDER BY State'
+                                         ), # gClass
+    sqlCode.CHILD_ACQUIRE_STATE_EXISTS : ('SELECT Level '
+                                          'FROM tblClass_ChildAcquire '
+                                          'WHERE Class = ? AND '
+                                                 'childParameterAlias = ? AND '
+                                                 'childAcquire = "TRUE" '
+                                          'LIMIT 1'
+                                         ), # gClass
+    sqlCode.CHILD_COMMAND              : ('SELECT childParameterAlias, '
+                                                 'childAliasClass, '
+                                                 'childCommandStatement, '
+                                                 'childArmStatement '
+                                          'FROM tblClass_Child '
+                                          'WHERE [Class] = ? AND '
+                                                 'childCommandStatement <> "NONE" AND '
+                                                 'requireCommand = "TRUE" '
+                                          'ORDER BY childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_COMMAND_FLOWPATH     : ('SELECT H.childParameterAlias, '
+                                                 'H.childAliasClass, '
+                                                 'H.childCommandStatement, '
+                                                 'H.childArmStatement '
+                                          'FROM tblClass_Child AS H INNER JOIN tblClass AS C ON '
+                                                 'H.childAliasClass = C.Class '
+                                          'WHERE H.Class = ? AND '
+                                                 'H.childCommandStatement <> "NONE" AND '
+                                                 'H.childCommandStatement NOT LIKE "%alwaysHigh%" AND '
+                                                 'H.requireCommand = "TRUE" AND '
+                                                 'C.Flowpath = 1 '
+                                          'ORDER BY H.childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_COMMAND_FLOWPATH_ALL : ('SELECT H.childParameterAlias, '
+                                                 'H.childAliasClass, '
+                                                 'H.childCommandStatement, '
+                                                 'H.childArmStatement '
+                                          'FROM tblClass_Child AS H INNER JOIN tblClass AS C ON '
+                                                 'H.childAliasClass = C.Class '
+                                          'WHERE H.Class = ? AND '
+                                                 'H.childCommandStatement <> "NONE" AND '
+                                                 'H.requireCommand = "TRUE" AND '
+                                                 'C.Flowpath = 1 '
+                                          'ORDER BY H.childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_COMMAND_FLOWPATH_ALWAYS : ('SELECT H.childParameterAlias, '
+                                                 'H.childAliasClass, '
+                                                 'H.childCommandStatement, '
+                                                 'H.childArmStatement '
+                                          'FROM tblClass_Child AS H INNER JOIN tblClass AS C ON '
+                                                 'H.childAliasClass = C.Class '
+                                          'WHERE H.Class = ? AND '
+                                                 'H.childCommandStatement <> "NONE" AND '
+                                                 'H.childCommandStatement LIKE "%alwaysHigh%" AND '
+                                                 'H.requireCommand = "TRUE" AND '
+                                                 'C.Flowpath = 1 '
+                                          'ORDER BY H.childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_COMMAND_FLOWPATH_EXISTS : ('SELECT H.Level '
+                                          'FROM tblClass_Child AS H INNER JOIN tblClass AS C ON '
+                                                 'H.childAliasClass = C.Class '
+                                          'WHERE H.Class = ? AND '
+                                                 'H.childCommandStatement <> "NONE" AND '
+                                                 'H.requireCommand = "TRUE" AND '
+                                                 'C.Flowpath = 1 '
+                                          'LIMIT 1'
+                                         ), # gClass
+    sqlCode.CHILD_COMMAND_EXISTS       : ('SELECT Level '
+                                          'FROM tblClass_Child '
+                                          'WHERE [Class] = ? AND '
+                                                 'childCommandStatement <> "NONE" AND '
+                                                 'requireCommand = "TRUE" '
+                                          'LIMIT 1'
+                                         ), # gClass
+    sqlCode.CHILD_COMMAND_ALWAYS       : ('SELECT childParameterAlias, '
+                                                 'childAliasClass, '
+                                                 'childCommandStatement, '
+                                                 'childArmStatement '
+                                          'FROM tblClass_Child '
+                                          'WHERE [Class] = ? AND '
+                                                 'childCommandStatement LIKE "%alwaysHigh%" AND '
+                                                 'requireCommand = "TRUE" '
+                                          'ORDER BY childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_COMMAND_SELECTED     : ('SELECT childParameterAlias, '
+                                                 'childAliasClass, '
+                                                 'childCommandStatement, '
+                                                 'childArmStatement '
+                                          'FROM tblClass_Child '
+                                          'WHERE [Class] = ? AND '
+                                                 'childCommandStatement NOT LIKE "%alwaysHigh%" AND '
+                                                 'childCommandStatement <> "NONE" AND '
+                                                 'requireCommand = "TRUE" '
                                           'ORDER BY childParameterAlias'
                                          ), # gClass
     sqlCode.CHILD_COMMAND_BLK          : ('SELECT DISTINCT P.childParameterAlias, '
@@ -1204,6 +1438,7 @@ sql = {
                                                  'P.childAliasClass = C.Class '
                                           'WHERE P.Class = ? AND '
                                                  'P.childCommandStatement <> "NONE" AND '
+                                                 'P.requireCommand = "TRUE" AND '
                                                  'C.Level != "CM" AND '
                                                  'C.Level != "CP" '
                                           'ORDER BY P.childParameterAlias'
@@ -1214,9 +1449,65 @@ sql = {
                                                  'P.childAliasClass = C.Class '
                                           'WHERE P.Class = ? AND '
                                                  'P.childCommandStatement <> "NONE" AND '
+                                                 'P.requireCommand = "TRUE" AND '
                                                  'C.Level != "CM" AND '
                                                  'C.Level != "CP" '
                                           'LIMIT 1'
+                                         ), # gClass
+    sqlCode.CHILD_COMMAND_NOT_BLK      : ('SELECT DISTINCT P.childParameterAlias, '
+                                                 'P.childAliasClass, '
+                                                 'P.childCommandStatement '
+                                          'FROM tblClass_Child AS P '
+                                          'INNER JOIN tblClass_Child AS C ON '
+                                                 'P.childAliasClass = C.Class '
+                                          'WHERE P.Class = ? AND '
+                                                 'P.childCommandStatement <> "NONE" AND '
+                                                 'P.requireCommand = "TRUE" AND '
+                                                 'C.Level != "EM" AND '
+                                                 'C.Level != "UN" AND '
+                                                 'C.Level != "PC" AND '
+                                                 'C.Level != "CP" '
+                                          'ORDER BY P.childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_COMMAND_CLASS        : ('SELECT childParameterAlias AS selectChildParameterAlias, '
+                                                 'childAliasClass, '
+                                                 'childCommandStatement, '
+                                                 'childArmStatement '
+                                          'FROM tblClass_Child '
+                                          'WHERE [Class] = ? AND '
+                                                 'childAliasClass = ? AND '
+                                                 'childCommandStatement <> "NONE" AND '
+                                                 'requireCommand = "TRUE" '
+                                          'ORDER BY childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_COMMAND_CLASS_ALIAS  : ('SELECT childParameterAlias AS selectChildParameterAlias, '
+                                                 'childAliasClass, '
+                                                 'childCommandStatement, '
+                                                 'childArmStatement '
+                                          'FROM tblClass_Child '
+                                          'WHERE [Class] = ? AND '
+                                                 'childAliasClass = ? AND '
+                                                 '(childParameterAlias LIKE ? || "%" OR '
+                                                 'childParameterAlias LIKE substr(childParameterAlias, 1, 1) || "%" || substr(?, 3, length(childParameterAlias) - 3) || "%" ) AND '
+                                                 'childCommandStatement <> "NONE" AND '
+                                                 'requireCommand = "TRUE" '
+                                          'ORDER BY childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_HYGIENE_BLK          : ('SELECT DISTINCT P.childParameterAlias, '
+                                                 'P.childAliasClass, '
+                                                 'P.childCommandStatement '
+                                          'FROM tblClass_Child AS P '
+                                          'INNER JOIN tblClass_Child AS C ON '
+                                                 'P.childAliasClass = C.Class '
+                                          'INNER JOIN tblClass AS H ON '
+                                                 'P.childAliasClass = H.Class '
+                                          'WHERE P.Class = ? AND '
+                                                 'H.Hygiene = 1 AND '
+                                                 'P.childCommandStatement <> "NONE" AND '
+                                                 'P.requireCommand = "TRUE" AND '
+                                                 'C.Level != "CM" AND '
+                                                 'C.Level != "CP" '
+                                          'ORDER BY P.childParameterAlias'
                                          ), # gClass
     sqlCode.CHILD_BIND                 : ('SELECT childParameterAlias, '
                                                  'childClass, '
@@ -1250,42 +1541,79 @@ sql = {
 #                                                 'childAcquire = "OWNER") '
 #                                          'ORDER BY childParameterAlias'
 #                                         ), # gClass, gState
-    sqlCode.CHILD_INIT_COMMAND_TRUE    : ('SELECT C.childParameterAlias, '
+    sqlCode.CHILD_INIT_CMD_TRUE         : ('SELECT C.childParameterAlias, '
                                                  'C.childAliasClass, '
                                                  'printf("%d", S.childIndex) AS childIndex, '
                                                  'S.State, '
                                                  'C.childCommandStatement, '
                                                  'S.conditionStatement, '
                                                  'S.trueStatement, '
-                                                 'S.trueCommand, '
-                                                 'S.falseStatement, '
-                                                 'S.falseCommand '
+                                                 'S.trueCommand '
                                           'FROM tblClass_Child AS C '
                                           'INNER JOIN tblClass_ChildStateValues AS S ON '
                                                  'C.childKey = S.childKey '
                                           'WHERE C.Class = ? AND '
-                                                 'S.State = ? AND '
+                                                 'C.requireCommand = "TRUE" AND '
+                                                 'S.childParameterAlias = ? AND '
+                                                 'S.trueCommand = ? AND '
                                                  'C.childCommandStatement <> "NONE" '
                                           'ORDER BY C.childParameterAlias'
                                          ), # gClass
-    sqlCode.CHILD_INIT_COMMAND_FALSE   : ('SELECT C.childParameterAlias, '
+    sqlCode.CHILD_INIT_CMD_TRUE_STATES : ('SELECT S.trueCommand, '
+                                                 'S.trueStatement '
+                                          'FROM tblClass_Child AS C '
+                                          'INNER JOIN tblClass_ChildStateValues AS S ON '
+                                                 'C.childKey = S.childKey '
+                                          'WHERE C.Class = ? AND '
+                                                 'C.requireCommand = "TRUE" AND '
+                                                 'S.childParameterAlias = ? AND '
+                                                 'C.childCommandStatement <> "NONE" '
+                                          'GROUP BY S.trueCommand '
+                                          'ORDER BY S.trueCommand'
+                                         ), # gClass
+    sqlCode.CHILD_INIT_CMD_FALSE       : ('SELECT C.childParameterAlias, '
                                                  'C.childAliasClass, '
                                                  'printf("%d", S.childIndex) AS childIndex, '
                                                  'S.State, '
                                                  'C.childCommandStatement, '
                                                  'S.conditionStatement, '
-                                                 'S.trueStatement, '
-                                                 'S.trueCommand, '
                                                  'S.falseStatement, '
                                                  'S.falseCommand '
                                           'FROM tblClass_Child AS C '
                                           'INNER JOIN tblClass_ChildStateValues AS S ON '
                                                  'C.childKey = S.childKey '
                                           'WHERE C.Class = ? AND '
-                                                 'S.State = ? AND '
+                                                 'C.requireCommand = "TRUE" AND '
+                                                 'S.childParameterAlias = ? AND '
+                                                 'S.falseCommand = ? AND '
                                                  'C.childCommandStatement <> "NONE" AND '
-                                                 'length(falseStatement) > 0 '
+                                                 'length(S.falseStatement) > 0 '
                                           'ORDER BY C.childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_INIT_CMD_FALSE_EXISTS: ('SELECT C.Level '
+                                          'FROM tblClass_Child AS C '
+                                          'INNER JOIN tblClass_ChildStateValues AS S ON '
+                                                 'C.childKey = S.childKey '
+                                          'WHERE C.Class = ? AND '
+                                                 'C.requireCommand = "TRUE" AND '
+                                                 'S.childParameterAlias = ? AND '
+                                                 'C.childCommandStatement <> "NONE" AND '
+                                                 'length(S.falseStatement) > 0 '
+                                          'GROUP BY S.falseCommand '
+                                          'ORDER BY S.falseCommand'
+                                         ), # gClass
+    sqlCode.CHILD_INIT_CMD_FALSE_STATES: ('SELECT S.falseCommand, '
+                                                 'S.falseStatement '
+                                          'FROM tblClass_Child AS C '
+                                          'INNER JOIN tblClass_ChildStateValues AS S ON '
+                                                 'C.childKey = S.childKey '
+                                          'WHERE C.Class = ? AND '
+                                                 'C.requireCommand = "TRUE" AND '
+                                                 'S.childParameterAlias = ? AND '
+                                                 'C.childCommandStatement <> "NONE" AND '
+                                                 'length(S.falseStatement) > 0 '
+                                          'GROUP BY S.falseCommand '
+                                          'ORDER BY S.falseCommand'
                                          ), # gClass
 #    sqlCode.CHILD_INIT_COMMAND_FALSE   : ('SELECT S.childParameterAlias, '
 #                                                 'S.childClass AS childAliasClass, '
@@ -1361,6 +1689,25 @@ sql = {
                                                  'length(C.childBind) > 0 '
                                           'ORDER BY cast(childIndex as Int)'
                                          ), # gInstance
+    sqlCode.CHILD_INSTANCE_SHARED      : ('SELECT DISTINCT I.Parent, '
+                                                 'C.Class, '
+                                                 'I.Instance AS childInstance, '
+                                                 'C.childClass, '
+                                                 'printf("%d", I.IDX) AS IDX, '
+                                                 'I.Description AS childDescription, '
+                                                 'I.Connection, '
+                                                 'CASE '
+                                                     'WHEN I.Connection = "1" THEN 2 '
+                                                     'WHEN I.Connection = "2" THEN 1 '
+                                                 'END ConnectionOther '
+                                         'FROM tblClass_ChildStateValues AS C '
+                                         'INNER JOIN tblInstance AS I ON C.childKey = I.childKey '
+                                         'INNER JOIN tblClass_Child AS S ON C.childParameterAlias = S.childParameterAlias '
+                                         'WHERE I.Parent = ? AND '
+                                                 'S.Shared = "TRUE" AND '
+                                                 'I.OwnerID = 0 '
+                                         'ORDER BY cast(C.childIndex as Int)'
+                                         ), # gClass
     sqlCode.CHILD_SELECT               : ('SELECT childParameterAlias, '
                                                  'childLinkAlias, '
                                                  'childAliasClass, '
@@ -1370,6 +1717,13 @@ sql = {
                                                  'childAcquireStatement <> "NONE" AND '
                                                  'childParameterAlias <> childLinkAlias '
                                           'ORDER BY childParameterAlias'
+                                         ), # gClass
+    sqlCode.PARENT_PEER                : ('SELECT parentPeerClass, '
+                                                 'parentPeerAlias '
+                                          'FROM tblClass_Child '
+                                          'WHERE Class = ? AND '
+                                                 'childParameterAlias = ? AND '
+                                                 'length(parentPeerClass) > 0'
                                          ), # gClass
 #    sqlCode.CHILD_SELECT               : ('SELECT * '
 #                                          'FROM tblClass_ChildSelection '
@@ -1586,6 +1940,21 @@ sql = {
                                                  'substr(I.Level, 1, 1) != "V" '
                                           'ORDER BY I.[Level], I.Instance'
                                          ),
+    sqlCode.INSTANCE_BLK_SHARED        : ('SELECT DISTINCT Instance, '
+                                                 'Class, '
+                                                 'printf("%d", IDX) AS IDX, '
+                                                 'Description, '
+                                                 'Connection, '
+                                                 'CASE '
+                                                     'WHEN Connection = "1" THEN 2 '
+                                                     'WHEN Connection = "2" THEN 1 '
+                                                 'END ConnectionOther '
+                                          'FROM tblInstance '
+                                          'WHERE OwnerID = 0 AND '
+                                                 'Level != "PC" AND '
+                                                 'substr(Level, 1, 1) != "V" '
+                                          'ORDER BY Instance'
+                                         ),
     sqlCode.INSTANCE_SFC               : ('SELECT printf("%d",I.ID) AS ID, '
                                                  'printf("%d",I.IDX) AS IDX, '
                                                  'printf("%d",S.IDX) AS sfcIDX, '
@@ -1594,6 +1963,7 @@ sql = {
                                                  'I.[Class], '
                                                  'I.Description, '
                                                  'I.Parent, '
+                                                 'I.Connection, '
                                                  'S.SFC, '
                                                  'S.State, '
                                                  'S.StateDescription '
@@ -1601,7 +1971,7 @@ sql = {
                                                  'tblClass_State AS S ON '
                                                         'I.Level = S.Level AND '
                                                         'I.ClassID = S.ClassID '
-                                          'WHERE S.SFC != "None" AND '
+                                          'WHERE upper(S.SFC) != "NONE" AND '
                                                  'substr(I.Level, 1, 1) != "V" '
                                           'ORDER BY I.[Level], I.Instance, S.SFC'
                                          ),
@@ -1877,11 +2247,17 @@ sql = {
                                                  'substr(Level, 1, 1) != "V" '
                                          ), # gInstance
 
+    sqlCode.RECIPE_PARAMETER_CLASS     : ('SELECT DISTINCT parameterClass AS Class '
+                                          'FROM pGlobal '
+                                          'WHERE isRecipe = 1 '
+                                          'ORDER BY parameterClass'
+                                         ),
     sqlCode.RECIPE_PARAMETERS          : ('SELECT DISTINCT blockParameter, '
                                                  'parameterDataType, '
                                                  'parameterDescription '
                                           'FROM pGlobal '
-                                          'WHERE isRecipe = 1 '
+                                          'WHERE isRecipe = 1 AND '
+                                                 'parameterClass = ? '
                                           'GROUP BY blockParameter '
                                           'ORDER BY blockParameter'
                                          ),
@@ -1911,6 +2287,11 @@ sql = {
                                           'FROM tblClass_Selection '
                                           'WHERE [Class] = ? '
                                           'ORDER BY Parameter'
+                                         ), # gClass
+    sqlCode.SELECT_EXISTS              : ('SELECT Level '
+                                          'FROM tblClass_Selection '
+                                          'WHERE [Class] = ? '
+                                          'LIMIT 1'
                                          ), # gClass
     sqlCode.SELVALUE                   : ('SELECT S.Level, '
                                                  'S.Class, '
@@ -1977,17 +2358,52 @@ sql = {
                                           'WHERE [Class] = ? '
                                           'ORDER BY State'
                                          ), # gClass
-    sqlCode.STATE_ARM                  : ('SELECT * '
+    sqlCode.STATE_NO_SFC               : ('SELECT * '
                                           'FROM tblClass_State '
-                                          'WHERE [SFC] = ? AND '
-                                                'Cast(Arm AS Int) = 1 '
+                                          'WHERE [Class] = ? AND '
+                                          'upper(SFC) = "NONE" '
                                           'ORDER BY State'
                                          ), # gClass
-    sqlCode.STATE_DISARM               : ('SELECT * '
+    sqlCode.STATE_NO_SFCExists         : ('SELECT Level '
                                           'FROM tblClass_State '
-                                          'WHERE [SFC] = ? AND '
-                                                'Cast(Arm AS Int) = 2 '
-                                          'ORDER BY State'
+                                          'WHERE [Class] = ? AND '
+                                          'upper(SFC) = "NONE" '
+                                          'LIMIT 1'
+                                         ), # gClass
+    sqlCode.CHILD_ARM_COMPLETED        : ('SELECT childParameterAlias, '
+                                                 'childAliasClass, '
+                                                 'childCommandStatement, '
+                                                 'childArmStatement '
+                                          'FROM tblClass_Child '
+                                          'WHERE [Class] = ? AND '
+                                                 'childCommandStatement <> "NONE" AND '
+                                                 'requireCommand = "TRUE" AND '
+                                                 'Cast(childArmWhen AS Int) = 2 '
+                                          'ORDER BY childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_ARM_STARTED          : ('SELECT childParameterAlias, '
+                                                 'childAliasClass, '
+                                                 'childCommandStatement, '
+                                                 'childArmStatement '
+                                          'FROM tblClass_Child '
+                                          'WHERE [Class] = ? AND '
+                                                 'childCommandStatement <> "NONE" AND '
+                                                 'childArmStatement NOT LIKE "%alwaysHigh%" AND '
+                                                 'requireCommand = "TRUE" AND '
+                                                 'Cast(childArmWhen AS Int) = 1 '
+                                          'ORDER BY childParameterAlias'
+                                         ), # gClass
+    sqlCode.CHILD_ARM_STARTED_ALWAYS   : ('SELECT childParameterAlias, '
+                                                 'childAliasClass, '
+                                                 'childCommandStatement, '
+                                                 'childArmStatement '
+                                          'FROM tblClass_Child '
+                                          'WHERE [Class] = ? AND '
+                                                 'childCommandStatement <> "NONE" AND '
+                                                 'childArmStatement LIKE "%alwaysHigh%" AND '
+                                                 'requireCommand = "TRUE" AND '
+                                                 'Cast(childArmWhen AS Int) = 1 '
+                                          'ORDER BY childParameterAlias'
                                          ), # gClass
     sqlCode.STATE_TIMER                : ('SELECT printf("%d",I.ID) AS ID, '
                                                  'I.[Level], '
@@ -2762,6 +3178,34 @@ sql = {
                                                  'Instance = ? '
                                           'ORDER BY cast(idxEvent as Int)'
                                          ), # gClass
+#    sqlCode.pEventLogRealNumEvent      : ('SELECT *, '
+#                                                '1 + idxEvent - (SELECT '
+#                                                '(SELECT COUNT(pKey) FROM pEventLogReal t2 WHERE t2.pKey < t1.pKey) '
+#                                                '+ '
+#                                                '(SELECT COUNT(pKey) FROM pEventLogReal t3 WHERE t3.pKey = T1.pKey) '
+#                                            'FROM pEventLogReal t1 '
+#                                            'WHERE Class = ? AND Instance = ? '
+#                                            'ORDER BY cast(idxEvent as Int) '
+#                                            ') AS numEvent '
+#                                          'FROM pEventLogReal '
+#                                          'WHERE Class = ? AND '
+#                                                 'Instance = ? '
+#                                          'ORDER BY cast(idxEvent as Int)'
+#                                         ), # gClass
+#    sqlCode.pEventLogTimeNumEvent      : ('SELECT *, '
+#                                                '1 + idxEvent - (SELECT '
+#                                                '(SELECT COUNT(pKey) FROM pEventLogTime t2 WHERE t2.pKey < t1.pKey) '
+#                                                '+ '
+#                                                '(SELECT COUNT(pKey) FROM pEventLogTime t3 WHERE t3.pKey = T1.pKey) '
+#                                            'FROM pEventLogTime t1 '
+#                                            'WHERE Class = ? AND Instance = ? '
+#                                            'ORDER BY cast(idxEvent as Int) '
+#                                            ') AS numEvent '
+#                                          'FROM pEventLogTime '
+#                                          'WHERE Class = ? AND '
+#                                                 'Instance = ? '
+#                                          'ORDER BY cast(idxEvent as Int)'
+#                                         ), # gClass
 #    sqlCode.pEventLogMsg               : ('SELECT * '
 #                                          'FROM pGlobal '
 #                                          'WHERE parameterClass = ? AND '
@@ -2891,13 +3335,13 @@ sql = {
 #                                                 'isEventDataReal = 1 '
 #                                          'LIMIT 1'
 #                                         ), # gClass
-#    sqlCode.pEventDataTimeExists       : ('SELECT isSFC '
-#                                          'FROM pGlobal '
-#                                          'WHERE parameterClass = ? AND '
-#                                                 'isSFC = 1 AND '
-#                                                 'isEventDataTime = 1 '
-#                                          'LIMIT 1'
-#                                         ), # gClass
+    sqlCode.pEventDataTimeExists       : ('SELECT isSFC '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                 'isSFC = 1 AND '
+                                                 'isEventDataTime = 1 '
+                                          'LIMIT 1'
+                                         ), # gClass
     sqlCode.pEventConfirmAll           : ('SELECT *, '
                                                  'Replace(childParameter,"_confirm",".confirm") AS dbEventParameter '
                                           'FROM pGlobal '
@@ -3105,6 +3549,27 @@ sql = {
                                                  'parameterSource, '
                                                  'childParameter'
                                          ), # gClass, gSFC
+    sqlCode.pSFCChildWriteDefineAlias  : ('SELECT DISTINCT childParameterClass, '
+                                                 'childParameter, '
+                                                 'blockParameter, '
+                                                 'parameterDataType, '
+                                                 'childParameterAlias, '
+                                                 'childParameterAttribute, '
+                                                 'parameterValue, '
+                                                 'operation '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                'childParameterAlias = ? AND '
+                                                'upper(operation) = "WRITE" AND '
+                                                'upper(parameterDataType) <> "BOOL" AND '
+                                                'isLink = 0 AND '
+                                                'isChild = 1 AND '
+                                                'isMC = 0 AND '
+                                                'parameterType != "VAR" '
+                                          'ORDER BY parameterOrder, '
+                                                 'parameterSource, '
+                                                 'childParameter'
+                                         ), # gClass, gSFC
     sqlCode.pSFCChildWriteBool         : ('SELECT * '
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
@@ -3130,6 +3595,27 @@ sql = {
                                                  'operation '
                                           'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
+                                                'upper(operation) = "WRITE" AND '
+                                                'upper(parameterDataType) = "BOOL" AND '
+                                                'isLink = 0 AND '
+                                                'isChild = 1 AND '
+                                                'isMC = 0 AND '
+                                                'parameterType != "VAR" '
+                                          'ORDER BY parameterOrder, '
+                                                 'parameterSource, '
+                                                 'childParameter'
+                                         ), # gClass, gSFC
+    sqlCode.pSFCChildWriteBoolDefineAlias : ('SELECT DISTINCT childParameterClass, '
+                                                 'childParameter, '
+                                                 'blockParameter, '
+                                                 'parameterDataType, '
+                                                 'childParameterAlias, '
+                                                 'childParameterAttribute, '
+                                                 'parameterValue, '
+                                                 'operation '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                'childParameterAlias = ? AND '
                                                 'upper(operation) = "WRITE" AND '
                                                 'upper(parameterDataType) = "BOOL" AND '
                                                 'isLink = 0 AND '
@@ -3299,6 +3785,40 @@ sql = {
                                                         'S.SFC = P.parameterSource '
                                           'WHERE S.Class = ? AND '
                                                  'P.parameterSource = ? AND '
+                                                 'upper(P.childParameterAttribute) != "HYGIENE" AND '
+                                                 '(S.childAcquire = "TRUE" OR '
+                                                 'S.childAcquire = "OWNER") AND '
+                                                 'upper(P.operation) = "WRITE" AND '
+                                                 'P.isSFC = 1 AND '
+                                                 'P.isMC = 1 AND '
+                                                 'P.isChild = 1 '
+                                          'ORDER BY S.State, '
+                                                 'P.parameterOrder, '
+                                                 'P.parameterSource, '
+                                                 'P.childParameter'
+                                         ), # gClass
+    sqlCode.pSFCChildMCWriteHygiene    : ('SELECT DISTINCT S.Class, '
+                                                 'S.State, '
+                                                 'S.childParameterAlias, '
+                                                 'S.childClass, '
+                                                 'printf("%d", S.IDX) AS childIDX, '
+                                                 'printf("%d", S.childIndex) AS childIndex, '
+                                                 'P.parameterSource, '
+                                                 'P.parameterType, '
+                                                 'P.parameterDataType, '
+                                                 'P.childParameter, '
+                                                 'P.childParameterClass, '
+                                                 'P.blockParameter, '
+                                                 'P.childParameterAttribute, '
+                                                 'P.parameterDescription, '
+                                                 'P.operation '
+                                          'FROM tblClass_ChildStateValues AS S  '
+                                                 'LEFT JOIN pGlobal AS P ON  '
+                                                        'S.childParameterAlias = P.childParameterAlias AND '
+                                                        'S.SFC = P.parameterSource '
+                                          'WHERE S.Class = ? AND '
+                                                 'P.parameterSource = ? AND '
+                                                 'upper(P.childParameterAttribute) = "HYGIENE" AND '
                                                  '(S.childAcquire = "TRUE" OR '
                                                  'S.childAcquire = "OWNER") AND '
                                                  'upper(P.operation) = "WRITE" AND '
@@ -3320,6 +3840,25 @@ sql = {
                                                  'FROM pGlobal '
                                           'WHERE parameterClass = ? AND '
                                                  'upper(operation) = "WRITE" AND '
+                                                 'upper(childParameterAttribute) != "HYGIENE" AND '
+                                                 'isSFC = 1 AND '
+                                                 'isMC = 1 AND '
+                                                 'isChild = 1 '
+                                          'ORDER BY parameterOrder, '
+                                                 'parameterSource, '
+                                                 'childParameter'
+                                         ), # gClass
+    sqlCode.pSFCChildMCWriteDefineHygiene     : ('SELECT DISTINCT childParameterClass, '
+                                                 'childParameter, '
+                                                 'blockParameter, '
+                                                 'parameterDataType, '
+                                                 'childParameterAlias, '
+                                                 'childParameterAttribute, '
+                                                 'operation '
+                                                 'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                 'upper(operation) = "WRITE" AND '
+                                                 'upper(childParameterAttribute) = "HYGIENE" AND '
                                                  'isSFC = 1 AND '
                                                  'isMC = 1 AND '
                                                  'isChild = 1 '
@@ -3425,6 +3964,18 @@ sql = {
                                           'WHERE parameterClass = ? AND '
                                                  'parameterState = ? AND '
                                                  'upper(operation) = "WRITE" AND '
+                                                 'upper(childParameterAttribute) != "HYGIENE" AND '
+                                                 'isSFC = 1 AND '
+                                                 'isMC = 1 AND '
+                                                 'isSelection = 1 '
+                                          'ORDER BY childParameterAlias'
+                                         ), # gClass
+    sqlCode.pSFCSelectMCWriteHygiene   : ('SELECT * '
+                                                 'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                 'parameterState = ? AND '
+                                                 'upper(operation) = "WRITE" AND '
+                                                 'upper(childParameterAttribute) = "HYGIENE" AND '
                                                  'isSFC = 1 AND '
                                                  'isMC = 1 AND '
                                                  'isSelection = 1 '
@@ -3487,6 +4038,7 @@ sql = {
                                                  'P.childParameter, '
                                                  'P.blockParameter, '
                                                  'P.parameterDataType, '
+                                                 'P.childParameterClass, '
                                                  'P.childParameterAlias, '
                                                  'P.childParameterAttribute, '
                                                  'parameterValue, '
@@ -3497,6 +4049,26 @@ sql = {
                                                  'S.Class = P.parameterClass '
                                           'WHERE S.Class = ? AND '
                                                  'upper(P.operation) = "WRITE" AND '
+                                                 'upper(P.childParameterAttribute) != "HYGIENE" AND '
+                                                 'P.isMC = 1 '
+                                          'ORDER BY P.childParameterAlias'
+                                         ), # gClass
+    sqlCode.pSFCSelectMCWriteDefineHygiene : ('SELECT DISTINCT P.childParameterClass, '
+                                                 'P.childParameter, '
+                                                 'P.blockParameter, '
+                                                 'P.parameterDataType, '
+                                                 'P.childParameterClass, '
+                                                 'P.childParameterAlias, '
+                                                 'P.childParameterAttribute, '
+                                                 'parameterValue, '
+                                                 'P.operation '
+                                          'FROM tblClass_ChildSelection AS S '
+                                                 'LEFT JOIN pGlobal AS P ON '
+                                                 'S.linkParameterAlias = P.childParameterAlias AND '
+                                                 'S.Class = P.parameterClass '
+                                          'WHERE S.Class = ? AND '
+                                                 'upper(P.operation) = "WRITE" AND '
+                                                 'upper(P.childParameterAttribute) = "HYGIENE" AND '
                                                  'P.isMC = 1 '
                                           'ORDER BY P.childParameterAlias'
                                          ), # gClass
@@ -3865,6 +4437,34 @@ sql = {
                                           'ORDER BY childParameterAlias, '
                                                  'childParameter'
                                          ), # gClass, gAlias
+    sqlCode.pParentWriteExists          : ('SELECT Level '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                 'childParameterAlias = ? AND '
+                                                 'isMC = 0 AND '
+                                                 'operation = "write" AND '
+                                                 'parameterType LIKE "VAR_%" AND '
+                                                 'childParameterAttribute IN '
+                                                     '(SELECT blockParameter '
+                                                         'FROM pGlobal '
+                                                         'WHERE parameterClass = ?) '
+                                          'LIMIT 1'
+                                         ), # gClass, gAlias
+    sqlCode.pParentSync                 : ('SELECT DISTINCT parameterClass, '
+                                                 'childParameter, '
+                                                 'blockParameter, '
+                                                 'operation, '
+                                                 'childParameterAlias, '
+                                                 'childParameterClass, '
+                                                 'childParameterAttribute '
+                                          'FROM pGlobal '
+                                          'WHERE parameterClass = ? AND '
+                                                 'parameterSource = ? AND '
+                                                 'substr(childParameterAttribute, 1, 5) = "SYNC_" '
+                                          'ORDER BY childParameterAlias, '
+                                                 'childParameter'
+                                         ), # gClass, gAlias
+#                                                 'replace(replace(replace(lower(childParameterAttribute), "read_", "read1_"), "write_", "read_"), "read1_", "write_") AS syncParameter '
 #    sqlCode.pSyncRead                  : ('SELECT * '
 #                                          'FROM pGlobal '
 #                                          'WHERE parameterClass = ? AND '
@@ -4299,7 +4899,6 @@ sql = {
                                                     'isMC = 0 AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isCalling = 0 AND '
                                                     'isSelection = 0 AND '
                                                     '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
                                                     'OR parameterType LIKE "VAR_%") AND '
@@ -4314,7 +4913,6 @@ sql = {
                                                     'isMC = 0 AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isCalling = 0 AND '
                                                     'isSelection = 0 AND '
                                                     '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
                                                     'OR parameterType LIKE "VAR_%") AND '
@@ -4327,7 +4925,6 @@ sql = {
                                                     'isMC = 0 AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isCalling = 0 AND '
                                                     'isSelection = 0 AND '
                                                     '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
                                                     'OR parameterType LIKE "VAR_%") AND '
@@ -4348,7 +4945,6 @@ sql = {
                                                     'isMC = 0 AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isCalling = 0 AND '
                                                     'isSelection = 0 AND '
                                                     '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
                                                     'OR parameterType LIKE "VAR_%") AND '
@@ -4363,7 +4959,6 @@ sql = {
                                                     'isMC = 0 AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isCalling = 0 AND '
                                                     'isSelection = 0 AND '
                                                     '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
                                                     'OR parameterType LIKE "VAR_%") AND '
@@ -4376,7 +4971,6 @@ sql = {
                                                     'isMC = 0 AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isCalling = 0 AND '
                                                     'isSelection = 0 AND '
                                                     '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
                                                     'OR parameterType LIKE "VAR_%") AND '
@@ -4397,7 +4991,6 @@ sql = {
                                                     'isMC = 0 AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isCalling = 0 AND '
                                                     'isSelection = 0 AND '
                                                     '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
                                                     'OR parameterType LIKE "VAR_%") AND '
@@ -4412,7 +5005,6 @@ sql = {
                                                     'isMC = 0 AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isCalling = 0 AND '
                                                     'isSelection = 0 AND '
                                                     '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
                                                     'OR parameterType LIKE "VAR_%") AND '
@@ -4425,7 +5017,6 @@ sql = {
                                                     'isMC = 0 AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isCalling = 0 AND '
                                                     'isSelection = 0 AND '
                                                     '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
                                                     'OR parameterType LIKE "VAR_%") AND '
@@ -4446,7 +5037,6 @@ sql = {
                                                     'isMC = 0 AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isCalling = 0 AND '
                                                     'isSelection = 0 AND '
                                                     '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
                                                     'OR parameterType LIKE "VAR_%") AND '
@@ -4461,7 +5051,6 @@ sql = {
                                                     'isMC = 0 AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isCalling = 0 AND '
                                                     'isSelection = 0 AND '
                                                     '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
                                                     'OR parameterType LIKE "VAR_%") AND '
@@ -4474,7 +5063,6 @@ sql = {
                                                     'isMC = 0 AND '
                                                     'isChild = 0 AND '
                                                     'isLink = 0 AND '
-                                                    'isCalling = 0 AND '
                                                     'isSelection = 0 AND '
                                                     '((parameterType = "VAR" AND Substr(blockParameter, 1, 2) = "R_") '
                                                     'OR parameterType LIKE "VAR_%") AND '
@@ -4894,7 +5482,7 @@ sql = {
     sqlCode.pEventLogRealClass          : ('SELECT idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) AS cOffset, '
                                                  '((idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
                                                  'idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
-                                                 'parameterSource, parameterState, childParameter, blockParameter, parameterDescription, cast(val AS int) AS magicNum '
+                                                 'parameterSource, parameterState, childParameter, substr(childParameter, 5, length(childParameter) - 4) AS dataParameter, blockParameter, parameterDescription, cast(val AS int) AS magicNum '
                                           'FROM pEventLogReal LEFT JOIN bitInt on cast(bit AS int) = idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) '
                                           'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
                                           'ORDER BY cast(idxEvent AS Int)'
@@ -4902,7 +5490,7 @@ sql = {
     sqlCode.pEventLogTimeClass          : ('SELECT idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) AS cOffset, '
                                                  '((idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16) AS cWord, '
                                                  'idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) AS cBit, '
-                                                 'parameterSource, parameterState, childParameter, blockParameter, parameterDescription, cast(val AS int) AS magicNum '
+                                                 'parameterSource, parameterState, childParameter, substr(childParameter, 5, length(childParameter) - 4) AS dataParameter, blockParameter, parameterDescription, cast(val AS int) AS magicNum '
                                           'FROM pEventLogTime LEFT JOIN bitInt on cast(bit AS int) = idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) ORDER BY idxEvent LIMIT 1)) / 16)) '
                                           'WHERE Instance = (SELECT Instance FROM tblInstance WHERE CLASS = ? LIMIT 1) '
                                           'ORDER BY cast(idxEvent AS Int)'
@@ -4933,7 +5521,8 @@ sql = {
                                           'WHERE Instance = ? '
                                           'ORDER BY cast(idxEvent AS Int)'
                                          ), # gClass
-    sqlCode.pEventLogMsgInstance       : ('SELECT idxEvent - (SELECT idxEvent FROM pEventLogMsg ORDER BY idxEvent LIMIT 1) AS gOffset, '
+    sqlCode.pEventLogMsgInstance       : ('SELECT idxEvent, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventLogMsg ORDER BY idxEvent LIMIT 1) AS gOffset, '
                                                  '((idxEvent - (SELECT idxEvent FROM pEventLogMsg ORDER BY idxEvent LIMIT 1)) / 16) AS gWord, '
                                                  'idxEvent - (SELECT idxEvent FROM pEventLogMsg ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogMsg ORDER BY idxEvent LIMIT 1)) / 16)) AS gBit, '
                                                  'idxEvent - (SELECT idxEvent FROM pEventLogMsg WHERE Instance = ? ORDER BY idxEvent LIMIT 1) AS cOffset, '
@@ -4946,7 +5535,8 @@ sql = {
                                           'WHERE Instance = ? '
                                           'ORDER BY cast(idxEvent AS Int)'
                                          ), # gClass
-    sqlCode.pEventLogRealInstance       : ('SELECT idxEvent - (SELECT idxEvent FROM pEventLogReal ORDER BY idxEvent LIMIT 1) AS gOffset, '
+    sqlCode.pEventLogRealInstance       : ('SELECT idxEvent, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventLogReal ORDER BY idxEvent LIMIT 1) AS gOffset, '
                                                  '((idxEvent - (SELECT idxEvent FROM pEventLogReal ORDER BY idxEvent LIMIT 1)) / 16) AS gWord, '
                                                  'idxEvent - (SELECT idxEvent FROM pEventLogReal ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogReal ORDER BY idxEvent LIMIT 1)) / 16)) AS gBit, '
                                                  'idxEvent - (SELECT idxEvent FROM pEventLogReal WHERE Instance = ? ORDER BY idxEvent LIMIT 1) AS cOffset, '
@@ -4959,7 +5549,8 @@ sql = {
                                           'WHERE Instance = ? '
                                           'ORDER BY cast(idxEvent AS Int)'
                                          ), # gClass
-    sqlCode.pEventLogTimeInstance       : ('SELECT idxEvent - (SELECT idxEvent FROM pEventLogTime ORDER BY idxEvent LIMIT 1) AS gOffset, '
+    sqlCode.pEventLogTimeInstance       : ('SELECT idxEvent, '
+                                                 'idxEvent - (SELECT idxEvent FROM pEventLogTime ORDER BY idxEvent LIMIT 1) AS gOffset, '
                                                  '((idxEvent - (SELECT idxEvent FROM pEventLogTime ORDER BY idxEvent LIMIT 1)) / 16) AS gWord, '
                                                  'idxEvent - (SELECT idxEvent FROM pEventLogTime ORDER BY idxEvent LIMIT 1) - 16 * (((idxEvent - (SELECT idxEvent FROM pEventLogTime ORDER BY idxEvent LIMIT 1)) / 16)) AS gBit, '
                                                  'idxEvent - (SELECT idxEvent FROM pEventLogTime WHERE Instance = ? ORDER BY idxEvent LIMIT 1) AS cOffset, '

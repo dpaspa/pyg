@@ -25,6 +25,7 @@ from fdgProperty import setProperty
 from fdgRefNumber import refRenumber
 from fdgCSV2XLSX import csv2xlsx
 from fdgXLSX2DB import xlsx2db
+from fdgXML2DB import xml2db
 
 import logging
 logging.basicConfig(filename='fdg.log',level=logging.DEBUG)
@@ -43,7 +44,7 @@ parser.add_argument('-f','--docFilter', help='The document data filter for the W
 parser.add_argument('-i','--inputData', help='The input data path if variable and blank in conf spreadhseet', required=False)
 parser.add_argument('-n','--projectName', help='The document project name', required=True)
 parser.add_argument('-o','--output', help='The ouput file path to save to', required=True)
-parser.add_argument('-r','--report', help='Print to PDF if a report', required=True)
+parser.add_argument('-r','--report', help='Print to PDF if a report', required=False)
 args = vars(parser.parse_args())
 
 #------------------------------------------------------------------------------#
@@ -131,11 +132,11 @@ def main():
     #--------------------------------------------------------------------------#
     # Determine if a PDF report:                                               #
     #--------------------------------------------------------------------------#
+    isReport = False
     s = args['report']
-    if (s.upper() == 'Y' or s.upper() == 'YES'):
-        isReport = True
-    else:
-        isReport = False
+    if (not args['report'] is None):
+        if (s.upper() == 'Y' or s.upper() == 'YES'):
+            isReport = True
 
     #--------------------------------------------------------------------------#
     # Get the output path:                                                     #
@@ -172,6 +173,15 @@ def main():
     conn = xlsx2db(wbName, pathOutput)
 
     #--------------------------------------------------------------------------#
+    # Delete any pre-existing data:                                            #
+    #--------------------------------------------------------------------------#
+    try:
+        os.remove(pathOutput + '/' + projectName + '.xlsx')
+        os.remove(pathOutput + '/' + projectName + '.db')
+    except OSError:
+        pass
+
+    #--------------------------------------------------------------------------#
     # Get the batch begin and end times:                                       #
     #--------------------------------------------------------------------------#
     td = getTimes(conn, pathInput, projectName, docFilter)
@@ -180,6 +190,11 @@ def main():
     # Get the list of data connections:                                        #
     #--------------------------------------------------------------------------#
     dc = getConnections(conn, pathInput, pathOutput, projectName, docFilter)
+
+    #--------------------------------------------------------------------------#
+    # Get the batch serial data:                                               #
+    #--------------------------------------------------------------------------#
+    xml2db(dc[0].conn)
 
     #--------------------------------------------------------------------------#
     # Get the parent documents from the configuration database:                #
@@ -200,7 +215,7 @@ def main():
         #----------------------------------------------------------------------#
         # Get the document information from the configuration database:        #
         #----------------------------------------------------------------------#
-        query = 'SELECT * FROM docInfo WHERE projectName = ? and (docFilter = ? or docFilter = "-")'
+        query = 'SELECT * FROM docInfo WHERE projectName = ? and (docFilter = ? or docFilter = "*")'
         try:
             c = conn.cursor()
             c.execute(query, (projectName, docFilter))
@@ -219,7 +234,10 @@ def main():
         # Create the document object:                                          #
         #----------------------------------------------------------------------#
         fileInput = rowParent['fileInput']
-        fileOutput = pathOutput + '/' + rowParent['nameOutput'] + '_' + docFilter + '.docx'
+        if (len(docFilter) == 0):
+            fileOutput = pathOutput + '/' + rowParent['nameOutput'] + '.docx'
+        else:
+            fileOutput = pathOutput + '/' + rowParent['nameOutput'] + '_' + docFilter + '.docx'
         d = createDocument(fileInput, fileOutput, conn, dc, td,
                            docFilter, rowParent['parentKey'], projectName,
                            docInfo['propertyComments'], docInfo['propertyKeywords'],

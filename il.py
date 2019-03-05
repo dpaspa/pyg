@@ -384,11 +384,9 @@ def generateInterlocks(wb, wsi, wso, wsiName, sILMarker, sParent, pbwt, at, doll
                 if (not sFunction is None):
                     sExpression = sExpression + sFunction
                     if (len(sExplanation) == 0):
-                        sExplanation = sDescriptionIL
-                    elif (sFunction == 'A'):
-                        sExplanation = sExplanation + ' and ' + sDescriptionIL
-                    elif (sFunction == 'O'):
-                        sExplanation = sExplanation + ' or ' + sDescriptionIL
+                        sExplanation = sFunction + ' ' + sDescriptionIL
+                    else:
+                        sExplanation = sExplanation + '   ' + sFunction + ' ' + sDescriptionIL
 
                 if (sCode[:1] == '('):
                     sExpression = sExpression + sCode

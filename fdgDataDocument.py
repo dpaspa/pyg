@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #------------------------------------------------------------------------------#
 #                   Copyright 2018 complianceSHORTCUTS.com                     #
 #------------------------------------------------------------------------------#
@@ -29,6 +30,7 @@ from tqdm import trange
 import sqlite3
 import collections
 import datetime
+from copy import deepcopy
 #from contextlib import contextmanager
 
 from fdgProperty import setProperty
@@ -39,10 +41,13 @@ logging.basicConfig(filename='fdg.log',level=logging.DEBUG)
 #------------------------------------------------------------------------------#
 # Declare global variables:                                                    #
 #------------------------------------------------------------------------------#
-currentRow = None
-currentTable = None
 d = None
 ps = None
+
+#------------------------------------------------------------------------------#
+# Declare global field names:                                                  #
+#------------------------------------------------------------------------------#
+gRef = ''
 
 #------------------------------------------------------------------------------#
 # Declare the error handling global variables and procedure:                   #
@@ -162,6 +167,17 @@ def dataDocument(gDoc):
         dataTable(table)
 
         #----------------------------------------------------------------------#
+        # Process any nested tables:                                           #
+        #----------------------------------------------------------------------#
+#        for t in iter_block_tables(table):
+#            iTable = iTable + 1
+#            dataTable(Table(t, table))
+#        for row in table.rows:
+#            for cell in row.cells:
+#                for child in cell._tc.iterchildren():
+#                    if isinstance(child, CT_Tbl):
+
+        #----------------------------------------------------------------------#
         # Update the progress bar:                                             #
         #----------------------------------------------------------------------#
         pc = 1.0 / numTables
@@ -184,6 +200,10 @@ def dataDocument(gDoc):
 # Processes the current table looking for defined header keywords defining the #
 # content of the table.                                                        #
 #------------------------------------------------------------------------------#
+# Calling parameters:                                                          #
+#                                                                              #
+# table                 The current table.                                     #
+#------------------------------------------------------------------------------#
 def dataTable(table):
     #--------------------------------------------------------------------------#
     # Define the procedure name:                                               #
@@ -191,18 +211,9 @@ def dataTable(table):
     errProc = 'dataTable'
 
     #--------------------------------------------------------------------------#
-    # Use global variables:                                                    #
-    #--------------------------------------------------------------------------#
-    global currentRow
-    global currentTable
-
-    #--------------------------------------------------------------------------#
     # Get the table data source:                                               #
     #--------------------------------------------------------------------------#
-    bDelRow = False
-    currentTable = table
-    currentRow = currentTable.rows[0]
-    txtQuery = currentRow.cells[0].text
+    txtQuery = table.rows[0].cells[0].text
 
     #--------------------------------------------------------------------------#
     # Check for non-ascii characters. Can't be a keyword string in that case:  #
@@ -219,9 +230,8 @@ def dataTable(table):
             #------------------------------------------------------------------#
             # Insert the image:                                                #
             #------------------------------------------------------------------#
-            remove_row(currentTable, currentRow)
-            currentRow = currentTable.rows[0]
-            tableInsertImage(txtQuery[6:])
+            remove_row(table, table.rows[0])
+            tableInsertImage(txtQuery[6:], table)
 
         #----------------------------------------------------------------------#
         # Check if base query data for the entire document:                    #
@@ -230,7 +240,7 @@ def dataTable(table):
             #------------------------------------------------------------------#
             # Get the base data for the document:                              #
             #------------------------------------------------------------------#
-            remove_row(currentTable, currentRow)
+            remove_row(table, table.rows[0])
             getBaseData(txtQuery[8:])
 
         #----------------------------------------------------------------------#
@@ -240,7 +250,7 @@ def dataTable(table):
             #------------------------------------------------------------------#
             # Must be a valid query. Insert the data:                          #
             #------------------------------------------------------------------#
-            remove_row(currentTable, currentRow)
+            remove_row(table, table.rows[0])
             docProperty(txtQuery[8:])
 
         #----------------------------------------------------------------------#
@@ -250,9 +260,8 @@ def dataTable(table):
             #------------------------------------------------------------------#
             # Must be a valid query. Insert the data:                          #
             #------------------------------------------------------------------#
-            remove_row(currentTable, currentRow)
-            currentRow = currentTable.rows[0]
-            tableBaseRecord()
+            remove_row(table, table.rows[0])
+            tableBaseRecord(table)
 
         #----------------------------------------------------------------------#
         # Check if an append table rows query:                                 #
@@ -261,9 +270,8 @@ def dataTable(table):
             #------------------------------------------------------------------#
             # Must be a valid query. Insert the data:                          #
             #------------------------------------------------------------------#
-            remove_row(currentTable, currentRow)
-            currentRow = currentTable.rows[0]
-            tableAddRows(txtQuery[7:])
+            remove_row(table, table.rows[0])
+            tableAddRows(txtQuery[7:], table)
 
         #----------------------------------------------------------------------#
         # Check if a static table query:                                       #
@@ -272,9 +280,8 @@ def dataTable(table):
             #------------------------------------------------------------------#
             # Must be a valid query. Insert the data:                          #
             #------------------------------------------------------------------#
-            remove_row(currentTable, currentRow)
-            currentRow = currentTable.rows[0]
-            tableStaticFields(txtQuery[10:])
+            remove_row(table, table.rows[0])
+            tableStaticFields(txtQuery[10:], table)
 
         #----------------------------------------------------------------------#
         # Check if an append table rows query:                                 #
@@ -283,9 +290,7 @@ def dataTable(table):
             #------------------------------------------------------------------#
             # Must be a valid query. Insert the data:                          #
             #------------------------------------------------------------------#
-            remove_row(currentTable, currentRow)
-            currentRow = currentTable.rows[0]
-            query = """CONF SELECT V.Ver,
+            query = """CONF SELECT printf("%d", V.Ver) AS Ver,
                             V.ChangedBy,
                             substr("00"||printf("%d",V.D), -2, 2)
                             || "-" || CASE
@@ -307,9 +312,10 @@ def dataTable(table):
                             V.Description
                         FROM revHistory AS V
                         WHERE V.projectName = @@PROJECT@@ AND
-                            V.docFilter = @@FILTER@@
+                            (V.docFilter = @@FILTER@@ OR
+                            V.docFilter = "*")
                         ORDER BY V.Ver DESC"""
-            tableAddRows(query)
+            tableAddRows(query, table)
         else:
             #------------------------------------------------------------------#
             # Ignore other content:                                            #
@@ -402,8 +408,9 @@ def docProperty(query):
 # Calling parameters:                                                          #
 #                                                                              #
 # query                 The query string to get the data for.                  #
+# table                 The current table.                                     #
 #------------------------------------------------------------------------------#
-def tableAddRows(query):
+def tableAddRows(query, table):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
@@ -412,7 +419,7 @@ def tableAddRows(query):
     #--------------------------------------------------------------------------#
     # Use global variables:                                                    #
     #--------------------------------------------------------------------------#
-    global currentTable
+    global gRef
 
     #--------------------------------------------------------------------------#
     # Execute the query and get the data:                                      #
@@ -433,9 +440,10 @@ def tableAddRows(query):
     # There is no data so delete the entire table and the paragraph:           #
     #--------------------------------------------------------------------------#
     if (not bHasData):
-        p1 = getTableParagraph(currentTable)
-        remove_table(currentTable)
-        remove_paragraph(p1)
+        p1 = getTableParagraph(table)
+        remove_table(table)
+        if (p1 is not None):
+            remove_paragraph(p1)
     else:
         #----------------------------------------------------------------------#
         # Re-query to refresh the cursor:                                      #
@@ -446,7 +454,7 @@ def tableAddRows(query):
         #----------------------------------------------------------------------#
         # Get the column attribute row:                                        #
         #----------------------------------------------------------------------#
-        rowAttr = currentTable.rows[1]
+        rowAttr = table.rows[1]
         cellsAttr = rowAttr.cells
         para = cellsAttr[0].paragraphs[0]
         styleAttr = para.style
@@ -459,33 +467,75 @@ def tableAddRows(query):
             # Add a new row to the table and enter a loop to process each cell #
             # and prevent the row from breaking across pages:                  #
             #------------------------------------------------------------------#
-            rowNew = currentTable.add_row()
+            rowNew = table.add_row()
             preventRowSplit(rowNew)
 
 #            rowNew.height_rule = WD_ROW_HEIGHT.EXACTLY
             rowNew.height_rule = 2
             rowNew.height = shared.Cm(1.2)
-#            cellsNew = currentTable.add_row().cells
             cellsNew = rowNew.cells
             for i in range(0, len(cellsAttr)):
                 #--------------------------------------------------------------#
-                # Replace the field placeholders in the cell text:             #
+                # Process any nested tables by duplicating the table template: #
                 #--------------------------------------------------------------#
-                s = cellsAttr[i].text
-                for fld in row.keys():
-                    try:
-                        s = s.replace('@@' + fld.upper() + '@@', str(row[fld]))
-                    except:
-                        pass
-                para = cellsNew[i].paragraphs[0]
-                para.text = ''
-                run = para.add_run(s)
-                para.style = styleAttr
+                bFoundTable = False
+                for t in iter_block_items(cellsAttr[i]):
+                    if isinstance(t, Table):
+                        bFoundTable = True
+                        tTemplate = t._tbl
+                        tNew = deepcopy(tTemplate)
+                        para = cellsNew[i].paragraphs[0]
+                        para._p.addnext(tNew)
+                        tc = cellsNew[i]._tc
+                        p = tc.add_p()
+                        remove_paragraph(para)
+
+                #--------------------------------------------------------------#
+                # Update the text in any tables:                               #
+                #--------------------------------------------------------------#
+                if (bFoundTable):
+                    for t in iter_block_items(cellsNew[i]):
+                        if isinstance(t, Table):
+                            dataTable(t)
+                else:
+                    #----------------------------------------------------------#
+                    # Replace the field placeholders in the cell text:         #
+                    #----------------------------------------------------------#
+                    s = cellsAttr[i].text
+                    for fld in row.keys():
+                        #------------------------------------------------------#
+                        # Replace any fields with their values:                #
+                        #------------------------------------------------------#
+                        try:
+                            s = s.replace('@@' + fld.upper() + '@@', str(row[fld]))
+                        except:
+                            pass
+
+                        #------------------------------------------------------#
+                        # Save any special data for the current row:           #
+                        #------------------------------------------------------#
+                        if (fld.upper() == 'REF' or fld.upper() == 'TAG'):
+                            gRef = str(row[fld])
+
+                    #----------------------------------------------------------#
+                    # Update the cell text:                                    #
+                    #----------------------------------------------------------#
+                    para = cellsNew[i].paragraphs[0]
+                    para.text = ''
+                    run = para.add_run(s)
+                    para.style = styleAttr
 
         #----------------------------------------------------------------------#
-        # Clean up the table by deleting the query and attribute rows:         #
+        # Clean up the table by deleting the attribute row:                    #
         #----------------------------------------------------------------------#
-        remove_row(currentTable, rowAttr)
+        remove_row(table, rowAttr)
+
+        #----------------------------------------------------------------------#
+        # Delete the header row if it is not wanted:                           #
+        #----------------------------------------------------------------------#
+        txtDel = table.rows[0].cells[0].text
+        if (txtDel.upper() == 'DELETE'):
+            remove_row(table, table.rows[0])
 
 #------------------------------------------------------------------------------#
 # Function: tableBaseRecord                                                    #
@@ -494,7 +544,11 @@ def tableAddRows(query):
 # A child document table which includes fields from the parent document base   #
 # cursor. The current record data should be inserted.                          #
 #------------------------------------------------------------------------------#
-def tableBaseRecord():
+# Calling parameters:                                                          #
+#                                                                              #
+# table                 The current table.                                     #
+#------------------------------------------------------------------------------#
+def tableBaseRecord(table):
     #--------------------------------------------------------------------------#
     # Define the procedure name in case of any programming errors:             #
     #--------------------------------------------------------------------------#
@@ -504,7 +558,6 @@ def tableBaseRecord():
     # Use global variables:                                                    #
     #--------------------------------------------------------------------------#
     global d
-    global currentTable
 
     #--------------------------------------------------------------------------#
     # Process the table as a static field table with the global data:          #
@@ -515,7 +568,7 @@ def tableBaseRecord():
         #----------------------------------------------------------------------#
         try:
             d.dataRow[fld].decode('ascii')
-            srTable(currentTable, '@@' + fld.upper() + '@@', str(d.dataRow[fld]))
+            srTable(table, '@@' + fld.upper() + '@@', str(d.dataRow[fld]))
         except:
             pass
 
@@ -528,8 +581,9 @@ def tableBaseRecord():
 # Calling parameters:                                                          #
 #                                                                              #
 # sImage                The image filename.                                    #
+# table                 The current table.                                     #
 #------------------------------------------------------------------------------#
-def tableInsertImage(sImage):
+def tableInsertImage(sImage, table):
     #--------------------------------------------------------------------------#
     # Define the procedure name and trap any programming errors:               #
     #--------------------------------------------------------------------------#
@@ -556,7 +610,7 @@ def tableInsertImage(sImage):
     #--------------------------------------------------------------------------#
     # Insert the image:                                                        #
     #--------------------------------------------------------------------------#
-    para = currentRow.cells[0].paragraphs[0]
+    para = table.rows[0].cells[0].paragraphs[0]
     style = para.style
     para.text = ''
     run = para.add_run()
@@ -573,17 +627,13 @@ def tableInsertImage(sImage):
 # Calling parameters:                                                          #
 #                                                                              #
 # query                 The query string for the table data.                   #
+# table                 The current table.                                     #
 #------------------------------------------------------------------------------#
-def tableStaticFields(query):
+def tableStaticFields(query, table):
     #--------------------------------------------------------------------------#
     # Define the procedure name:                                               #
     #--------------------------------------------------------------------------#
     errProc = 'tableStaticFields'
-
-    #--------------------------------------------------------------------------#
-    # Use global variables:                                                    #
-    #--------------------------------------------------------------------------#
-    global currentTable
 
     #--------------------------------------------------------------------------#
     # Execute the query and get the data. Static table can only handle one     #
@@ -595,9 +645,10 @@ def tableStaticFields(query):
         #----------------------------------------------------------------------#
         # No data so delete the table and the paragraph:                       #
         #----------------------------------------------------------------------#
-        p1 = getTableParagraph(currentTable)
-        remove_table(currentTable)
-        remove_paragraph(p1)
+        p1 = getTableParagraph(table)
+        remove_table(table)
+        if (p1 is not None):
+            remove_paragraph(p1)
     else:
         #----------------------------------------------------------------------#
         # Process each field in the data and all cells in the table:           #
@@ -608,7 +659,7 @@ def tableStaticFields(query):
             #------------------------------------------------------------------#
             try:
                 str(data[fld]).decode('ascii')
-                srTable(currentTable, '@@' + fld.upper() + '@@', str(data[fld]))
+                srTable(table, '@@' + fld.upper() + '@@', str(data[fld]))
             except:
                 errorHandler(errProc, errorCode.nonASCIIField, query, fld)
 
@@ -663,6 +714,7 @@ def getQueryParameters(txtQuery):
     # Declare the named tuple for the returned data:                           #
     #--------------------------------------------------------------------------#
     global d
+    global gRef
     Query = collections.namedtuple('Query', ['conn', 'query', 'parms'])
 
     #--------------------------------------------------------------------------#
@@ -703,6 +755,9 @@ def getQueryParameters(txtQuery):
     for i in range(len(parms)):
         if (parms[i].upper() == 'FILTER'):
             parms[i] = d.docFilter
+
+        elif (parms[i].upper() == 'GREF'):
+            parms[i] = gRef
 
         elif (parms[i].upper() == 'KEY'):
             parms[i] = d.filterKey
@@ -761,9 +816,9 @@ def srParagraph(paragraph, txtSearch, txtReplace):
     s = paragraph.text
     if (s.find(txtSearch) >= 0):
         style = paragraph.style
-#            txtReplace = txtReplace.replace('\"','')
         s = s.replace(txtSearch, txtReplace)
         paragraph.text = ''
+        paragraph.style = style
         run = paragraph.add_run(s)
         paragraph.style = style
 
@@ -784,9 +839,7 @@ def srHeader(document, txtSearch, txtReplace):
 def srTable(table, txtSearch, txtReplace):
     errProc = 'srTable'
 
-    global currentTable
-
-    for row in currentTable.rows:
+    for row in table.rows:
         for cell in row.cells:
             for paragraph in cell.paragraphs:
                 srParagraph(paragraph, txtSearch, txtReplace)
@@ -802,13 +855,11 @@ def remove_row(t, r):
     tr = r._tr
     tbl.remove(tr)
 
-def remove_table(t):
+def remove_table(table):
     errProc = 'remove_table'
 
-    global currentTable
-
-    tbl = currentTable._tbl
-    for row in currentTable.rows:
+    tbl = table._tbl
+    for row in table.rows:
         tr = row._tr
         tbl.remove(tr)
 #        tbl = t._tbl
